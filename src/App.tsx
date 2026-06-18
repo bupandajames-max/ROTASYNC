@@ -54,6 +54,19 @@ import {
 
 const DEFAULT_DEPARTMENTS: Department[] = [];
 
+// --- Assignment engine helpers (Increment 1: availability + fairness) ---
+// Codes that mean a staff member is NOT available for task assignment that day.
+const ROTA_ABSENCE_CODES = ['OFF', 'AL', 'SL', 'CO', 'MD'];
+const isWorkingCode = (code?: string): boolean => !!code && !ROTA_ABSENCE_CODES.includes(code);
+
+// Build a per-staff task-count map from already-generated daily tasks, used to
+// seed fairness so balancing accounts for work already on the board.
+const buildLoadTally = (tasks: DailyTask[]): Record<string, number> => {
+  const tally: Record<string, number> = {};
+  tasks.forEach(t => { tally[t.staffName] = (tally[t.staffName] || 0) + 1; });
+  return tally;
+};
+
 const DEFAULT_TAXONOMY = {
   appName: 'RotaSync',
   workspaceSingular: 'Facility',
@@ -1168,7 +1181,8 @@ export default function App() {
     dateStr: string,
     uStaff: StaffMember[],
     uCycle: RosterCycle,
-    uTasks: TaskMaster[]
+    uTasks: TaskMaster[],
+    loadTally?: Record<string, number> // optional: when provided, balances assignment by load and is mutated in place
   ): DailyTask[] => {
     const list: DailyTask[] = [];
     const dow = new Date(dateStr + 'T00:00:00').getDay();
@@ -1182,7 +1196,8 @@ export default function App() {
     uStaff.forEach(s => {
       const code = uCycle.shifts[s.id]?.[dayIdx] || 'OFF';
       staffShiftMap[s.name] = code;
-      if (code !== 'OFF') {
+      // Only treat genuinely-working codes as available — exclude OFF and leave/absence.
+      if (isWorkingCode(code)) {
         if (!shiftStaffMap[code]) shiftStaffMap[code] = [];
         shiftStaffMap[code].push(s.name);
       }
@@ -1209,17 +1224,20 @@ export default function App() {
       let assignees: { name: string; shift: string }[] = [];
 
       if (task.pattern === 'Dispensing-rotate') {
-        // Generic daily rotation among active working staff for today
-        const workingStaffForDay = uStaff.filter(s => {
-          const shiftCode = staffShiftMap[s.name] || 'OFF';
-          return shiftCode !== 'OFF' && !['AL', 'SL', 'CO', 'MD'].includes(shiftCode);
-        }).sort((a, b) => a.name.localeCompare(b.name));
+        // Round-robin among available working staff for today.
+        const workingStaffForDay = uStaff.filter(s => isWorkingCode(staffShiftMap[s.name]))
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         if (workingStaffForDay.length > 0) {
           const slot = parseInt(task.assignedValue) || 0;
           const dayOffset = Math.max(0, Math.round((new Date(dateStr + 'T00:00:00').getTime() - new Date(uCycle.startDate + 'T00:00:00').getTime()) / 864e5));
-          const rotIdx = (dayOffset + slot) % workingStaffForDay.length;
-          const assignee = workingStaffForDay[rotIdx];
+          const rotStart = (dayOffset + slot) % workingStaffForDay.length;
+          // Rotate the candidate order so ties break deterministically and spread over time.
+          const ordered = [...workingStaffForDay.slice(rotStart), ...workingStaffForDay.slice(0, rotStart)];
+          // Fairness: pick the least-loaded candidate when a tally is supplied; else pure rotation.
+          const assignee = loadTally
+            ? ordered.reduce((best, s) => ((loadTally[s.name] || 0) < (loadTally[best.name] || 0) ? s : best), ordered[0])
+            : ordered[0];
           assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
         }
       } else if (task.pattern === 'Shift-based') {
@@ -1234,13 +1252,13 @@ export default function App() {
           if (targetTask.pattern === 'Manager-assign' || targetTask.pattern === 'Collab') {
             const names = (targetTask.managerAssignedName || '').split(',').map(n => n.trim());
             names.forEach(n => {
-              if (n && staffShiftMap[n]) {
+              if (n && isWorkingCode(staffShiftMap[n])) {
                 assignees.push({ name: n, shift: staffShiftMap[n] });
               }
             });
           } else if (targetTask.pattern === 'Person-specific') {
             const specName = targetTask.assignedValue;
-            if (specName && staffShiftMap[specName]) {
+            if (specName && isWorkingCode(staffShiftMap[specName])) {
               assignees.push({ name: specName, shift: staffShiftMap[specName] });
             }
           }
@@ -1248,26 +1266,26 @@ export default function App() {
       } else if (task.pattern === 'Collab') {
         const names = (task.managerAssignedName || '').split(',').map(n => n.trim());
         names.forEach(n => {
-          if (n && staffShiftMap[n]) {
+          if (n && isWorkingCode(staffShiftMap[n])) {
             assignees.push({ name: n, shift: staffShiftMap[n] });
           }
         });
       } else if (task.pattern === 'Manager-assign') {
         const names = (task.managerAssignedName || '').split(',').map(n => n.trim());
         names.forEach(n => {
-          if (n && staffShiftMap[n]) {
+          if (n && isWorkingCode(staffShiftMap[n])) {
             assignees.push({ name: n, shift: staffShiftMap[n] });
           }
         });
       } else if (task.pattern === 'Person-specific') {
         const specName = task.assignedValue;
-        if (specName && staffShiftMap[specName]) {
+        if (specName && isWorkingCode(staffShiftMap[specName])) {
           assignees.push({ name: specName, shift: staffShiftMap[specName] });
         }
       } else if (task.pattern === 'Role-group') {
         const targetRole = task.assignedValue;
         uStaff.forEach(s => {
-          if (s.role === targetRole && staffShiftMap[s.name] && staffShiftMap[s.name] !== 'OFF') {
+          if (s.role === targetRole && isWorkingCode(staffShiftMap[s.name])) {
             assignees.push({ name: s.name, shift: staffShiftMap[s.name] });
           }
         });
@@ -1290,6 +1308,8 @@ export default function App() {
           customFields: task.customFields,
           customFieldsData: {}
         });
+        // Fairness bookkeeping: count every assignment so rotation balances total load.
+        if (loadTally) loadTally[a.name] = (loadTally[a.name] || 0) + 1;
       });
     });
 
@@ -1303,8 +1323,9 @@ export default function App() {
       const todayStr = new Date().toISOString().split('T')[0];
       const hasTodayTasks = dailyTasks.some(t => t.date === todayStr);
       if (!hasTodayTasks && activeCycle) {
-        // generate daily tasks for today
-        const generated = generateDayTasks(todayStr, staffList, activeCycle, taskMasterList);
+        // generate daily tasks for today (balanced against work already on the board)
+        const loadTally = buildLoadTally(dailyTasks);
+        const generated = generateDayTasks(todayStr, staffList, activeCycle, taskMasterList, loadTally);
         // keep already stored finished ones
         const combined = [...generated.filter(g => !dailyTasks.some(d => d.id === g.id)), ...dailyTasks];
         setDailyTasks(combined);
@@ -1476,7 +1497,9 @@ export default function App() {
       const today = new Date();
       let combined = [...dailyTasks];
       let updated = false;
-      
+      // One shared tally across the days we generate so load balances cycle-wide.
+      const loadTally = buildLoadTally(dailyTasks);
+
       for (let i = 0; i < 3; i++) {
         const targetDate = new Date();
         targetDate.setDate(today.getDate() + i);
@@ -1487,7 +1510,7 @@ export default function App() {
         
         const alreadyExists = dailyTasks.some(t => t.date === targetDateStr);
         if (!alreadyExists) {
-          const dayTasks = generateDayTasks(targetDateStr, staffList, activeCycle, taskMasterList);
+          const dayTasks = generateDayTasks(targetDateStr, staffList, activeCycle, taskMasterList, loadTally);
           if (dayTasks.length > 0) {
             combined = [...dayTasks, ...combined];
             updated = true;
@@ -1516,7 +1539,9 @@ export default function App() {
     const skippedDates: string[] = [];
     let totalGeneratedCount = 0;
     let combined = [...dailyTasks];
-    
+    // Shared fairness tally across the 7-day generation window.
+    const loadTally = buildLoadTally(dailyTasks);
+
     for (let i = 0; i < 7; i++) {
       const targetDate = new Date();
       targetDate.setDate(today.getDate() + i);
@@ -1534,7 +1559,7 @@ export default function App() {
         continue;
       }
       
-      const dayTasks = generateDayTasks(targetDateStr, staffList, activeCycle, taskMasterList);
+      const dayTasks = generateDayTasks(targetDateStr, staffList, activeCycle, taskMasterList, loadTally);
       if (dayTasks.length > 0) {
         combined = [...dayTasks, ...combined];
         totalGeneratedCount += dayTasks.length;
