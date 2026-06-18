@@ -36,6 +36,7 @@ export default function TaskRegister({
   const [freq, setFreq] = useState('Daily');
   const [compliance, setCompliance] = useState(false);
   const [notes, setNotes] = useState('');
+  const [requiredSkillsInput, setRequiredSkillsInput] = useState('');
 
   // Tracker target for Continuous trackers
   const [trackerTarget, setTrackerTarget] = useState<number>(0);
@@ -143,12 +144,14 @@ export default function TaskRegister({
     e.preventDefault();
     if (!taskName) return;
 
+    const parsedSkills = requiredSkillsInput.split(',').map(s => s.trim()).filter(Boolean);
     const newTask: TaskMaster = {
       id: `task-${Date.now()}`,
       name: taskName,
       category,
       pattern,
       assignedValue: asgnVal,
+      requiredSkills: parsedSkills.length > 0 ? parsedSkills : undefined,
       priority,
       frequency: freq,
       compliance,
@@ -165,6 +168,7 @@ export default function TaskRegister({
     setTaskName('');
     setAsgnVal('');
     setNotes('');
+    setRequiredSkillsInput('');
     setTrackerTarget(0);
     setCustomFields([]);
   };
@@ -687,6 +691,7 @@ export default function TaskRegister({
                     onChange={(e) => setPattern(e.target.value as any)}
                     className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                   >
+                    <option value="Auto">Smart auto-assign</option>
                     <option value="Shift-based">Shift-based</option>
                     <option value="Role-group">Role-group</option>
                     <option value="Linked">Linked</option>
@@ -718,9 +723,21 @@ export default function TaskRegister({
                   type="text"
                   value={asgnVal}
                   onChange={(e) => setAsgnVal(e.target.value)}
-                  placeholder="Shift A, Provide Relief, or Slot index (0,1,2)"
+                  placeholder={pattern === 'Auto' ? 'Optional: restrict to a role (e.g. Nurse)' : 'Shift A, Provide Relief, or Slot index (0,1,2)'}
                   className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase">Required Skills <span className="text-gray-400 normal-case font-medium">(optional, comma-separated)</span></label>
+                <input
+                  type="text"
+                  value={requiredSkillsInput}
+                  onChange={(e) => setRequiredSkillsInput(e.target.value)}
+                  placeholder="e.g. First Aid, Forklift License"
+                  className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                />
+                <p className="text-[9px] text-gray-400 mt-1">Only staff who hold every listed skill are eligible for this task.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

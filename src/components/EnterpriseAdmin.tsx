@@ -192,6 +192,7 @@ export default function EnterpriseAdmin({
   const [newStaffGender, setNewStaffGender] = useState<'F' | 'M' | ''>('M');
   const [newStaffDeptId, setNewStaffDeptId] = useState('');
   const [newStaffIsManager, setNewStaffIsManager] = useState(false);
+  const [newStaffSkills, setNewStaffSkills] = useState('');
 
   // Edit Staff Form State
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
@@ -205,6 +206,7 @@ export default function EnterpriseAdmin({
   const [editGender, setEditGender] = useState<'F' | 'M' | ''>('M');
   const [editDeptId, setEditDeptId] = useState('');
   const [editIsManager, setEditIsManager] = useState(false);
+  const [editSkills, setEditSkills] = useState('');
 
   const handleStartEdit = (staff: StaffMember) => {
     setEditingStaff(staff);
@@ -218,6 +220,7 @@ export default function EnterpriseAdmin({
     setEditGender(staff.gender || 'M');
     setEditDeptId(staff.departmentId || '');
     setEditIsManager(!!staff.isManager);
+    setEditSkills((staff.skills || []).join(', '));
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -241,7 +244,8 @@ export default function EnterpriseAdmin({
           contractedHours: Number(editHoursVal),
           gender: editGender,
           departmentId: editDeptId || undefined,
-          isManager: editIsManager
+          isManager: editIsManager,
+          skills: editSkills.split(',').map(x => x.trim()).filter(Boolean),
         };
       }
       return s;
@@ -502,7 +506,8 @@ export default function EnterpriseAdmin({
       employeeNo: newStaffEmpNo,
       isManager: newStaffIsManager,
       facilityId: selectedFacilityId,
-      departmentId: newStaffDeptId || undefined
+      departmentId: newStaffDeptId || undefined,
+      skills: newStaffSkills.split(',').map(x => x.trim()).filter(Boolean),
     };
 
     const updated = [...staffList, newStaff];
@@ -516,6 +521,7 @@ export default function EnterpriseAdmin({
     setNewStaffRole('Operator');
     setNewStaffEmpNo('');
     setNewStaffIsManager(false);
+    setNewStaffSkills('');
   };
 
   // Create Task Workflow
@@ -1636,6 +1642,18 @@ export default function EnterpriseAdmin({
                 />
               </div>
 
+              <div>
+                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Skills / Competencies</label>
+                <input
+                  type="text"
+                  placeholder="comma-separated, e.g. First Aid, Forklift License"
+                  value={newStaffSkills}
+                  onChange={(e) => setNewStaffSkills(e.target.value)}
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                />
+                <p className="text-[9px] text-slate-400 mt-1">Used by smart auto-assign & skill-gated tasks.</p>
+              </div>
+
               <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-150">
                 <input 
                   type="checkbox"
@@ -1818,12 +1836,14 @@ export default function EnterpriseAdmin({
                   }}
                   className="w-full text-xs font-extrabold bg-indigo-50/50 border border-indigo-150 rounded-xl p-3 focus:ring-1 focus:ring-indigo-600 outline-none mt-1"
                 >
+                  <option value="Auto">Smart auto-assign (skills + availability + fairness)</option>
                   <option value="Shift-based">Shift-matched (Auto-assigns rostered member)</option>
                   <option value="Dispensing-rotate">Round-robin (rotates across available staff)</option>
                   <option value="Person-specific">Named Anchor specific</option>
                   <option value="Collab">Collaboration / Open Pool</option>
                 </select>
                 <p className="text-[9px] text-indigo-900 font-semibold leading-normal mt-1 bg-indigo-50/45 p-2 rounded-lg">
+                  {newTaskPattern === 'Auto' && '💡 Picks one qualified person who is on shift today and has the lightest workload — the smartest default.'}
                   {newTaskPattern === 'Shift-based' && '💡 System evaluates live schedules, matching today\'s duty roster to this check.'}
                   {newTaskPattern === 'Dispensing-rotate' && '💡 Rotates day-by-day to the least-loaded staffer on shift, skipping anyone off or on leave.'}
                   {newTaskPattern === 'Person-specific' && '💡 Permanent assignment locked specifically to a designated team member.'}
@@ -2518,6 +2538,17 @@ export default function EnterpriseAdmin({
                   placeholder="+260 971 000 000"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Skills / Competencies</label>
+                <input
+                  type="text"
+                  placeholder="comma-separated, e.g. First Aid, Forklift License"
+                  value={editSkills}
+                  onChange={(e) => setEditSkills(e.target.value)}
                   className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                 />
               </div>

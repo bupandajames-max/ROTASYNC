@@ -23,6 +23,7 @@ export interface StaffMember {
   departmentId?: string;
   rosterTrack?: string; // 'Rotating 24/7', 'Days Only', 'Nights Only', 'Flexible Custom'
   rosterNotes?: string;
+  skills?: string[]; // competencies used for skills-based task eligibility
 }
 
 export interface RosterCycle {
@@ -57,6 +58,7 @@ export interface TaskFieldDef {
 // the same (so logic/data don't change); only the UI presentation differs.
 export const PATTERN_LABELS: Record<string, string> = {
   'Dispensing-rotate': 'Round-robin',
+  'Auto': 'Smart auto-assign',
 };
 export const patternLabel = (p: string): string => PATTERN_LABELS[p] || p;
 
@@ -64,8 +66,9 @@ export interface TaskMaster {
   id: string;
   name: string;
   category: string; // Dynamic string instead of rigid clinical/pharmacy union
-  pattern: 'Shift-based' | 'Role-group' | 'Linked' | 'Collab' | 'Person-specific' | 'Manager-assign' | 'Dispensing-rotate';
+  pattern: 'Shift-based' | 'Role-group' | 'Linked' | 'Collab' | 'Person-specific' | 'Manager-assign' | 'Dispensing-rotate' | 'Auto';
   assignedValue: string; // e.g., "Shift A"
+  requiredSkills?: string[]; // optional competencies a staffer must have to be eligible
   managerAssignedName?: string;
   priority: 'Critical' | 'High' | 'Standard' | 'Routine';
   frequency: string;

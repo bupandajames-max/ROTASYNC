@@ -1192,16 +1192,32 @@ export default function App() {
     // Map shifts for easy lookup
     const shiftStaffMap: { [shift: string]: string[] } = {};
     const staffShiftMap: { [name: string]: string } = {};
+    const staffByName: { [name: string]: StaffMember } = {};
 
     uStaff.forEach(s => {
       const code = uCycle.shifts[s.id]?.[dayIdx] || 'OFF';
       staffShiftMap[s.name] = code;
+      staffByName[s.name] = s;
       // Only treat genuinely-working codes as available — exclude OFF and leave/absence.
       if (isWorkingCode(code)) {
         if (!shiftStaffMap[code]) shiftStaffMap[code] = [];
         shiftStaffMap[code].push(s.name);
       }
     });
+
+    // Skills-based eligibility: a staffer qualifies if they hold every required skill.
+    const hasRequiredSkills = (name: string, required: string[]): boolean => {
+      if (!required || required.length === 0) return true;
+      const owned = (staffByName[name]?.skills || []).map(x => x.toLowerCase().trim());
+      return required.every(r => owned.includes(r.toLowerCase().trim()));
+    };
+    // Lowest-load picker (fairness) over a candidate list; deterministic when no tally.
+    const pickFairest = (names: StaffMember[]): StaffMember | null => {
+      if (names.length === 0) return null;
+      return loadTally
+        ? names.reduce((best, s) => ((loadTally[s.name] || 0) < (loadTally[best.name] || 0) ? s : best), names[0])
+        : names[0];
+    };
 
     const isWknd = dow === 0 || dow === 6;
     const isPH = isPublicHoliday(dateStr, holidays);
@@ -1222,22 +1238,31 @@ export default function App() {
 
       // Determine who to assign
       let assignees: { name: string; shift: string }[] = [];
+      const required = task.requiredSkills || [];
 
-      if (task.pattern === 'Dispensing-rotate') {
-        // Round-robin among available working staff for today.
-        const workingStaffForDay = uStaff.filter(s => isWorkingCode(staffShiftMap[s.name]))
+      if (task.pattern === 'Auto') {
+        // Smart auto-assign: one staffer = on shift ∩ has required skills ∩ (optional role) → fairest.
+        const roleFilter = (task.assignedValue || '').trim();
+        const candidates = uStaff.filter(s =>
+          isWorkingCode(staffShiftMap[s.name])
+          && (!roleFilter || s.role === roleFilter)
+          && hasRequiredSkills(s.name, required)
+        ).sort((a, b) => a.name.localeCompare(b.name));
+        const assignee = pickFairest(candidates);
+        if (assignee) assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
+      } else if (task.pattern === 'Dispensing-rotate') {
+        // Round-robin among available working staff who hold the required skills.
+        const workingStaffForDay = uStaff.filter(s => isWorkingCode(staffShiftMap[s.name]) && hasRequiredSkills(s.name, required))
           .sort((a, b) => a.name.localeCompare(b.name));
 
         if (workingStaffForDay.length > 0) {
           const slot = parseInt(task.assignedValue) || 0;
           const dayOffset = Math.max(0, Math.round((new Date(dateStr + 'T00:00:00').getTime() - new Date(uCycle.startDate + 'T00:00:00').getTime()) / 864e5));
           const rotStart = (dayOffset + slot) % workingStaffForDay.length;
-          // Rotate the candidate order so ties break deterministically and spread over time.
+          // Rotate the candidate order so ties break deterministically and spread over time,
+          // then pick the least-loaded (fairness) — falls back to pure rotation with no tally.
           const ordered = [...workingStaffForDay.slice(rotStart), ...workingStaffForDay.slice(0, rotStart)];
-          // Fairness: pick the least-loaded candidate when a tally is supplied; else pure rotation.
-          const assignee = loadTally
-            ? ordered.reduce((best, s) => ((loadTally[s.name] || 0) < (loadTally[best.name] || 0) ? s : best), ordered[0])
-            : ordered[0];
+          const assignee = pickFairest(ordered)!;
           assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
         }
       } else if (task.pattern === 'Shift-based') {
@@ -1285,7 +1310,7 @@ export default function App() {
       } else if (task.pattern === 'Role-group') {
         const targetRole = task.assignedValue;
         uStaff.forEach(s => {
-          if (s.role === targetRole && isWorkingCode(staffShiftMap[s.name])) {
+          if (s.role === targetRole && isWorkingCode(staffShiftMap[s.name]) && hasRequiredSkills(s.name, required)) {
             assignees.push({ name: s.name, shift: staffShiftMap[s.name] });
           }
         });

@@ -66,11 +66,14 @@ service cloud.firestore {
       return data.keys().hasAll(['id', 'name', 'category', 'pattern', 'priority', 'frequency', 'active'])
         && data.id is string && data.id.size() <= 128
         && data.name is string && data.name.size() <= 150
-        && data.category in ['QA', 'Inventory & Stock Control', 'Medication Dispensing', 'Administrative Management', 'Maintenance']
-        && data.pattern in ['Shift-based', 'Role-group', 'Linked', 'Collab', 'Person-specific', 'Manager-assign', 'Dispensing-rotate']
+        // Category is a dynamic, workspace-defined string (not a fixed clinical enum).
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 100
+        && data.pattern in ['Shift-based', 'Role-group', 'Linked', 'Collab', 'Person-specific', 'Manager-assign', 'Dispensing-rotate', 'Auto']
         && data.priority in ['Critical', 'High', 'Standard', 'Routine']
         && data.frequency is string && data.frequency.size() <= 50
-        && data.active is bool;
+        && data.active is bool
+        // Optional skill requirements, when present, must be a list.
+        && (!data.keys().hasAny(['requiredSkills']) || data.requiredSkills is list);
     }
 
     function isValidSystemConfig(data) {
