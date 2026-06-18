@@ -60,7 +60,7 @@ Each task details should include:
 - Practical guidelines/notes describing the expectations, compliance criteria, or execution metrics of this task.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',

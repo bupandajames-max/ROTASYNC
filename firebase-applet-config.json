@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0706186972",
-  "appId": "1:475901575547:web:48847653bfc26ad50dfdde",
-  "apiKey": "AIzaSyA-ifORuAk9RHkwCODhYWp2-WVpWTvd0wk",
-  "authDomain": "gen-lang-client-0706186972.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-edcd9041-8cfa-4252-8425-aec992679dde",
-  "storageBucket": "gen-lang-client-0706186972.firebasestorage.app",
-  "messagingSenderId": "475901575547",
-  "measurementId": ""
+  "projectId": "rotasync-prod",
+  "appId": "1:380502244892:web:73c67809fd0a5b1f65e9d9",
+  "apiKey": "AIzaSyCOYkILws4DvTpXopx7VLSWKxklKBD5tQU",
+  "authDomain": "rotasync-prod.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "rotasync-prod.firebasestorage.app",
+  "messagingSenderId": "380502244892",
+  "measurementId": "G-H6CDL6EHEH"
 }
