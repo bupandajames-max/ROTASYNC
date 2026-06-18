@@ -1,0 +1,6 @@
+{
+  "name": "RotaSync",
+  "description": "Enterprise multi-tenant team roster, dynamic schedules, self-service setup wizards, and flexible departmental data isolation workspace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

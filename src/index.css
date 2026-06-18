@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Redefine entire indigo spectrum to establish Mary Begg Health Services medical brand identity */
+  --color-indigo-50: #ebf6fc;
+  --color-indigo-100: #d6eff9;
+  --color-indigo-150: #bde4f6;
+  --color-indigo-200: #93d4f1;
+  --color-indigo-300: #69c3eb;
+  --color-indigo-400: #3fb3e6;
+  --color-indigo-500: #009EE2; /* Primary Brand Sky Blue */
+  --color-indigo-550: #0093d3;
+  --color-indigo-600: #008ece;
+  --color-indigo-650: #007ec1;
+  --color-indigo-700: #006da2;
+  --color-indigo-750: #1b355e;
+  --color-indigo-800: #1f3864; /* Corporate Deep Navy */
+  --color-indigo-850: #1a3056;
+  --color-indigo-900: #152747;
+  --color-indigo-950: #101d35; /* Deep Clinical Slate/Navy overlay context */
+  --color-indigo-955: #0b1425;
+}
+
+/* Print formatting for official timesheets */
+@media print {
+  /* 1. Hide interactive elements, navigation menu sidebar, and headers from paper prints */
+  header, 
+  aside, 
+  nav, 
+  footer, 
+  button, 
+  select, 
+  input, 
+  .no-print {
+    display: none !important;
+  }
+
+  /* 2. Collapse all ancestor elements of the timesheet printable container so that they don't reserve blank physical layouts.
+     Exclude the .fixed wrapper to allow it to auto-expand for printing columns and pages. */
+  html,
+  body:has(#timesheetPrintable),
+  #root:has(#timesheetPrintable),
+  div:not(.fixed):has(#timesheetPrintable),
+  main:has(#timesheetPrintable) {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. Hide all general page content from view */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Make the main printable section and its descendants explicitly visible */
+  #timesheetPrintable, 
+  #timesheetPrintable * {
+    visibility: visible !important;
+  }
+
+  /* 4. Target the specific modal background container wrapping the timesheet and position it perfectly at top-left */
+  .fixed.inset-0:has(#timesheetPrintable) {
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 9999 !important;
+  }
+
+  /* 5. Target the modal card content wrapper inside and strip structural offsets / clipping */
+  .fixed.inset-0:has(#timesheetPrintable) > div {
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* 6. Beautiful report formatting specifically on the single-page document wrapper */
+  #timesheetPrintable {
+    visibility: visible !important;
+    display: block !important;
+    position: relative !important; /* Ensure content flows seamlessly over multiple page-breaks */
+    width: 100% !important;
+    max-width: none !important;
+    padding: 32px !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* Prevent row shearing or blank rows when tables span across page bounds */
+  tr {
+    page-break-inside: avoid !important;
+  }
+}

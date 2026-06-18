@@ -1,0 +1,235 @@
+{
+  "entities": {
+    "Facility": {
+      "title": "Facility",
+      "description": "A care facility or clinic workspace element.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the facility" },
+        "name": { "type": "string", "description": "Name of the facility" },
+        "location": { "type": "string", "description": "Geographical location" },
+        "leadManager": { "type": "string", "description": "Leader/manager in charge" },
+        "fridgeTargetTemp": { "type": "string", "description": "Required clinical fridge target temp range" },
+        "dailyKpiWordCheck": { "type": "string", "description": "KPI check parameter string" },
+        "ipDevice": { "type": "string", "description": "IP of locked workspace device" },
+        "facilitiesType": { "type": "string", "enum": ["Mine Clinic", "Primary Care", "Surgery Hub", "Executive Care"] }
+      },
+      "required": ["id", "name", "location"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "A sub-department or wing within a specific facility.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of department" },
+        "facilityId": { "type": "string", "description": "Associated parent facility ID" },
+        "name": { "type": "string", "description": "Name of the department" },
+        "description": { "type": "string", "description": "Description of the services run" }
+      },
+      "required": ["id", "facilityId", "name"]
+    },
+    "StaffMember": {
+      "title": "StaffMember",
+      "description": "A rostered staff member, doctor, nurse, coordinator or lead.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique staff ID" },
+        "name": { "type": "string", "description": "Short code name or display name" },
+        "email": { "type": "string", "description": "Staff email" },
+        "phone": { "type": "string", "description": "Staff phone contact info" },
+        "role": { "type": "string", "description": "Designated professional clinical or admin role" },
+        "contractedHours": { "type": "number", "description": "Monthly or periodic contracted hours" },
+        "gender": { "type": "string", "enum": ["F", "M", ""] },
+        "fullName": { "type": "string", "description": "Full formal name for scheduling registry" },
+        "employeeNo": { "type": "string", "description": "Unique clinic employment registry number" },
+        "isManager": { "type": "boolean", "description": "Flag showing manager mode toggle and authority privileges" },
+        "facilityId": { "type": "string", "description": "Primary staff facility ID" },
+        "departmentId": { "type": "string", "description": "Primary staff department ID" }
+      },
+      "required": ["id", "name", "email", "role", "facilityId"]
+    },
+    "RosterCycle": {
+      "title": "RosterCycle",
+      "description": "A 30-day scheduling cycle for duty allocations and assignments.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Cycle ID partition" },
+        "startDate": { "type": "string", "description": "Cycle start date YYYY-MM-DD" },
+        "endDate": { "type": "string", "description": "Cycle end date YYYY-MM-DD" },
+        "shifts": { "type": "object", "description": "Map of staffId to shift code arrays corresponding to dates" },
+        "isLocked": { "type": "boolean", "description": "Indicator of whether scheduling is locked" }
+      },
+      "required": ["id", "startDate", "endDate", "shifts"]
+    },
+    "TaskMaster": {
+      "title": "TaskMaster",
+      "description": "A recurrent clinical or operations chore template definition.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Task pattern rule ID" },
+        "name": { "type": "string", "description": "Task name" },
+        "category": { "type": "string", "enum": ["QA", "Inventory & Stock Control", "Medication Dispensing", "Administrative Management", "Maintenance"] },
+        "pattern": { "type": "string", "enum": ["Shift-based", "Role-group", "Linked", "Collab", "Person-specific", "Manager-assign", "Dispensing-rotate"] },
+        "assignedValue": { "type": "string", "description": "Value constraints based on pattern definition" },
+        "managerAssignedName": { "type": "string", "description": "Explicit manager assignee overwrite" },
+        "priority": { "type": "string", "enum": ["Critical", "High", "Standard", "Routine"] },
+        "frequency": { "type": "string", "description": "Trigger frequency (Daily, Sunday, Monthly, etc.)" },
+        "compliance": { "type": "boolean", "description": "Requires QA compliance tracing" },
+        "active": { "type": "boolean", "description": "Indicates whether the chore list is active" },
+        "notes": { "type": "string", "description": "Detailed clinic guideline specifications" },
+        "trackerTarget": { "type": "number", "description": "Intraday compliance numeric target" },
+        "trackerValue": { "type": "number", "description": "Recorded active compliance value" }
+      },
+      "required": ["id", "name", "category", "pattern", "priority", "frequency", "active"]
+    },
+    "DailyTask": {
+      "title": "DailyTask",
+      "description": "An active instance of a task representing a specific staff target chore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Instantiated task log record ID" },
+        "date": { "type": "string", "description": "YYYY-MM-DD execution day" },
+        "staffName": { "type": "string", "description": "Who must complete / who completed the task" },
+        "taskName": { "type": "string", "description": "Aesthetic pattern title of template" },
+        "category": { "type": "string", "description": "Task clinical category" },
+        "shiftCode": { "type": "string", "description": "Duty rotation shift" },
+        "priority": { "type": "string", "enum": ["Critical", "High", "Standard", "Routine"] },
+        "status": { "type": "string", "enum": ["Pending", "In Progress", "Done", "Missed", "Carried Fwd", "Pending Review"] },
+        "compliance": { "type": "boolean", "description": "True if signed and criteria met properly" },
+        "counterSign": { "type": "string", "description": "Supervisor/Lead signature name string" },
+        "isTracker": { "type": "boolean", "description": "Is this a numeric tracking task (fridge, stock etc)" },
+        "trackerTarget": { "type": "number", "description": "Compliance numeric minimum limit" },
+        "trackerValue": { "type": "number", "description": "Staff member recorded numeric logging" },
+        "fridgeTemp": { "type": "number", "description": "Clinical fridge temperature reading in C" },
+        "roomTemp": { "type": "number", "description": "Room temperature reading in C" },
+        "sealNumber": { "type": "string", "description": "Emergency drug kit lock tag seal number" },
+        "correctiveAction": { "type": "string", "description": "Notes for deviation correction actions" },
+        "clinicalComment": { "type": "string", "description": "Staff member open feedback on task completion" }
+      },
+      "required": ["id", "date", "staffName", "taskName", "status", "compliance"]
+    },
+    "TimesheetDay": {
+      "title": "TimesheetDay",
+      "description": "Daily details within a professional clinical timesheet record.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "scheduledShift": { "type": "string" },
+        "actualShift": { "type": "string" },
+        "clockIn": { "type": "string" },
+        "clockOut": { "type": "string" },
+        "lunchBreakMinutes": { "type": "number" },
+        "workType": { "type": "string" },
+        "regularWorkedHours": { "type": "number" },
+        "sundayWorkedHours": { "type": "number" },
+        "overtimeHours": { "type": "number" },
+        "holidayWorkedHours": { "type": "number" },
+        "leaveHours": { "type": "number" },
+        "deviationReason": { "type": "string" },
+        "isModified": { "type": "boolean" }
+      }
+    },
+    "Timesheet": {
+      "title": "Timesheet",
+      "description": "A clinic timesheet matching scheduled shifts for regular work & approvals.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Primary composite key for partitioned records" },
+        "staffId": { "type": "string", "description": "Associated staff member unique key" },
+        "staffName": { "type": "string", "description": "Who worked" },
+        "cycleId": { "type": "string", "description": "Roster cycle partition key" },
+        "days": { "type": "object", "description": "Sub-map of dateStr to TimesheetDay elements" },
+        "status": { "type": "string", "enum": ["Draft", "Submitted", "Approved", "Rejected"] },
+        "submittedAt": { "type": "string" },
+        "approvedAt": { "type": "string" },
+        "approvedBy": { "type": "string" },
+        "managerComment": { "type": "string" }
+      },
+      "required": ["id", "staffId", "staffName", "cycleId", "days", "status"]
+    },
+    "ApprovalRequest": {
+      "title": "ApprovalRequest",
+      "description": "Manager approval request triggers (shifts, swaps, compliance escalations).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "type": { "type": "string", "enum": ["SWAP", "EXTRA", "COMPLIANCE", "MONTHLY"] },
+        "requesterName": { "type": "string" },
+        "shiftData": { "type": "string" },
+        "targetName": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Denied"] }
+      },
+      "required": ["id", "timestamp", "type", "requesterName", "details", "status"]
+    },
+    "ExtraHoursEntry": {
+      "title": "ExtraHoursEntry",
+      "description": "Pre-authorized overtime allocations log details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "staffName": { "type": "string" },
+        "shiftDate": { "type": "string" },
+        "shiftCode": { "type": "string" },
+        "hours": { "type": "number" },
+        "note": { "type": "string" },
+        "approvedBy": { "type": "string" }
+      },
+      "required": ["id", "staffName", "shiftDate", "hours", "approvedBy"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "System-wide settings or configuration flags.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique config ID (e.g., status)" },
+        "seeded": { "type": "boolean", "description": "Whether the system database was initially seeded" }
+      },
+      "required": ["id", "seeded"]
+    }
+  },
+  "firestore": {
+    "/systemConfig/{configId}": {
+      "schema": "SystemConfig",
+      "description": "System configurations such as initialization seeding status."
+    },
+    "/facilities/{facilityId}": {
+      "schema": "Facility",
+      "description": "Multi-tenant medical workspace facility or clinic definitions."
+    },
+    "/departments/{departmentId}": {
+      "schema": "Department",
+      "description": "Clinical departments inside medical work sites."
+    },
+    "/staff/{staffId}": {
+      "schema": "StaffMember",
+      "description": "Clinical and professional staff registry records."
+    },
+    "/cycles/{cycleId}": {
+      "schema": "RosterCycle",
+      "description": "Monthly roster planning and locking cycles."
+    },
+    "/taskMasters/{taskMasterId}": {
+      "schema": "TaskMaster",
+      "description": "Operations tasks master definitions and templates."
+    },
+    "/dailyTasks/{taskId}": {
+      "schema": "DailyTask",
+      "description": "Active instantiated staff tasks tracking execution logs."
+    },
+    "/timesheets/{timesheetId}": {
+      "schema": "Timesheet",
+      "description": "Monthly timesheet logs and supervisor-locked sheets."
+    },
+    "/approvals/{approvalId}": {
+      "schema": "ApprovalRequest",
+      "description": "Staff schedule changes, swaps or timesheet submissions awaiting manager approval."
+    },
+    "/extraHours/{extraHoursId}": {
+      "schema": "ExtraHoursEntry",
+      "description": "Pre-authorized clinical roster hours logs."
+    }
+  }
+}
