@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "mcp__visualize__read_me",
-      "mcp__visualize__show_widget"
+      "mcp__visualize__show_widget",
+      "Bash(firebase login:list)",
+      "Bash(firebase use *)",
+      "Bash(firebase deploy *)",
+      "Read(//tmp/**)",
+      "Bash(break)",
+      "Bash(curl -s -X POST http://localhost:3000/api/suggest-department-tasks -H \"Content-Type: application/json\" -d '{\"departmentName\":\"Pharmacy\"}')",
+      "Bash(firebase apphosting:secrets:set GEMINI_API_KEY --data-file - --force)",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/suggest-department-tasks -H \"Content-Type: application/json\" -d '{\"departmentName\":\"Marketing\",\"userDescription\":\"Digital marketing team for a retail chain\"}' -o /tmp/mk.json)",
+      "Bash(node -e \"const d=require\\('/tmp/mk.json'\\); console.log\\('CATEGORIES:', JSON.stringify\\(d.categories\\)\\); console.log\\('TASKS:'\\); \\(d.tasks||[]\\).forEach\\(t=>console.log\\('  -', t.name, '=>', t.category, '['+t.pattern+']'\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/suggest-department-tasks -H \"Content-Type: application/json\" -d '{\"departmentName\":\"Marketing\",\"userDescription\":\"Digital marketing team for a retail chain\"}')",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const d=JSON.parse\\(s\\);console.log\\('CATEGORIES:',JSON.stringify\\(d.categories\\)\\);console.log\\('TASKS:'\\);\\(d.tasks||[]\\).forEach\\(t=>console.log\\('  -',t.name,'=>',t.category,'['+t.pattern+']'\\)\\)}\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Make task categories department-agnostic \\(Phases 1+2\\) *)",
+      "Bash(git commit -q -m 'Update local Claude Code permission allowlist *)"
     ]
   }
 }
