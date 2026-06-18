@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TaskMaster, StaffMember, DailyTask, TaskFieldDef } from '../types';
+import { TaskMaster, StaffMember, DailyTask, TaskFieldDef, patternLabel } from '../types';
 import { Database, Plus, Trash2, Check, Sparkles, BookOpen, Star, AlertCircle, BarChart, Calendar, Zap, Play, CheckCircle } from 'lucide-react';
 
 interface TaskRegisterProps {
@@ -587,7 +587,7 @@ export default function TaskRegister({
                     </td>
                     <td className="p-4 text-center">
                       <span className="bg-[#cbdff0]/30 text-[#122543] text-[10px] px-2.5 py-1 rounded-full font-bold border border-slate-100 select">
-                        {t.pattern}
+                        {patternLabel(t.pattern)}
                       </span>
                     </td>
                     <td className="p-4 text-center">
@@ -657,7 +657,7 @@ export default function TaskRegister({
                   required
                   value={taskName}
                   onChange={(e) => setTaskName(e.target.value)}
-                  placeholder="Review dispensary cupboards, verify shelf..."
+                  placeholder="e.g. Opening checklist, equipment check, daily report..."
                   className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                 />
               </div>
@@ -693,7 +693,7 @@ export default function TaskRegister({
                     <option value="Collab">Collab</option>
                     <option value="Person-specific">Person-specific</option>
                     <option value="Manager-assign">Manager-assign</option>
-                    <option value="Dispensing-rotate">Dispensing-rotate</option>
+                    <option value="Dispensing-rotate">Round-robin</option>
                   </select>
                 </div>
 
@@ -941,7 +941,7 @@ export default function TaskRegister({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
-                  placeholder="Checks details, instructions for the floor..."
+                  placeholder="Details and instructions for whoever performs this task..."
                   className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                 ></textarea>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday } from '../types';
+import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, patternLabel } from '../types';
 import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
 import { useToast } from './ui/ToastProvider';
 import { useConfirm } from './ui/ConfirmProvider';
@@ -1048,7 +1048,7 @@ export default function EnterpriseAdmin({
                                         </span>
                                       )}
                                       <span className="bg-slate-100 text-slate-500 font-extrabold text-[8px] px-1 py-0.5 rounded uppercase font-mono">
-                                        {t.pattern}
+                                        {patternLabel(t.pattern)}
                                       </span>
                                       <span className={`font-mono text-[8px] px-1 py-0.5 rounded font-extrabold uppercase ${
                                         t.priority === 'Critical' ? 'bg-red-50 text-red-600' :
@@ -1819,13 +1819,13 @@ export default function EnterpriseAdmin({
                   className="w-full text-xs font-extrabold bg-indigo-50/50 border border-indigo-150 rounded-xl p-3 focus:ring-1 focus:ring-indigo-600 outline-none mt-1"
                 >
                   <option value="Shift-based">Shift-matched (Auto-assigns rostered member)</option>
-                  <option value="Dispensing-rotate">Dispensing-rotate (Cyclical rotation checks)</option>
+                  <option value="Dispensing-rotate">Round-robin (rotates across available staff)</option>
                   <option value="Person-specific">Named Anchor specific</option>
                   <option value="Collab">Collaboration / Open Pool</option>
                 </select>
                 <p className="text-[9px] text-indigo-900 font-semibold leading-normal mt-1 bg-indigo-50/45 p-2 rounded-lg">
                   {newTaskPattern === 'Shift-based' && '💡 System evaluates live schedules, matching today\'s duty roster to this check.'}
-                  {newTaskPattern === 'Dispensing-rotate' && '💡 Cycled day-by-day among active early session staff.'}
+                  {newTaskPattern === 'Dispensing-rotate' && '💡 Rotates day-by-day to the least-loaded staffer on shift, skipping anyone off or on leave.'}
                   {newTaskPattern === 'Person-specific' && '💡 Permanent assignment locked specifically to a designated team member.'}
                   {newTaskPattern === 'Collab' && '💡 Open pool. Any authorized operator can lock compliance.'}
                 </p>
@@ -1903,7 +1903,7 @@ export default function EnterpriseAdmin({
                     <div className="flex items-center gap-4 mt-2.5 text-[9.5px] font-mono font-bold text-slate-400">
                       <span>Frequency: <strong className="text-slate-605">{task.frequency}</strong></span>
                       <span>·</span>
-                      <span>Workflow: <strong className="text-indigo-950 uppercase">{task.pattern}</strong></span>
+                      <span>Workflow: <strong className="text-indigo-950 uppercase">{patternLabel(task.pattern)}</strong></span>
                       {task.trackerTarget && <span>· Target: <strong className="text-emerald-600">{task.trackerTarget} units</strong></span>}
                     </div>
                   </div>

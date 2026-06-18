@@ -53,6 +53,13 @@ export interface TaskFieldDef {
   breachThresholdAction?: string; // Action text/instruction if outside min/max
 }
 
+// Human-friendly display labels for assignment patterns. The stored values stay
+// the same (so logic/data don't change); only the UI presentation differs.
+export const PATTERN_LABELS: Record<string, string> = {
+  'Dispensing-rotate': 'Round-robin',
+};
+export const patternLabel = (p: string): string => PATTERN_LABELS[p] || p;
+
 export interface TaskMaster {
   id: string;
   name: string;
