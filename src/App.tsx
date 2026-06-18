@@ -2091,6 +2091,7 @@ export default function App() {
               myExtraHoursLogCount={myExtraHoursLogCount}
               onUpdateTasksBulk={handleUpdateTasksBulk}
               onPreGenerate7DaysTasks={handlePreGenerate7DaysTasks}
+              taskCategories={taskCategories}
             />
           )}
 

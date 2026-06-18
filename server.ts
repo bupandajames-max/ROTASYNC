@@ -41,7 +41,9 @@ async function startServer() {
       const prompt = `You are an expert operations consultant. Generate a tailored description and a list of ideal operational tasks and responsibilities for a new business/operational department named "${departmentName}".
 ${userDescription ? `The user provided the following additional description/context: "${userDescription}".` : ''}
 
-Provide exactly 4 to 6 core operational tasks suitable for scheduling in a rostering system.
+First, propose a concise taxonomy of 3 to 5 operational CATEGORIES that best organize the work of this specific department (e.g. for a Marketing dept: "Campaign Execution", "Content", "Analytics"; for a Warehouse: "Receiving", "Picking & Packing", "Safety"). Categories must be tailored to "${departmentName}" — do NOT reuse generic clinical/pharmacy categories unless the department is genuinely clinical. Each category name should be 1-3 words, Title Case.
+
+Then provide exactly 4 to 6 core operational tasks suitable for scheduling in a rostering system. Every task must be tagged with exactly one category from the taxonomy you proposed above.
 Each task must belong to one of these execution patterns:
 - 'Shift-based'
 - 'Role-group'
@@ -71,17 +73,26 @@ Each task details should include:
                 type: Type.STRING,
                 description: 'A professional, detailed description of the department, explaining its core purpose, objectives, and administrative boundaries.',
               },
+              categories: {
+                type: Type.ARRAY,
+                description: 'A tailored taxonomy of 3 to 5 operational category names for this department, Title Case, 1-3 words each.',
+                items: { type: Type.STRING },
+              },
               tasks: {
                 type: Type.ARRAY,
                 description: 'A list of 4 to 6 ideal core operational tasks for this department.',
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    name: { 
-                      type: Type.STRING, 
-                      description: 'Task name' 
+                    name: {
+                      type: Type.STRING,
+                      description: 'Task name'
                     },
-                    pattern: { 
+                    category: {
+                      type: Type.STRING,
+                      description: 'One category name, taken exactly from the categories taxonomy above.',
+                    },
+                    pattern: {
                       type: Type.STRING, 
                       enum: ['Shift-based', 'Role-group', 'Linked', 'Collab', 'Person-specific', 'Manager-assign', 'Dispensing-rotate'],
                       description: 'The execution pattern.' 
@@ -104,11 +115,11 @@ Each task details should include:
                       description: 'Draft assignment, e.g., "Shift A", "Shift E", or "All Staff".' 
                     }
                   },
-                  required: ['name', 'pattern', 'priority', 'frequency', 'notes', 'assignedValue']
+                  required: ['name', 'category', 'pattern', 'priority', 'frequency', 'notes', 'assignedValue']
                 }
               }
             },
-            required: ['description', 'tasks']
+            required: ['description', 'categories', 'tasks']
           }
         }
       });

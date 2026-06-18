@@ -12,6 +12,7 @@ interface TaskRegisterProps {
   myExtraHoursLogCount: { [name: string]: number }; // total hours in active period for staff
   onUpdateTasksBulk: (updatedTasks: TaskMaster[]) => void;
   onPreGenerate7DaysTasks?: () => { success: boolean; message: string; generatedDates: string[]; skippedDates: string[] };
+  taskCategories: string[];
 }
 
 export default function TaskRegister({
@@ -24,10 +25,11 @@ export default function TaskRegister({
   myExtraHoursLogCount,
   onUpdateTasksBulk,
   onPreGenerate7DaysTasks,
+  taskCategories,
 }: TaskRegisterProps) {
   const [showAddModal, setShowAddTaskModal] = useState(false);
   const [taskName, setTaskName] = useState('');
-  const [category, setCategory] = useState<TaskMaster['category']>('Medication Dispensing');
+  const [category, setCategory] = useState<TaskMaster['category']>(taskCategories[0] || 'General');
   const [pattern, setPattern] = useState<TaskMaster['pattern']>('Shift-based');
   const [asgnVal, setAsgnVal] = useState('');
   const [priority, setPriority] = useState<TaskMaster['priority']>('Standard');
@@ -667,11 +669,13 @@ export default function TaskRegister({
                   onChange={(e) => setCategory(e.target.value as any)}
                   className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                 >
-                  <option value="QA">QA</option>
-                  <option value="Inventory & Stock Control">Inventory & Stock Control</option>
-                  <option value="Medication Dispensing">Medication Dispensing</option>
-                  <option value="Administrative Management">Administrative Management</option>
-                  <option value="Maintenance">Maintenance</option>
+                  {taskCategories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  {/* Preserve a value that isn't in the workspace taxonomy (e.g. legacy/AI-seeded) */}
+                  {category && !taskCategories.includes(category) && (
+                    <option value={category}>{category}</option>
+                  )}
                 </select>
               </div>
 

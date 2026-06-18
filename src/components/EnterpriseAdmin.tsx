@@ -161,8 +161,10 @@ export default function EnterpriseAdmin({
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [suggestedObjective, setSuggestedObjective] = useState<string | null>(null);
+  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [suggestedTasks, setSuggestedTasks] = useState<{
     name: string;
+    category: string;
     pattern: string;
     priority: string;
     frequency: string;
@@ -332,6 +334,7 @@ export default function EnterpriseAdmin({
     setAiSuggesting(true);
     setAiError(null);
     setSuggestedObjective(null);
+    setSuggestedCategories([]);
     setSuggestedTasks([]);
 
     try {
@@ -353,10 +356,15 @@ export default function EnterpriseAdmin({
 
       const data = await res.json();
       setSuggestedObjective(data.description);
+      const aiCategories: string[] = Array.isArray(data.categories)
+        ? data.categories.map((c: any) => String(c).trim()).filter(Boolean)
+        : [];
+      setSuggestedCategories(aiCategories);
       if (Array.isArray(data.tasks)) {
         setSuggestedTasks(
           data.tasks.map((task: any) => ({
             name: task.name || '',
+            category: (task.category && String(task.category).trim()) || aiCategories[0] || newDeptName,
             pattern: task.pattern || 'Shift-based',
             priority: task.priority || 'Standard',
             frequency: task.frequency || 'Daily',
@@ -399,13 +407,30 @@ export default function EnterpriseAdmin({
       setDepartments(updated);
     }
 
-    // Auto-create suggested checked tasks
+    // Merge the AI-proposed taxonomy into the workspace categories (case-insensitive dedupe)
     const activeTasks = suggestedTasks.filter(t => t.checked);
+    const categoriesFromAi = [
+      ...suggestedCategories,
+      ...activeTasks.map(t => t.category),
+    ].map(c => (c || '').trim()).filter(Boolean);
+    if (categoriesFromAi.length > 0) {
+      const seen = new Set(taskCategories.map(c => c.toLowerCase()));
+      const merged = [...taskCategories];
+      categoriesFromAi.forEach(c => {
+        if (!seen.has(c.toLowerCase())) {
+          seen.add(c.toLowerCase());
+          merged.push(c);
+        }
+      });
+      if (merged.length !== taskCategories.length) setTaskCategories(merged);
+    }
+
+    // Auto-create suggested checked tasks, each tagged with its AI category
     if (activeTasks.length > 0) {
       const newTasksToAdd: TaskMaster[] = activeTasks.map((t, idx) => ({
         id: `tasks-${deptId}-${idx}-${Date.now()}`,
         name: t.name,
-        category: newDeptName, // category is the department name
+        category: (t.category && t.category.trim()) || newDeptName,
         pattern: t.pattern as any,
         assignedValue: t.assignedValue,
         priority: t.priority as any,
@@ -421,6 +446,7 @@ export default function EnterpriseAdmin({
     setNewDeptName('');
     setNewDeptDesc('');
     setSuggestedObjective(null);
+    setSuggestedCategories([]);
     setSuggestedTasks([]);
   };
 
@@ -967,6 +993,25 @@ export default function EnterpriseAdmin({
                         </button>
                       </div>
 
+                      {suggestedCategories.length > 0 && (
+                        <div className="space-y-1 pt-2 border-t border-indigo-100/50">
+                          <div className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">
+                            Proposed Categories <span className="text-slate-300">(added to this workspace on create)</span>:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {suggestedCategories.map((c) => (
+                              <span key={c} className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                                taskCategories.some(tc => tc.toLowerCase() === c.toLowerCase())
+                                  ? 'bg-slate-100 text-slate-400 border-slate-200'
+                                  : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                              }`}>
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {suggestedTasks && suggestedTasks.length > 0 && (
                         <div className="space-y-2 pt-2 border-t border-indigo-100/50">
                           <div className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider mb-1.5">
@@ -997,6 +1042,11 @@ export default function EnterpriseAdmin({
                                   <div className="flex items-center justify-between gap-1 flex-wrap">
                                     <span className="font-extrabold text-slate-800 leading-tight">{t.name}</span>
                                     <div className="flex gap-1 shrink-0">
+                                      {t.category && (
+                                        <span className="bg-indigo-50 text-indigo-600 font-extrabold text-[8px] px-1 py-0.5 rounded uppercase font-mono">
+                                          {t.category}
+                                        </span>
+                                      )}
                                       <span className="bg-slate-100 text-slate-500 font-extrabold text-[8px] px-1 py-0.5 rounded uppercase font-mono">
                                         {t.pattern}
                                       </span>
