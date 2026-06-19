@@ -22,7 +22,8 @@
       "Bash(node -e ' *)",
       "Bash(git commit -q -m 'Add availability + fairness to task assignment engine \\(Increment 1\\) *)",
       "Bash(git commit -q -m 'Neutralize pharmacy residue in task UI *)",
-      "Bash(git commit -q -m 'Add skills-based eligibility + smart auto-assign \\(Increment 2\\) *)"
+      "Bash(git commit -q -m 'Add skills-based eligibility + smart auto-assign \\(Increment 2\\) *)",
+      "Bash(git commit -q -m 'Add AI category-task suggestions in task creation *)"
     ]
   }
 }
