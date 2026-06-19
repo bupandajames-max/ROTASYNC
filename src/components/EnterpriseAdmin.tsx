@@ -76,6 +76,7 @@ interface EnterpriseAdminProps {
   setTimezoneLabel: (tz: string) => void;
   regionPresetId?: string;
   setRegionPresetId: (id: string | undefined) => void;
+  accessLevel?: string; // current user's tier — gates role assignment + facility ops
 }
 
 export default function EnterpriseAdmin({
@@ -115,9 +116,27 @@ export default function EnterpriseAdmin({
   setTimezoneLabel,
   regionPresetId,
   setRegionPresetId,
+  accessLevel = 'staff',
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
+
+  // Which access tiers the current user may grant to others. Super users can
+  // appoint facility managers; facility managers and dept heads can appoint
+  // department heads (proxies); nobody grants 'superuser' here (allowlist only).
+  const ROLE_OPTIONS: { value: string; label: string }[] = [
+    { value: 'staff', label: 'Staff' },
+    { value: 'dept_head', label: 'Department Head' },
+    { value: 'facility_manager', label: 'Facility Manager' },
+  ];
+  const assignableRoles = accessLevel === 'superuser'
+    ? ROLE_OPTIONS
+    : accessLevel === 'facility_manager'
+      ? ROLE_OPTIONS.filter(r => r.value !== 'facility_manager')
+      : accessLevel === 'dept_head'
+        ? ROLE_OPTIONS.filter(r => r.value === 'staff' || r.value === 'dept_head')
+        : ROLE_OPTIONS.filter(r => r.value === 'staff');
+  const canManageFacilities = accessLevel === 'superuser';
   const [activeSubTab, setActiveSubTab] = useState<'silos' | 'shifts' | 'rules' | 'regional' | 'staff' | 'tasks' | 'sandbox' | 'taxonomy' | 'purge'>('silos');
 
   // Codes referenced by the active ruleset are protected from deletion (they keep
@@ -193,6 +212,7 @@ export default function EnterpriseAdmin({
   const [newStaffDeptId, setNewStaffDeptId] = useState('');
   const [newStaffIsManager, setNewStaffIsManager] = useState(false);
   const [newStaffSkills, setNewStaffSkills] = useState('');
+  const [newStaffAccessLevel, setNewStaffAccessLevel] = useState('staff');
 
   // Edit Staff Form State
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
@@ -207,6 +227,7 @@ export default function EnterpriseAdmin({
   const [editDeptId, setEditDeptId] = useState('');
   const [editIsManager, setEditIsManager] = useState(false);
   const [editSkills, setEditSkills] = useState('');
+  const [editAccessLevel, setEditAccessLevel] = useState('staff');
 
   const handleStartEdit = (staff: StaffMember) => {
     setEditingStaff(staff);
@@ -221,6 +242,7 @@ export default function EnterpriseAdmin({
     setEditDeptId(staff.departmentId || '');
     setEditIsManager(!!staff.isManager);
     setEditSkills((staff.skills || []).join(', '));
+    setEditAccessLevel(staff.accessLevel || (staff.isManager ? 'facility_manager' : 'staff'));
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
@@ -244,7 +266,9 @@ export default function EnterpriseAdmin({
           contractedHours: Number(editHoursVal),
           gender: editGender,
           departmentId: editDeptId || undefined,
-          isManager: editIsManager,
+          accessLevel: editAccessLevel as StaffMember['accessLevel'],
+          // Keep legacy isManager in sync with the access tier for older code paths.
+          isManager: editAccessLevel !== 'staff',
           skills: editSkills.split(',').map(x => x.trim()).filter(Boolean),
         };
       }
@@ -504,7 +528,9 @@ export default function EnterpriseAdmin({
       contractedHours: Number(newStaffHoursVal),
       gender: newStaffGender,
       employeeNo: newStaffEmpNo,
-      isManager: newStaffIsManager,
+      accessLevel: newStaffAccessLevel as StaffMember['accessLevel'],
+      // Keep legacy isManager in sync with the access tier for older code paths.
+      isManager: newStaffAccessLevel !== 'staff',
       facilityId: selectedFacilityId,
       departmentId: newStaffDeptId || undefined,
       skills: newStaffSkills.split(',').map(x => x.trim()).filter(Boolean),
@@ -522,6 +548,7 @@ export default function EnterpriseAdmin({
     setNewStaffEmpNo('');
     setNewStaffIsManager(false);
     setNewStaffSkills('');
+    setNewStaffAccessLevel('staff');
   };
 
   // Create Task Workflow
@@ -723,13 +750,15 @@ export default function EnterpriseAdmin({
                   Dynamically provision, edit, select, or delete custom {taxonomy.workspacePlural.toLowerCase()} in real-time.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowAddFacilityForm(!showAddFacilityForm)}
-                className="px-4 py-2 bg-indigo-950 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer w-full md:w-auto self-start"
-              >
-                <Plus className="w-4 h-4" /> Add custom {taxonomy.workspaceSingular}
-              </button>
+              {canManageFacilities && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddFacilityForm(!showAddFacilityForm)}
+                  className="px-4 py-2 bg-indigo-950 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer w-full md:w-auto self-start"
+                >
+                  <Plus className="w-4 h-4" /> Add custom {taxonomy.workspaceSingular}
+                </button>
+              )}
             </div>
 
             {/* Fac New Inline Form */}
@@ -854,7 +883,7 @@ export default function EnterpriseAdmin({
                           </span>
                           <h4 className="text-xs font-black text-slate-850 mt-1 leading-snug">{fac.name}</h4>
                         </div>
-                        <div className="flex items-center gap-0.5 shrink-0">
+                        <div className={`flex items-center gap-0.5 shrink-0 ${canManageFacilities ? '' : 'hidden'}`}>
                           <button
                             type="button"
                             onClick={() => handleEditFacilitySelect(fac)}
@@ -1654,17 +1683,16 @@ export default function EnterpriseAdmin({
                 <p className="text-[9px] text-slate-400 mt-1">Used by smart auto-assign & skill-gated tasks.</p>
               </div>
 
-              <div className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-150">
-                <input 
-                  type="checkbox"
-                  id="chk-mgr-reg"
-                  checked={newStaffIsManager}
-                  onChange={(e) => setNewStaffIsManager(e.target.checked)}
-                  className="w-4 h-4 cursor-pointer accent-indigo-655"
-                />
-                <label htmlFor="chk-mgr-reg" className="text-[10px] font-black text-slate-700 select-none cursor-pointer uppercase">
-                  Designate Administative/Manager Rights
-                </label>
+              <div>
+                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Access Level</label>
+                <select
+                  value={newStaffAccessLevel}
+                  onChange={(e) => setNewStaffAccessLevel(e.target.value)}
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                >
+                  {assignableRoles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+                <p className="text-[9px] text-slate-400 mt-1">Governs what this person sees and does. Resolved from their login email.</p>
               </div>
 
               <button
@@ -2553,17 +2581,21 @@ export default function EnterpriseAdmin({
                 />
               </div>
 
-              <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-150">
-                <input 
-                  type="checkbox"
-                  id="chk-mgr-edit"
-                  checked={editIsManager}
-                  onChange={(e) => setEditIsManager(e.target.checked)}
-                  className="w-4 h-4 cursor-pointer accent-[#005c93]"
-                />
-                <label htmlFor="chk-mgr-edit" className="text-[10px] font-black text-slate-700 select-none cursor-pointer uppercase">
-                  Designate line manager rights
-                </label>
+              <div>
+                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Access Level</label>
+                <select
+                  value={editAccessLevel}
+                  onChange={(e) => setEditAccessLevel(e.target.value)}
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                >
+                  {/* Always show the member's current level even if above what we can assign,
+                      so we never silently downgrade; only assignable ones are selectable. */}
+                  {(assignableRoles.some(r => r.value === editAccessLevel)
+                    ? assignableRoles
+                    : [...assignableRoles, ROLE_OPTIONS.find(r => r.value === editAccessLevel)!]
+                  ).map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+                <p className="text-[9px] text-slate-400 mt-1">Governs what this person sees and does. Resolved from their login email.</p>
               </div>
 
               <div className="flex items-center gap-2 pt-2 border-t border-slate-100">

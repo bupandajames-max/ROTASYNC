@@ -2248,6 +2248,7 @@ export default function App() {
               setTimezoneLabel={setTimezoneLabel}
               regionPresetId={regionPresetId}
               setRegionPresetId={setRegionPresetId}
+              accessLevel={access.accessLevel}
             />
           )}
         </main>
