@@ -531,7 +531,7 @@ export default function TimesheetPortal({
                     value={editDeviation}
                     onChange={(e) => setEditDeviation(e.target.value)}
                     rows={2}
-                    placeholder="e.g. Completed controlled drugs inventory balance or covered delayed afternoon staff handover."
+                    placeholder="e.g. Covered a late shift change, or finished tasks after the scheduled end time."
                     className="w-full text-xs font-medium bg-slate-50 border border-slate-150 rounded-xl p-3 mt-1.5 outline-none focus:border-[#009EE2] transition-colors leading-relaxed placeholder-slate-400"
                   />
                 </div>

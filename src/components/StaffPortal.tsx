@@ -636,7 +636,7 @@ export default function StaffPortal({
                   value={xhrNote}
                   onChange={(e) => setXhrNote(e.target.value)}
                   rows={2}
-                  placeholder="Case files extension, late dispensing clinic, cover..."
+                  placeholder="e.g. Stayed late to cover a shift, finished end-of-day tasks..."
                   className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-3 mt-1.5 shadow-xs outline-none focus:border-blue-500 focus:bg-white transition-colors"
                 ></textarea>
               </div>

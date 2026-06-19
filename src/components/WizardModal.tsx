@@ -36,59 +36,59 @@ interface WizardModalProps {
 const TASK_PRESET_TEMPLATES = [
   {
     id: "preset-1",
-    taskName: "Colleague Handover & Shift Briefing",
+    taskName: "Start-of-Shift Handover",
     roleRequirement: "All Staff",
     targetHour: "08:30 AM",
-    description: "Multi-disciplinary physical handover review of outstanding critical tasks, ward-level bed occupancies, and patient alerts.",
+    description: "Quick handover at the start of the shift: outstanding tasks, the day's priorities, and anything the next team should know.",
     category: "Communication",
     customFields: [
       {
         id: "briefingNote",
-        label: "Primary Handover Safety Alerts noted",
+        label: "Handover notes",
         type: "text",
         required: true,
-        placeholder: "e.g. Bed 14 alert, active medical telemetry checks, all items reconciled."
+        placeholder: "e.g. Two tasks carried over, delivery expected at noon, all else on track."
       }
     ]
   },
   {
     id: "preset-2",
-    taskName: "Dangerous Drug Register Dual-Signature Audit",
-    roleRequirement: "Clinical Officer",
-    targetHour: "12:00 PM",
-    description: "Reconcile Class A narcotics counts physically with paper logs. Must be dual-signed by lead members.",
-    category: "Pharmacy",
+    taskName: "End-of-Day Reconciliation",
+    roleRequirement: "Shift Lead",
+    targetHour: "5:00 PM",
+    description: "Reconcile cash, stock, or high-value items against the day's records. Sign off when the counts match.",
+    category: "Compliance",
     customFields: [
       {
         id: "clinicalComment",
-        label: "Asset Audit Register Reconciliation Comments",
+        label: "Reconciliation notes",
         type: "text",
         required: true,
-        placeholder: "e.g., Physical drug/asset count matches systemic balance ledger sheet. Page reconciled."
+        placeholder: "e.g. Counts match the day's records. Reconciled and signed off."
       }
     ]
   },
   {
     id: "preset-3",
-    taskName: "Active Pharmacy Dispensing Queue Review",
-    roleRequirement: "Pharmacist",
+    taskName: "Service Queue & Backlog Review",
+    roleRequirement: "Team Member",
     targetHour: "10:00 AM",
-    description: "Verify pending outpatient and inpatient prescription slips, ensure drug-drug interaction safety screening.",
-    category: "Pharmacy",
+    description: "Check the pending queue, clear the backlog where possible, and flag anything that needs escalation.",
+    category: "Operations",
     customFields: [
       {
         id: "queueSize",
-        label: "Remaining Dispensing Queue Count",
+        label: "Items remaining in queue",
         type: "number",
         required: true,
         placeholder: "0"
       },
       {
         id: "statusCheck",
-        label: "Dispensing Queue Status Check",
+        label: "Queue status",
         type: "select",
         required: true,
-        selectOptions: ["Fully cleared", "Manageable backup", "Severe delay - request assistance"]
+        selectOptions: ["Fully cleared", "Manageable backlog", "Severe delay - needs help"]
       }
     ]
   },
@@ -228,8 +228,8 @@ export default function WizardModal({
       departmentId: matchedDept?.id || undefined,
       name: newStaffName.trim(),
       fullName: newStaffName.trim(),
-      email: `${newStaffName.toLowerCase().replace(/\s+/g, '.')}@beggclinic.com`,
-      phone: '+260 970 000 000',
+      email: `${newStaffName.toLowerCase().replace(/\s+/g, '.')}@${selectedFacilityId || 'workspace'}.local`,
+      phone: '',
       role: newStaffRole,
       contractedHours: Number(newStaffWeeklyTarget),
       employeeNo: `MBCH-${Date.now().toString().slice(-6)}`,
@@ -430,7 +430,7 @@ export default function WizardModal({
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Full Professional Name</label>
                     <input
                       type="text"
-                      placeholder="e.g. Dr. Mwansa Chanda"
+                      placeholder="e.g. Alex Banda"
                       value={newStaffName}
                       onChange={(e) => setNewStaffName(e.target.value)}
                       className="w-full text-xs font-bold bg-slate-50/50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:border-[#7A1230] outline-none mt-1.5"
