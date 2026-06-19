@@ -137,6 +137,96 @@ Each task details should include:
     }
   });
 
+  // API Route: suggest concrete tasks for a single category, in context.
+  app.post('/api/suggest-category-tasks', async (req, res) => {
+    try {
+      const { category, departmentName, facilityType, existingTaskNames } = req.body;
+
+      if (!category) {
+        return res.status(400).json({ error: 'Category is required' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          error: 'GEMINI_API_KEY environment variable is not configured. Please set it in Settings > Secrets.'
+        });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const existing: string[] = Array.isArray(existingTaskNames) ? existingTaskNames : [];
+      const prompt = `You are an expert operations consultant. List the concrete, real-world operational tasks that are routinely carried out under the category "${category}".
+${departmentName ? `Context: these are performed by the "${departmentName}" department.` : ''}
+${facilityType ? `The site is a "${facilityType}".` : ''}
+${existing.length ? `Do NOT repeat any of these tasks that already exist: ${existing.join('; ')}.` : ''}
+
+Provide 5 to 8 distinct tasks suitable for scheduling in a rostering system. For each task:
+- A concise, action-oriented name (e.g. "Cycle Count Reconciliation", "Expiry / FEFO Check").
+- A suitable execution pattern from: 'Auto', 'Shift-based', 'Role-group', 'Linked', 'Collab', 'Person-specific', 'Manager-assign', 'Dispensing-rotate'. Prefer 'Auto' for routine tasks that any qualified person on shift can do.
+- A priority: 'Critical', 'High', 'Standard', 'Routine'.
+- A frequency: 'Daily', 'Weekly', 'Monthly', or 'Custom'.
+- Practical guidelines/notes describing how to execute or verify the task.
+- requiredSkills: 0-3 specific competencies a person must hold to perform it (empty array if none needed).`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              tasks: {
+                type: Type.ARRAY,
+                description: 'A list of 5 to 8 concrete tasks for this category.',
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING, description: 'Task name' },
+                    pattern: {
+                      type: Type.STRING,
+                      enum: ['Auto', 'Shift-based', 'Role-group', 'Linked', 'Collab', 'Person-specific', 'Manager-assign', 'Dispensing-rotate'],
+                      description: 'The execution pattern.'
+                    },
+                    priority: {
+                      type: Type.STRING,
+                      enum: ['Critical', 'High', 'Standard', 'Routine'],
+                      description: 'The importance/priority level.'
+                    },
+                    frequency: { type: Type.STRING, description: 'How often the task is performed.' },
+                    notes: { type: Type.STRING, description: 'Practical execution/verification guidelines.' },
+                    requiredSkills: {
+                      type: Type.ARRAY,
+                      description: '0-3 competencies needed to perform the task.',
+                      items: { type: Type.STRING },
+                    }
+                  },
+                  required: ['name', 'pattern', 'priority', 'frequency', 'notes', 'requiredSkills']
+                }
+              }
+            },
+            required: ['tasks']
+          }
+        }
+      });
+
+      const responseText = response.text;
+      if (!responseText) {
+        throw new Error('Empty response received from Gemini API');
+      }
+
+      const payload = JSON.parse(responseText.trim());
+      res.json(payload);
+    } catch (error: any) {
+      console.error('Error generating category task suggestions:', error);
+      res.status(500).json({ error: error?.message || 'An error occurred during Gemini suggestion generation.' });
+    }
+  });
+
   // Serve Vite in dev mode, or compiled static files in prod mode
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

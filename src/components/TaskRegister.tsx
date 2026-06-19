@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
 import { TaskMaster, StaffMember, DailyTask, TaskFieldDef, patternLabel } from '../types';
+
+type CategorySuggestion = {
+  name: string;
+  pattern: string;
+  priority: string;
+  frequency: string;
+  notes: string;
+  requiredSkills?: string[];
+  checked: boolean;
+};
 import { Database, Plus, Trash2, Check, Sparkles, BookOpen, Star, AlertCircle, BarChart, Calendar, Zap, Play, CheckCircle } from 'lucide-react';
 
 interface TaskRegisterProps {
@@ -37,6 +47,11 @@ export default function TaskRegister({
   const [compliance, setCompliance] = useState(false);
   const [notes, setNotes] = useState('');
   const [requiredSkillsInput, setRequiredSkillsInput] = useState('');
+
+  // AI category-task suggestions
+  const [catSuggesting, setCatSuggesting] = useState(false);
+  const [catSuggestError, setCatSuggestError] = useState<string | null>(null);
+  const [catSuggestions, setCatSuggestions] = useState<CategorySuggestion[]>([]);
 
   // Tracker target for Continuous trackers
   const [trackerTarget, setTrackerTarget] = useState<number>(0);
@@ -171,6 +186,79 @@ export default function TaskRegister({
     setRequiredSkillsInput('');
     setTrackerTarget(0);
     setCustomFields([]);
+  };
+
+  // Ask the AI for concrete tasks under the chosen category, in context.
+  const handleSuggestCategoryTasks = async () => {
+    if (!category) return;
+    setCatSuggesting(true);
+    setCatSuggestError(null);
+    setCatSuggestions([]);
+    try {
+      // Retry a couple of times — the model occasionally returns a transient 503.
+      let data: any = null;
+      let lastErr = '';
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await fetch('/api/suggest-category-tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category, existingTaskNames: tasks.map(t => t.name) }),
+        });
+        if (res.ok) { data = await res.json(); break; }
+        const err = await res.json().catch(() => ({}));
+        lastErr = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || `status ${res.status}`);
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
+      }
+      if (!data) throw new Error(lastErr.includes('high demand') ? 'The AI is busy right now — please try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
+      if (Array.isArray(data.tasks)) {
+        setCatSuggestions(data.tasks.map((t: any): CategorySuggestion => ({
+          name: t.name || '',
+          pattern: t.pattern || 'Auto',
+          priority: t.priority || 'Standard',
+          frequency: t.frequency || 'Daily',
+          notes: t.notes || '',
+          requiredSkills: Array.isArray(t.requiredSkills) ? t.requiredSkills : [],
+          checked: true,
+        })));
+      }
+    } catch (err: any) {
+      setCatSuggestError(err.message || 'Failed to get suggestions.');
+    } finally {
+      setCatSuggesting(false);
+    }
+  };
+
+  // Load a single suggestion into the form fields for editing before saving.
+  const applySuggestionToForm = (sug: CategorySuggestion) => {
+    setTaskName(sug.name);
+    setPattern(sug.pattern as TaskMaster['pattern']);
+    setPriority(sug.priority as TaskMaster['priority']);
+    setFreq(sug.frequency);
+    setNotes(sug.notes);
+    setRequiredSkillsInput((sug.requiredSkills || []).join(', '));
+  };
+
+  // Bulk-create every selected suggestion under the current category.
+  const handleAddSelectedSuggestions = () => {
+    const selected = catSuggestions.filter(s => s.checked);
+    if (selected.length === 0) return;
+    const baseTs = Date.now();
+    const newTasks: TaskMaster[] = selected.map((s, i) => ({
+      id: `task-${baseTs}-${i}`,
+      name: s.name,
+      category,
+      pattern: s.pattern as TaskMaster['pattern'],
+      assignedValue: '',
+      requiredSkills: s.requiredSkills && s.requiredSkills.length > 0 ? s.requiredSkills : undefined,
+      priority: s.priority as TaskMaster['priority'],
+      frequency: s.frequency,
+      compliance: false,
+      active: true,
+      notes: s.notes,
+    }));
+    onUpdateTasksBulk([...tasks, ...newTasks]);
+    setCatSuggestions([]);
+    setShowAddTaskModal(false);
   };
 
   // Upgraded suggestFairAssignee algorithm
@@ -667,7 +755,18 @@ export default function TaskRegister({
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Category</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Category</label>
+                  <button
+                    type="button"
+                    onClick={handleSuggestCategoryTasks}
+                    disabled={catSuggesting || !category}
+                    className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-md border border-indigo-200 transition-all cursor-pointer"
+                  >
+                    <Sparkles className={`w-3 h-3 ${catSuggesting ? 'animate-pulse' : ''}`} />
+                    {catSuggesting ? 'Thinking…' : 'Suggest tasks'}
+                  </button>
+                </div>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as any)}
@@ -681,6 +780,57 @@ export default function TaskRegister({
                     <option value={category}>{category}</option>
                   )}
                 </select>
+
+                {catSuggestError && (
+                  <p className="text-[10px] text-rose-600 font-semibold mt-1.5">⚠️ {catSuggestError}</p>
+                )}
+
+                {catSuggestions.length > 0 && (
+                  <div className="mt-2 bg-indigo-50/50 border border-indigo-100 rounded-lg p-2.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wide">
+                        Suggested for "{category}"
+                      </span>
+                      <button type="button" onClick={() => setCatSuggestions([])} className="text-[10px] text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕ Dismiss</button>
+                    </div>
+                    <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                      {catSuggestions.map((sug, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-2 rounded-md border text-[11px] cursor-pointer flex items-start gap-2 transition-all ${sug.checked ? 'bg-white border-indigo-300' : 'bg-slate-50/60 border-slate-100 opacity-60'}`}
+                          onClick={() => setCatSuggestions(catSuggestions.map((s, i) => i === idx ? { ...s, checked: !s.checked } : s))}
+                        >
+                          <input type="checkbox" checked={sug.checked} onChange={() => {}} className="mt-0.5 accent-indigo-600" />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between gap-1 flex-wrap">
+                              <span className="font-bold text-slate-800">{sug.name}</span>
+                              <span className="text-[8px] font-mono font-extrabold uppercase bg-indigo-100 text-indigo-700 px-1 py-0.5 rounded">{patternLabel(sug.pattern)}</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{sug.notes}</p>
+                            <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                              {sug.priority} · {sug.frequency}{sug.requiredSkills?.length ? ` · skills: ${sug.requiredSkills.join(', ')}` : ''}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); applySuggestionToForm(sug); }}
+                              className="text-[9px] font-bold text-indigo-700 hover:underline mt-1 cursor-pointer"
+                            >
+                              ↳ Use this to fill the form
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddSelectedSuggestions}
+                      disabled={!catSuggestions.some(s => s.checked)}
+                      className="w-full text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 rounded-md py-2 transition-all cursor-pointer"
+                    >
+                      + Add {catSuggestions.filter(s => s.checked).length} selected task{catSuggestions.filter(s => s.checked).length === 1 ? '' : 's'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
