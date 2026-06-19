@@ -27,7 +27,10 @@
       "Bash(git commit -q -m 'RBAC Phase A: access-level foundation *)",
       "Bash(git commit -q -m 'RBAC Phase B: gate UI by resolved access tier *)",
       "Bash(git commit -q -m 'RBAC Phase C: role administration UI *)",
-      "Bash(git commit -q -m 'RBAC Phase D: enforce role tiers in Firestore rules *)"
+      "Bash(git commit -q -m 'RBAC Phase D: enforce role tiers in Firestore rules *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git commit -q -m 'Fix cramped modal layouts: fixed header, scroll body, pinned footer *)",
+      "Bash(git commit -q -m 'Header: show demo role on the badge in no-login sandbox *)"
     ]
   }
 }
