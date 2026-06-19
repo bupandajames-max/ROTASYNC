@@ -240,14 +240,6 @@ export default function DashboardHome({
       {/* Rebranded Identity card with abstract shapes */}
       <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-7 rounded-3xl shadow-xl border border-indigo-500/10 flex justify-between items-center flex-wrap gap-6 relative overflow-hidden">
         
-        {/* Abstract design element */}
-        <div className="absolute right-0 top-0 bottom-0 opacity-15 flex items-center justify-center translate-x-12 scale-150 pointer-events-none select-none">
-          <svg className="w-80 h-80 text-sky-200" viewBox="0 0 100 100" fill="none">
-            <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="1.5" strokeDasharray="8 6" />
-            <path d="M50 15v70M15 50h70" stroke="currentColor" strokeWidth="2.5" />
-          </svg>
-        </div>
-        
         <div className="relative z-10 flex-1 min-w-[280px]">
           <span className="text-[10px] bg-indigo-505/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider inline-block mb-3 select-none">
             {taxonomy.appName} · {activeFacility?.name}
@@ -260,11 +252,6 @@ export default function DashboardHome({
           </p>
         </div>
         
-        <div className="relative z-10 bg-[#090d16]/80 backdrop-blur-md px-5 py-3.5 border border-indigo-505/20 rounded-2xl text-xs font-mono shadow-inner text-right">
-          <div className="text-[10px] text-sky-400 font-bold uppercase tracking-widest">Signed in as</div>
-          <div className="font-sans font-black text-white text-base mt-1">{staff.role}</div>
-          <div className="text-[11px] text-indigo-300 mt-1 uppercase tracking-wider">{staff.employeeNo}</div>
-        </div>
       </div>
 
       {/* Primary quick actions — surfaced at the top so they're never buried */}

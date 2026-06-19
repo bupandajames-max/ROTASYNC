@@ -192,7 +192,7 @@ export default function Header({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all shadow-md bg-indigo-600 hover:bg-indigo-550 block text-white border border-indigo-400/35 cursor-pointer"
             >
               <Server className="w-3.5 h-3.5 text-sky-200" />
-              Sync Live Cloud (Firebase)
+              Sign in
             </button>
           )}
         </div>
@@ -291,14 +291,6 @@ export default function Header({
           )}
         </div>
  
-        {/* Clock */}
-        <div className="flex items-center gap-1.5 bg-[#090d16] px-3 py-2 rounded-xl border border-indigo-500/20 text-[11px] shadow-inner font-bold">
-          <Clock className="w-3 h-3 text-sky-300 animate-pulse" />
-          <span className="font-mono tracking-wider text-sky-50">
-            {time.toLocaleTimeString('en-US', { hour12: false })} CAT
-          </span>
-        </div>
-
         {/* Profile Operator Picker */}
         <div className="relative select-none" ref={staffRef}>
           <button
