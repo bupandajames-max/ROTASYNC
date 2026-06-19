@@ -270,7 +270,7 @@ export default function DashboardHome({
         </button>
         <button onClick={() => onNavigate('analytics')} className="flex items-center gap-2.5 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 shadow-sm transition-all cursor-pointer group text-left">
           <div className="p-2 bg-amber-50 text-amber-700 rounded-xl"><Award className="w-4 h-4" /></div>
-          <span className="font-bold text-xs text-slate-700 group-hover:text-indigo-900">Payroll & analytics</span>
+          <span className="font-bold text-xs text-slate-700 group-hover:text-indigo-900">Reports & pay</span>
         </button>
       </div>
 

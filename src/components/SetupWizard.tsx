@@ -249,7 +249,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
 
           {STEPS[stepIdx].id === 'rules' && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500">Sensible defaults are applied. You can fine-tune every rotation rule later in Enterprise Setup → Roster Rules.</p>
+              <p className="text-xs text-slate-500">Sensible defaults are applied. You can fine-tune every rule later in Settings → Roster Rules.</p>
               <label className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-4">
                 <span className="text-xs font-bold text-slate-700">Grant an optional personal day off mid-cycle</span>
                 <input type="checkbox" checked={personalDayOffEnabled} onChange={e => setPersonalDayOffEnabled(e.target.checked)} className="w-5 h-5 accent-indigo-600" />
@@ -315,7 +315,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
               <Field label="Timezone label (display only)">
                 <input value={timezoneLabel} onChange={e => setTimezoneLabel(e.target.value)} className={inputCls} placeholder="e.g. Zambia (CAT)" />
               </Field>
-              <p className="text-[11px] text-slate-400">You can edit individual holidays anytime in Enterprise Setup → Regional.</p>
+              <p className="text-[11px] text-slate-400">You can edit individual holidays anytime in Settings → Regional.</p>
             </div>
           )}
         </div>

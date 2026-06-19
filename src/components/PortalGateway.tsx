@@ -188,7 +188,7 @@ export default function PortalGateway({
                   Connected Workspace
                 </h1>
                 <p className="text-sm p-0 m-0 text-slate-300 mt-4 leading-relaxed font-semibold">
-                  Multi-tenant dynamic roster scheduling, duty hour logs, work rules configuration, and real-time team task lists.
+                  Plan rosters, track hours, set work rules, and manage your team's daily tasks — all in one place.
                 </p>
               </div>
             </div>
@@ -197,15 +197,15 @@ export default function PortalGateway({
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                 <div className="text-xs">
-                  <strong className="block text-white font-bold font-sans">Corporate Data Security</strong>
-                  <span className="text-slate-300">Absolute separation of team accounts prevents cross-department leaks.</span>
+                  <strong className="block text-white font-bold font-sans">Private by default</strong>
+                  <span className="text-slate-300">Each team only sees its own schedules and tasks.</span>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Network className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
                 <div className="text-xs">
-                  <strong className="block text-white font-bold font-sans">Automated Work Rules</strong>
-                  <span className="text-slate-300">Configure custom limits, sabbaticals, timecards, and rest periods instantly.</span>
+                  <strong className="block text-white font-bold font-sans">Built-in work rules</strong>
+                  <span className="text-slate-300">Set hour limits, leave, and rest periods in a few clicks.</span>
                 </div>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function PortalGateway({
                 </span>
                 <h2 className="text-2xl font-black text-white mt-3">Welcome to your Portal</h2>
                 <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                  Sign in using secure SSO credentials to view your assigned duty roster and log outstanding task items.
+                  Sign in with your Google account to see your roster and log your tasks.
                 </p>
               </div>
 
