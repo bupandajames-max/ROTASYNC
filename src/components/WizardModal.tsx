@@ -337,7 +337,7 @@ export default function WizardModal({
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl border border-gray-150 relative max-h-[90vh] overflow-y-auto flex flex-col justify-between">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl border border-gray-150 relative max-h-[90vh] flex flex-col">
         
         {/* Close Button */}
         <button
@@ -348,7 +348,7 @@ export default function WizardModal({
         </button>
 
         {/* Wizard Header Info */}
-        <div className="mb-6">
+        <div className="mb-6 shrink-0">
           <div className="flex items-center gap-3">
             <div className="bg-amber-100 p-2.5 rounded-2xl text-amber-800">
               <Sparkles className="w-6 h-6" />
@@ -406,8 +406,8 @@ export default function WizardModal({
           </div>
         </div>
 
-        {/* Dynamic Step Panels Content */}
-        <div className="flex-1 py-1 min-h-[300px]">
+        {/* Dynamic Step Panels Content — only this region scrolls */}
+        <div className="flex-1 min-h-0 overflow-y-auto py-1 pr-1">
           
           {/* STEP 1: Staff Onboarding */}
           {activeStep === 1 && (
@@ -709,8 +709,8 @@ export default function WizardModal({
 
         </div>
 
-        {/* Wizard Footer Controls */}
-        <div className="flex justify-between items-center border-t border-slate-100 pt-5 mt-5">
+        {/* Wizard Footer Controls — pinned below the scroll area */}
+        <div className="flex justify-between items-center gap-3 border-t border-slate-100 pt-4 mt-4 shrink-0">
           <div>
             <p className="text-[10px] text-slate-400 font-mono">
               ★ Active step {activeStep} of 3

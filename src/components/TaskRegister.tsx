@@ -736,12 +736,14 @@ export default function TaskRegister({
       {/* Add Task Modal overlay */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 relative max-h-[85vh] overflow-y-auto">
-            <h3 className="font-sans font-bold text-base text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-1.5">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 relative max-h-[85vh] flex flex-col">
+            <h3 className="font-sans font-bold text-base text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-1.5 shrink-0">
               <BookOpen className="w-5 h-5 text-[#00aeff]" /> Create New Task Master
             </h3>
 
-            <form onSubmit={handleAddTaskSubmit} className="flex flex-col gap-3">
+            <form onSubmit={handleAddTaskSubmit} className="flex flex-col gap-3 flex-1 min-h-0">
+              {/* Scrollable field area — keeps the action buttons pinned below */}
+              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 pr-1">
               <div>
                 <label className="text-[10px] font-bold text-gray-500 uppercase">Task Name</label>
                 <input
@@ -1112,8 +1114,9 @@ export default function TaskRegister({
                   className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                 ></textarea>
               </div>
+              </div>
 
-              <div className="flex gap-2.5 pt-2">
+              <div className="flex gap-2.5 pt-3 mt-1 shrink-0 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowAddTaskModal(false)}
