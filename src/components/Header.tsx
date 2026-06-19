@@ -16,7 +16,8 @@ import {
   Fingerprint, 
   ShieldAlert, 
   SlidersHorizontal,
-  Network
+  Network,
+  LogOut
 } from 'lucide-react';
 import { useToast } from './ui/ToastProvider';
 
@@ -181,16 +182,9 @@ export default function Header({
         {/* Firebase Live Cloud Auth Sync Indicator */}
         <div className="flex items-center gap-2 select-none">
           {firebaseUser ? (
-            <div className="flex items-center gap-2 bg-[#0d1527] px-3 py-1.5 rounded-xl border border-emerald-500/40 text-[11px] font-bold shadow-inner text-emerald-300">
+            <div className="flex items-center gap-2 bg-[#0d1527] px-3 py-1.5 rounded-xl border border-emerald-500/40 text-[11px] font-bold shadow-inner text-emerald-300" title="Connected to cloud sync. Sign out from the Account menu.">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse border border-emerald-100 shrink-0" />
               <span className="hidden md:inline truncate max-w-[120px]">Cloud Synced: {firebaseUser.email?.split('@')[0]}</span>
-              <button
-                onClick={onSignOut}
-                title="Disconnect Cloud Sync"
-                className="ml-1 p-0.5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
             </div>
           ) : (
             <button
@@ -308,47 +302,51 @@ export default function Header({
         {/* Profile Operator Picker */}
         <div className="relative select-none" ref={staffRef}>
           <button
-            disabled={!isManagerView}
             onClick={() => setIsStaffDropdownOpen(!isStaffDropdownOpen)}
-            className={`flex items-center gap-2 bg-[#090d16] px-3 py-1.5 rounded-xl border border-indigo-500/20 shadow-inner text-left transition-all text-white ${
-              isManagerView 
-                ? 'hover:bg-[#002d53] active:bg-[#00213b] cursor-pointer' 
-                : 'opacity-85 cursor-not-allowed'
-            }`}
+            className="flex items-center gap-2 bg-[#090d16] px-3 py-1.5 rounded-xl border border-indigo-500/20 shadow-inner text-left transition-all text-white hover:bg-[#002d53] active:bg-[#00213b] cursor-pointer"
           >
             <User className="w-3.5 h-3.5 text-sky-300 shrink-0" />
             <div className="flex flex-col leading-none">
-              <span className="text-[11px] text-sky-400 font-mono font-extrabold uppercase tracking-wider block">Viewing as</span>
+              <span className="text-[11px] text-sky-400 font-mono font-extrabold uppercase tracking-wider block">Account</span>
               <span className="text-xs font-black text-white flex items-center gap-1.5 mt-0.5 animate-none">
                 {activeStaff?.name}
-                {isManagerView && (
-                  <ChevronDown className={`w-3 h-3 text-sky-450 transition-transform ${isStaffDropdownOpen ? 'rotate-180' : ''}`} />
-                )}
+                <ChevronDown className={`w-3 h-3 text-sky-450 transition-transform ${isStaffDropdownOpen ? 'rotate-180' : ''}`} />
               </span>
             </div>
           </button>
 
           {isStaffDropdownOpen && (
             <div className="absolute right-0 mt-2 w-85 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 text-slate-800 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              <div className="flex flex-col gap-1 pb-3 border-b border-slate-100">
+              {/* Account + sign out — available to everyone */}
+              <div className="flex flex-col gap-2 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <Fingerprint className="w-4 h-4 text-indigo-900" />
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 font-mono">Viewing as</span>
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 font-mono">Account</span>
                 </div>
                 {firebaseUser ? (
                   <p className="text-[10px] text-slate-400 font-semibold truncate">
-                    Session: <strong className="text-slate-600 font-bold">{firebaseUser.email}</strong>
+                    Signed in as <strong className="text-slate-600 font-bold">{firebaseUser.email}</strong>
                   </p>
                 ) : (
                   <p className="text-[10px] text-slate-400 font-medium leading-relaxed mt-0.5">
-                    <strong>Operator Delegation:</strong> Switch active sessions to inspect timesheets, records, and specific task lists.
+                    Demo session — not signed in.
                   </p>
                 )}
-                <div className="flex items-center gap-1.5 mt-1.5 bg-indigo-50 rounded-xl p-2.5 border border-indigo-200 text-[10px] leading-relaxed text-indigo-900 font-semibold">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
-                  <span>Switch whose schedule, tasks, and timesheet you're viewing.</span>
-                </div>
+                <button
+                  onClick={() => { setIsStaffDropdownOpen(false); onSignOut && onSignOut(); }}
+                  className="mt-1 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer text-rose-600 bg-rose-50 hover:bg-rose-100 border-rose-200"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> {firebaseUser ? 'Sign out' : 'Exit demo session'}
+                </button>
               </div>
+
+              {/* Inspect another member's view — managers only, when there are others to inspect */}
+              {isManagerView && staffList.length > 1 && (
+              <>
+                <div className="flex items-center gap-1.5 mt-3 bg-indigo-50 rounded-xl p-2.5 border border-indigo-200 text-[10px] leading-relaxed text-indigo-900 font-semibold">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span><strong>Inspect staff view.</strong> Preview another member's schedule, tasks &amp; timesheet — view only; your own access is unchanged.</span>
+                </div>
 
               <div className="relative mt-3">
                 <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
@@ -417,6 +415,8 @@ export default function Header({
                   })
                 )}
               </div>
+              </>
+              )}
             </div>
           )}
         </div>
