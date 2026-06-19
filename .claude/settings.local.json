@@ -25,7 +25,9 @@
       "Bash(git commit -q -m 'Add skills-based eligibility + smart auto-assign \\(Increment 2\\) *)",
       "Bash(git commit -q -m 'Add AI category-task suggestions in task creation *)",
       "Bash(git commit -q -m 'RBAC Phase A: access-level foundation *)",
-      "Bash(git commit -q -m 'RBAC Phase B: gate UI by resolved access tier *)"
+      "Bash(git commit -q -m 'RBAC Phase B: gate UI by resolved access tier *)",
+      "Bash(git commit -q -m 'RBAC Phase C: role administration UI *)",
+      "Bash(git commit -q -m 'RBAC Phase D: enforce role tiers in Firestore rules *)"
     ]
   }
 }
