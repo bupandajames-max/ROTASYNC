@@ -16,6 +16,31 @@ service cloud.firestore {
       return request.auth.token.email;
     }
 
+    // --- ROLE / SCOPE PRIMITIVES (Phase D enforcement) ---
+    // The caller's tier lives in users/{uid} (written on login). Super users are
+    // additionally recognized by email so seeding never depends on that doc.
+    // NOTE: keep SUPER_EMAILS in sync with src/config/access.ts SUPERUSER_EMAILS.
+    function callerEmail() {
+      return isSignedIn() ? request.auth.token.email : '';
+    }
+    function isSuperEmail() {
+      return callerEmail() in ['bupandajames@gmail.com'];
+    }
+    function callerLevel() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accessLevel
+        : 'staff';
+    }
+    function isSuper() {
+      return isSignedIn() && (isSuperEmail() || callerLevel() == 'superuser');
+    }
+    function isFacilityLevel() {
+      return isSignedIn() && (isSuper() || callerLevel() == 'facility_manager');
+    }
+    function isManagerLevel() {
+      return isSignedIn() && (isFacilityLevel() || callerLevel() == 'dept_head');
+    }
+
     // Standard string sanitization check to prevent path/injection poisoning
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
@@ -83,55 +108,70 @@ service cloud.firestore {
     }
 
     // --- COLLECTION RULES MATCH BLOCKS ---
+    // Reads are open to any signed-in user (the app hydrates collections and
+    // filters by facility/department client-side). Writes are role-gated.
 
     match /systemConfig/{configId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(configId) && isValidSystemConfig(incoming());
-      allow delete: if isSignedIn();
+      allow create, update: if isManagerLevel() && isValidId(configId) && isValidSystemConfig(incoming());
+      allow delete: if isManagerLevel();
     }
 
-    // Role mirror — one doc per authenticated user, keyed by auth UID.
-    // Source of truth for server-side role checks (Phase D). For now a user may
+    // Role mirror — one doc per authenticated user, keyed by auth UID. A user may
     // only write their own doc; reads are open to signed-in users.
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
     }
 
+    // Facilities (sites): super users only.
     match /facilities/{facilityId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(facilityId) && isValidFacility(incoming());
-      allow delete: if isSignedIn();
+      allow create, update: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
+      allow delete: if isSuper();
     }
 
+    // Departments: facility managers and above.
     match /departments/{departmentId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(departmentId) && isValidDepartment(incoming());
-      allow delete: if isSignedIn();
+      allow create, update: if isFacilityLevel() && isValidId(departmentId) && isValidDepartment(incoming());
+      allow delete: if isFacilityLevel();
     }
 
+    // Workspace configuration (rules, categories, taxonomy): facility managers+.
+    match /workspaceConfigs/{configId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isFacilityLevel();
+    }
+
+    // Staff registry: department heads and above (manage their people).
     match /staff/{staffId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(staffId) && isValidStaff(incoming());
-      allow delete: if isSignedIn();
+      allow create, update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming());
+      allow delete: if isManagerLevel();
     }
 
+    // Roster cycles: department heads and above.
     match /cycles/{cycleId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(cycleId) && isValidCycle(incoming());
-      allow delete: if isSignedIn();
+      allow create, update: if isManagerLevel() && isValidId(cycleId) && isValidCycle(incoming());
+      allow delete: if isManagerLevel();
     }
 
+    // Task master templates: department heads and above.
     match /taskMasters/{taskMasterId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidId(taskMasterId) && isValidTaskMaster(incoming());
-      allow delete: if isSignedIn();
+      allow create, update: if isManagerLevel() && isValidId(taskMasterId) && isValidTaskMaster(incoming());
+      allow delete: if isManagerLevel();
     }
 
     match /test/{testId} {
       allow read: if true;
     }
 
+    // --- OPERATIONAL DATA ---
+    // Any signed-in user may write: staff complete tasks, submit timesheets,
+    // and raise requests. (Per-record ownership scoping is a future hardening.)
     match /dailyTasks/{taskId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn() && isValidId(taskId);
