@@ -90,6 +90,14 @@ service cloud.firestore {
       allow delete: if isSignedIn();
     }
 
+    // Role mirror — one doc per authenticated user, keyed by auth UID.
+    // Source of truth for server-side role checks (Phase D). For now a user may
+    // only write their own doc; reads are open to signed-in users.
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
     match /facilities/{facilityId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn() && isValidId(facilityId) && isValidFacility(incoming());

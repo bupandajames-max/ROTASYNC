@@ -8,9 +8,13 @@ export interface ShiftDef {
   active: boolean;
 }
 
+// Access tier (distinct from job `role`). Scope comes from facilityId + departmentId.
+export type AccessLevel = 'staff' | 'dept_head' | 'facility_manager' | 'superuser';
+
 export interface StaffMember {
   id: string;
   name: string;
+  accessLevel?: AccessLevel; // governs what this person can see/do; defaults derived from isManager
   email: string;
   phone: string;
   role: string;

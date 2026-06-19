@@ -51,6 +51,7 @@ import {
   dbDeleteDoc,
   dbGetDoc
 } from './firebase';
+import { resolveAccess, ResolvedAccess } from './config/access';
 
 const DEFAULT_DEPARTMENTS: Department[] = [];
 
@@ -85,6 +86,8 @@ export default function App() {
 
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [isFirebaseSyncEnabled, setIsFirebaseSyncEnabled] = useState<boolean>(false);
+  // Resolved access tier + scope for the signed-in user (Phase A foundation).
+  const [access, setAccess] = useState<ResolvedAccess>({ accessLevel: 'staff', email: '' });
   const [isSyncingFirebase, setIsSyncingFirebase] = useState<boolean>(false);
 
   // RBAC Sandbox Bypass monitoring
@@ -159,6 +162,25 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Resolve the signed-in user's access tier from their email (super-user allowlist
+  // → matching staff record), and mirror it into a rules-friendly users/{uid} doc.
+  // Phase A: additive only — this does not yet change what the UI shows.
+  useEffect(() => {
+    if (!firebaseUser) {
+      setAccess({ accessLevel: 'staff', email: '' });
+      return;
+    }
+    const resolved = resolveAccess(firebaseUser.email, staffList);
+    setAccess(resolved);
+    dbSetDoc('users', firebaseUser.uid, {
+      id: firebaseUser.uid,
+      email: resolved.email,
+      accessLevel: resolved.accessLevel,
+      facilityId: resolved.facilityId || '',
+      departmentId: resolved.departmentId || '',
+    }).catch(() => {});
+  }, [firebaseUser, staffList]);
 
   const handleGoogleSignIn = async () => {
     try {
