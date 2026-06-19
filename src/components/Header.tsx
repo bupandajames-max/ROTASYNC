@@ -430,11 +430,19 @@ export default function Header({
             dept_head: 'Department Head',
             staff: 'Staff',
           };
-          const label = ROLE_LABELS[accessLevel || 'staff'] || 'Staff';
-          const elevated = (accessLevel && accessLevel !== 'staff');
+          // When signed in, the badge reflects the account's resolved tier. In the
+          // no-login demo (sandbox) path there is no tier to resolve, so reflect the
+          // active simulator view instead of always showing "Staff".
+          const signedIn = !!firebaseUser;
+          const label = signedIn
+            ? (ROLE_LABELS[accessLevel || 'staff'] || 'Staff')
+            : (isManagerView ? 'Manager · Demo' : 'Staff · Demo');
+          const elevated = signedIn ? (accessLevel && accessLevel !== 'staff') : isManagerView;
           return (
             <div
-              title={`You are signed in as ${label}. Access is set by your account, not switchable here.`}
+              title={signedIn
+                ? `You are signed in as ${label}. Access is set by your account, not switchable here.`
+                : 'Demo session — sign in for your real access tier.'}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase shadow-md border ${
                 elevated
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400/40'
