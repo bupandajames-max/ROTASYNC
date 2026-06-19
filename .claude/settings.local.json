@@ -30,7 +30,8 @@
       "Bash(git commit -q -m 'RBAC Phase D: enforce role tiers in Firestore rules *)",
       "mcp__Claude_Preview__preview_start",
       "Bash(git commit -q -m 'Fix cramped modal layouts: fixed header, scroll body, pinned footer *)",
-      "Bash(git commit -q -m 'Header: show demo role on the badge in no-login sandbox *)"
+      "Bash(git commit -q -m 'Header: show demo role on the badge in no-login sandbox *)",
+      "Bash(git commit -q -m 'Make sign-out discoverable and clarify the staff picker *)"
     ]
   }
 }
