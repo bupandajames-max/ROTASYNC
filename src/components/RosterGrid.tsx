@@ -499,7 +499,7 @@ export default function RosterGrid({
         <div>
           <div className="text-xs text-gray-400 font-extrabold uppercase tracking-wider">Active Cycle</div>
           <h2 className="text-[#7A1230] text-xl font-black font-sans flex items-center gap-2">
-            Roster Grid & Smart Duty Planner
+            Roster &amp; Schedule
             {isGridLocked ? (
               <span className="text-xs bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 border border-red-200">
                 <Lock className="w-3 h-3" /> {isManagerView ? 'Locked (Live)' : 'Read-Only (Access Restricted)'}
@@ -596,10 +596,10 @@ export default function RosterGrid({
                       ? 'bg-indigo-100 text-indigo-900 border-indigo-300'
                       : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
                   }`}
-                  title="Configure flexible custom, calendar, or billing operational periods"
+                  title="Change the roster's start and end dates"
                 >
                   <CalendarRange className="w-3.5 h-3.5 text-indigo-500" />
-                  Configure Operational Period
+                  Edit roster dates
                 </button>
               )}
 
@@ -739,7 +739,7 @@ export default function RosterGrid({
                     type="submit"
                     className="px-5 py-2 bg-[#7A1230] hover:bg-[#5C0D24] text-white rounded-xl text-xs font-black shadow-xs cursor-pointer transition-colors uppercase tracking-wider"
                   >
-                    Apply Operational Period Changes
+                    Save date changes
                   </button>
                 </div>
               </form>
@@ -751,7 +751,7 @@ export default function RosterGrid({
             <div className="border border-amber-200 bg-amber-50 rounded-2xl p-4 flex flex-col gap-2 shadow-sm">
               <div className="flex items-center gap-2 text-amber-800 font-extrabold text-sm mb-1">
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
-                Coverage Integrity Alerts ({coverageAlerts.length})
+                Coverage gaps ({coverageAlerts.length})
               </div>
               <div className="max-h-24 overflow-y-auto flex flex-col gap-1 pr-2">
                 {coverageAlerts.map((alert, idx) => (

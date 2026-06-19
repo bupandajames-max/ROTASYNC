@@ -20,14 +20,14 @@ export default function Navigation({ currentTab, setCurrentTab, isManagerView, a
     // Everyone sees their own working surfaces.
     { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'roster', label: 'Roster & Schedule', icon: Calendar },
-    { id: 'timesheets', label: 'My Timesheet Log', icon: Clock },
+    { id: 'timesheets', label: 'My Timesheet', icon: Clock },
     { id: 'tasks', label: `${taxonomy.taskSingular} Board`, icon: ClipboardCheck },
     // Management surfaces — dept head and above only.
     ...(canManage ? [
-      { id: 'register', label: 'Task Register', icon: Database },
-      { id: 'manager', label: 'Approvals Desk', icon: Sliders },
-      { id: 'admin', label: 'Enterprise Setup', icon: Settings },
-      { id: 'analytics', label: 'Payroll & Analytics', icon: BarChart3 },
+      { id: 'register', label: 'Manage Tasks', icon: Database },
+      { id: 'manager', label: 'Approvals', icon: Sliders },
+      { id: 'admin', label: 'Settings', icon: Settings },
+      { id: 'analytics', label: 'Reports & Pay', icon: BarChart3 },
     ] : []),
   ];
 

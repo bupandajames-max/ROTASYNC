@@ -2120,9 +2120,9 @@ export default function App() {
           {currentTab === 'tasks' && activeCycle && (
             <div className="flex flex-col gap-6">
               <div className="flex justify-between items-center bg-white py-3 px-5 border border-slate-100 rounded-xl">
-                <span className="text-xs text-gray-500 font-bold uppercase select-none">Personal portal workspace</span>
+                <span className="text-xs text-gray-500 font-bold uppercase select-none">My tasks</span>
                 <span className="text-xs bg-[#f3ebd3]/40 text-[#c55a11] border border-[#cbdff0] px-3 py-1 rounded-full font-bold">
-                  🔐 Certified CAT Staff Space
+                  🔐 Your space
                 </span>
               </div>
 
@@ -2141,7 +2141,7 @@ export default function App() {
 
                 <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm self-start">
                   <h3 className="text-sm font-bold text-slate-800 border-b border-gray-100 pb-3 mb-4 flex items-center gap-1.5 font-medium">
-                    👤 My Personal Hub Panel
+                    👤 My details
                   </h3>
                   <StaffPortal
                     activeStaffId={activeStaffId}

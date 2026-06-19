@@ -556,7 +556,7 @@ export default function NewStaffOnboardingModal({
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-slate-400 mt-1.5 block font-medium">Used by Roster Integrity Alerts to flag over-committing or under-utilization.</span>
+                      <span className="text-[10px] text-slate-400 mt-1.5 block font-medium">Used to flag over- or under-scheduling against their hours.</span>
                     </div>
                   </div>
                 </motion.div>
@@ -572,8 +572,8 @@ export default function NewStaffOnboardingModal({
                   className="space-y-4 text-left animate-[fadeIn_0.15s_ease-out]"
                 >
                   <div>
-                    <h4 className="text-base font-black text-slate-900 tracking-tight">Primary Roster Track Configuration</h4>
-                    <p className="text-xs text-slate-500">Determine how the Roster Optimizer maps out their default shifts patterns.</p>
+                    <h4 className="text-base font-black text-slate-900 tracking-tight">Default Shift Pattern</h4>
+                    <p className="text-xs text-slate-500">Sets the shifts the scheduler gives this person by default.</p>
                   </div>
 
                   {/* Radio tracks selection card */}
@@ -634,7 +634,7 @@ export default function NewStaffOnboardingModal({
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] uppercase font-black tracking-widest text-[#7A1230] flex items-center gap-1">
-                        <Activity className="w-3.5 h-3.5 text-[#E29E25]" /> Track Template Simulation Preview:
+                        <Activity className="w-3.5 h-3.5 text-[#E29E25]" /> Shift pattern preview:
                       </span>
                     </div>
                     <div className="grid grid-cols-5 gap-1.5 pt-1">

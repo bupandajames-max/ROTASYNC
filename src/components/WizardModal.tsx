@@ -355,7 +355,7 @@ export default function WizardModal({
             </div>
             <div>
               <h2 className="font-sans font-black text-lg text-slate-900 tracking-tight">Onboarding & Setup Wizard</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Initialize a consistent self-service clinic workflow step-by-step</p>
+              <p className="text-xs text-slate-500 mt-0.5">Set up your team, tasks, and first roster — step by step</p>
             </div>
           </div>
 
@@ -415,7 +415,7 @@ export default function WizardModal({
               <div className="bg-slate-50/60 p-4 border border-slate-100 rounded-2xl flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="text-xs text-slate-600 leading-relaxed font-semibold">
-                  Specify staff members active in this roster. Establishing real staff accounts allows the Roster Optimizer to accurately balance shift coverage and target hours under Zambian labor rules.
+                  Add the people on this roster. Real staff accounts let the scheduler balance shift coverage and target hours fairly.
                 </div>
               </div>
 
@@ -739,7 +739,7 @@ export default function WizardModal({
                 onClick={handleFinishLaunch}
                 className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer uppercase tracking-wider"
               >
-                <Sparkles className="w-4 h-4 text-amber-200" /> Launch Optimizer & Start Cycle
+                <Sparkles className="w-4 h-4 text-amber-200" /> Build roster &amp; finish
               </button>
             )}
           </div>

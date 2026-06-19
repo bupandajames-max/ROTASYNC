@@ -182,7 +182,7 @@ export default function PortalGateway({
               </div>
               
               <div className="mt-8">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-indigo-300 uppercase block">Enterprise Suite</span>
+                <span className="text-[10px] font-mono font-bold tracking-widest text-indigo-300 uppercase block">Team Rostering</span>
                 <h1 className="text-3xl font-black tracking-tight leading-none text-white mt-1">
                   {taxonomy.appName} <br />
                   Connected Workspace
@@ -257,7 +257,7 @@ export default function PortalGateway({
                   <div className="flex items-start gap-2.5">
                     <Sparkles className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
                     <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                      <strong>AI Studio Sandbox Review:</strong> Simulate registered personas directly to preview multi-tenant dashboards, strict filters, and compliance.
+                      <strong>Just exploring?</strong> Try the app without signing in — preview it as a sample manager or team member.
                     </p>
                   </div>
 
@@ -297,7 +297,7 @@ export default function PortalGateway({
                       <strong className="text-slate-100 block truncate group-hover:text-sky-300">
                         {staffList.find(s => !s.isManager)?.name || "Default Operator"}
                       </strong>
-                      <span className="text-[10px] text-slate-400 truncate">Personal task list card</span>
+                      <span className="text-[10px] text-slate-400 truncate">Personal task list</span>
                     </button>
                   </div>
 
@@ -320,9 +320,9 @@ export default function PortalGateway({
                           >
                             <div className="flex flex-col">
                               <span className="text-xs font-bold text-slate-200">{s.fullName || s.name}</span>
-                              <span className="text-[10px] text-slate-500">{s.role} • {s.isManager ? 'Supervisor/Manager' : 'Team member'}</span>
+                              <span className="text-[10px] text-slate-500">{s.role} • {s.isManager ? 'Manager' : 'Team member'}</span>
                             </div>
-                            <span className="text-[9px] font-mono font-black text-[#009EE2] uppercase">Simulate</span>
+                            <span className="text-[9px] font-mono font-black text-[#009EE2] uppercase">Preview</span>
                           </button>
                         ))}
                       </div>
@@ -339,7 +339,7 @@ export default function PortalGateway({
 
         {/* Footer info banner */}
         <div className="mt-8 text-center text-slate-500 text-[11px] font-semibold max-w-sm tracking-wide">
-          Protected by enterprise-grade secure SSO data-isolation protocols.
+          Your sign-in is secured by Google.
         </div>
       </div>
     );

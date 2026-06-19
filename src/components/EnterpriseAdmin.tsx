@@ -643,14 +643,14 @@ export default function EnterpriseAdmin({
           )}
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-slate-700">Strict Group Isolation Siloed</span>
+              <span className="text-xs font-black text-slate-700">Show one {taxonomy.groupSingular.toLowerCase()} at a time</span>
               <button 
                 onClick={() => setIsSandboxStrictMode(!isSandboxStrictMode)}
                 className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
                   isSandboxStrictMode ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-800'
                 }`}
               >
-                {isSandboxStrictMode ? 'ON (Silos Active)' : 'OFF (Global View)'}
+                {isSandboxStrictMode ? 'On' : 'Off (show all)'}
               </button>
             </div>
             <p className="text-[9.5px] text-slate-500 mt-0.5">
@@ -716,7 +716,7 @@ export default function EnterpriseAdmin({
             activeSubTab === 'sandbox' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <ShieldCheck className="w-4 h-4 text-emerald-500" /> Multi-Tenant Silo Simulator
+          <ShieldCheck className="w-4 h-4 text-emerald-500" /> Department View
         </button>
         <button
           onClick={() => setActiveSubTab('taxonomy')}
@@ -764,7 +764,7 @@ export default function EnterpriseAdmin({
             {/* Fac New Inline Form */}
             {showAddFacilityForm && (
               <form onSubmit={handleInlineCreateFacility} className="bg-white p-5 rounded-2xl border border-slate-200 mb-6 space-y-4 animate-[fadeIn_0.15s_ease-out] shadow-sm">
-                <h4 className="text-xs font-black uppercase text-indigo-950">Provision New {taxonomy.workspaceSingular}</h4>
+                <h4 className="text-xs font-black uppercase text-indigo-950">Add New {taxonomy.workspaceSingular}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Workspace Name *</label>
@@ -1175,7 +1175,7 @@ export default function EnterpriseAdmin({
                               }`}
                             >
                               {isDeptCurrent ? <Check className="w-3 h-3" strokeWidth={3} /> : null}
-                              {isDeptCurrent ? 'Active Silo' : 'Activate Silo'}
+                              {isDeptCurrent ? 'Active' : 'Switch to this'}
                             </button>
                           </div>
                         </div>
@@ -1641,7 +1641,7 @@ export default function EnterpriseAdmin({
                     onChange={(e) => setNewStaffDeptId(e.target.value)}
                     className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                   >
-                    <option value="">No Silo (Global Access)</option>
+                    <option value="">All {taxonomy.groupPlural.toLowerCase()}</option>
                     {facilityDepts.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
@@ -1744,8 +1744,8 @@ export default function EnterpriseAdmin({
                   <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-bold text-slate-400">
                     <th className="py-3 px-4">{taxonomy.memberSingular}</th>
                     <th className="py-3 px-3">Role / Title</th>
-                    <th className="py-3 px-3">Index Mnemonic</th>
-                    <th className="py-3 px-3">{taxonomy.groupSingular} Silo</th>
+                    <th className="py-3 px-3">Employee No.</th>
+                    <th className="py-3 px-3">{taxonomy.groupSingular}</th>
                     <th className="py-3 px-3">Status</th>
                     <th className="py-3 px-3 text-center">Actions</th>
                   </tr>
@@ -1980,20 +1980,20 @@ export default function EnterpriseAdmin({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
             <div>
               <h3 className="text-sm font-black text-slate-800 uppercase flex items-center gap-1.5">
-                <ShieldCheck className="text-emerald-500 w-5 h-5" /> Enforcing Secure Data isolation Silos
+                <ShieldCheck className="text-emerald-500 w-5 h-5" /> How department separation works
               </h3>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed font-semibold">
-                Our multi-tenant architecture implements absolute data isolation silos at the {taxonomy.groupSingular.toLowerCase()} and {taxonomy.workspaceSingular.toLowerCase()} tier. If a user is registered under a specific sub-group, they can never view, inspect, or sign-off checklist items representing alternative silos.
+                Each person belongs to a {taxonomy.groupSingular.toLowerCase()} within a {taxonomy.workspaceSingular.toLowerCase()}. When separation is on, they only see their own {taxonomy.groupSingular.toLowerCase()}'s schedules, tasks, and check-offs — not other {taxonomy.groupPlural.toLowerCase()}.
               </p>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Administrators can toggle this active lock mechanism to audit isolation compliance. Below is a physical sandbox table reflecting what each configured operator sees right now!
+                Turn it on to preview exactly what each person sees. The table below shows everyone's current view.
               </p>
             </div>
 
             <div className="bg-white p-5 rounded-2xl border border-slate-150 flex flex-col justify-between">
               <div>
                 <span className="text-[9.5px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono font-bold uppercase">
-                  Sandbox Simulation Metrics
+                  Workspace summary
                 </span>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -2001,7 +2001,7 @@ export default function EnterpriseAdmin({
                     <strong className="text-base text-slate-800 mt-0.5 block">{facilities.length} Live Sites</strong>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <span className="text-[9.5px] uppercase font-mono text-slate-400 font-bold block">{taxonomy.groupPlural} Silos</span>
+                    <span className="text-[9.5px] uppercase font-mono text-slate-400 font-bold block">{taxonomy.groupPlural}</span>
                     <strong className="text-base text-slate-800 mt-0.5 block">{departments.length} Registered</strong>
                   </div>
                 </div>
@@ -2036,7 +2036,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div className="flex justify-between items-center bg-indigo-50 p-2.5 rounded-xl border border-indigo-100 mt-4 text-[10.5px]">
-                <span className="font-semibold text-indigo-900">{taxonomy.groupSingular} Silo Context Active:</span>
+                <span className="font-semibold text-indigo-900">Viewing {taxonomy.groupSingular.toLowerCase()}:</span>
                 <select
                   value={currentDeptId}
                   onChange={(e) => setCurrentDeptId(e.target.value)}
@@ -2053,7 +2053,7 @@ export default function EnterpriseAdmin({
 
           <div className="space-y-4">
             <h4 className="text-xs font-black text-slate-800 uppercase flex items-center gap-1.5">
-              <Eye className="w-4 h-4 text-slate-400" /> Active Tenant Permissions Matrix
+              <Eye className="w-4 h-4 text-slate-400" /> Who can see what
             </h4>
 
             <div className="overflow-x-auto border border-slate-100 rounded-2xl">
@@ -2061,10 +2061,10 @@ export default function EnterpriseAdmin({
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase font-bold text-slate-400">
                     <th className="py-2.5 px-4">{taxonomy.memberSingular}</th>
-                    <th className="py-2.5 px-3">Role Tier</th>
-                    <th className="py-2.5 px-3">Registered {taxonomy.groupSingular} Silo</th>
-                    <th className="py-2.5 px-3">Isolation Scope Bound</th>
-                    <th className="py-2.5 px-3">Interactive Test Check</th>
+                    <th className="py-2.5 px-3">Role</th>
+                    <th className="py-2.5 px-3">{taxonomy.groupSingular}</th>
+                    <th className="py-2.5 px-3">Can see</th>
+                    <th className="py-2.5 px-3">Preview</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[11px]">
@@ -2540,7 +2540,7 @@ export default function EnterpriseAdmin({
                     onChange={(e) => setEditDeptId(e.target.value)}
                     className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                   >
-                    <option value="">No Silo (Global Access)</option>
+                    <option value="">All {taxonomy.groupPlural.toLowerCase()}</option>
                     {facilityDepts.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
