@@ -5,6 +5,7 @@ interface NavigationProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
   isManagerView: boolean;
+  accessLevel?: string;
   taxonomy: {
     taskSingular: string;
     taskPlural: string;
@@ -12,18 +13,22 @@ interface NavigationProps {
   };
 }
 
-export default function Navigation({ currentTab, setCurrentTab, isManagerView, taxonomy }: NavigationProps) {
+export default function Navigation({ currentTab, setCurrentTab, isManagerView, accessLevel, taxonomy }: NavigationProps) {
+  // Anyone above 'staff' (or the bootstrap manager view) gets the management tabs.
+  const canManage = (accessLevel && accessLevel !== 'staff') || isManagerView;
   const tabs = [
+    // Everyone sees their own working surfaces.
     { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'roster', label: 'Roster & Schedule', icon: Calendar },
     { id: 'timesheets', label: 'My Timesheet Log', icon: Clock },
     { id: 'tasks', label: `${taxonomy.taskSingular} Board`, icon: ClipboardCheck },
-    { id: 'register', label: 'Task Register', icon: Database },
-    ...(isManagerView ? [
+    // Management surfaces — dept head and above only.
+    ...(canManage ? [
+      { id: 'register', label: 'Task Register', icon: Database },
       { id: 'manager', label: 'Approvals Desk', icon: Sliders },
-      { id: 'admin', label: 'Enterprise Setup', icon: Settings }
+      { id: 'admin', label: 'Enterprise Setup', icon: Settings },
+      { id: 'analytics', label: 'Payroll & Analytics', icon: BarChart3 },
     ] : []),
-    { id: 'analytics', label: 'Payroll & Analytics', icon: BarChart3 }
   ];
 
   return (

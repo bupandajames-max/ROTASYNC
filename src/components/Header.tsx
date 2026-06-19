@@ -26,6 +26,7 @@ interface HeaderProps {
   setActiveStaffId: (id: string) => void;
   isManagerView: boolean;
   setIsManagerView: (val: boolean) => void;
+  accessLevel?: string;
   facilities: Facility[];
   selectedFacilityId: string;
   setSelectedFacilityId: (id: string) => void;
@@ -52,6 +53,7 @@ export default function Header({
   setActiveStaffId,
   isManagerView,
   setIsManagerView,
+  accessLevel,
   facilities,
   selectedFacilityId,
   setSelectedFacilityId,
@@ -139,7 +141,13 @@ export default function Header({
     setShowProvisionModal(false);
   };
 
-  const filteredFacilities = facilities.filter(f =>
+  // Only super users may switch between / create facilities. Everyone else is
+  // pinned to the facility they belong to (the currently selected one).
+  const canSwitchFacilities = accessLevel === 'superuser';
+  const scopedFacilities = canSwitchFacilities
+    ? facilities
+    : facilities.filter(f => f.id === selectedFacilityId);
+  const filteredFacilities = scopedFacilities.filter(f =>
     f.name.toLowerCase().includes(facilitySearchQuery.toLowerCase()) ||
     f.location.toLowerCase().includes(facilitySearchQuery.toLowerCase()) ||
     (f.facilitiesType && f.facilitiesType.toLowerCase().includes(facilitySearchQuery.toLowerCase()))
@@ -273,15 +281,17 @@ export default function Header({
               </div>
               <div className="border-t border-slate-100 pt-2.5 mt-2.5 flex items-center justify-between">
                 <span className="text-[10px] text-slate-450 font-medium font-sans">© {taxonomy.appName}</span>
-                <button
-                  onClick={() => {
-                    setIsFacilityDropdownOpen(false);
-                    setShowProvisionModal(true);
-                  }}
-                  className="flex items-center gap-1 text-[10.5px] font-black text-indigo-600 hover:text-indigo-800 transition-colors"
-                >
-                  <Plus className="w-3 h-3" /> Add {taxonomy.workspaceSingular}
-                </button>
+                {canSwitchFacilities && (
+                  <button
+                    onClick={() => {
+                      setIsFacilityDropdownOpen(false);
+                      setShowProvisionModal(true);
+                    }}
+                    className="flex items-center gap-1 text-[10.5px] font-black text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" /> Add {taxonomy.workspaceSingular}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -367,10 +377,9 @@ export default function Header({
                       <button
                         key={s.id}
                         onClick={() => {
+                          // Operator delegation only changes whose schedule you're
+                          // viewing — it does not change your own privileges.
                           setActiveStaffId(s.id);
-                          if (!s.isManager) {
-                            setIsManagerView(false);
-                          }
                           setIsStaffDropdownOpen(false);
                           setStaffSearchQuery('');
                         }}
@@ -412,19 +421,31 @@ export default function Header({
           )}
         </div>
 
-        {/* Manager / Staff view toggle */}
-        {activeStaff?.isManager && (
-          <button
-            onClick={() => setIsManagerView(!isManagerView)}
-            title={isManagerView
-              ? 'You can manage rosters, approvals and setup. Click to preview the staff view.'
-              : 'You are seeing the staff view. Click to switch back to manager tools.'}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase transition-all shadow-md bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border border-emerald-400/40 cursor-pointer"
-          >
-            <ShieldCheck className="w-3 h-3" />
-            {isManagerView ? 'Manager view' : 'Switch to manager'}
-          </button>
-        )}
+        {/* Read-only role badge — privileges come from the authenticated account,
+            not a toggle. */}
+        {(() => {
+          const ROLE_LABELS: Record<string, string> = {
+            superuser: 'Super User',
+            facility_manager: 'Facility Manager',
+            dept_head: 'Department Head',
+            staff: 'Staff',
+          };
+          const label = ROLE_LABELS[accessLevel || 'staff'] || 'Staff';
+          const elevated = (accessLevel && accessLevel !== 'staff');
+          return (
+            <div
+              title={`You are signed in as ${label}. Access is set by your account, not switchable here.`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-wide uppercase shadow-md border ${
+                elevated
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400/40'
+                  : 'bg-[#090d16] text-sky-200 border-indigo-500/20'
+              }`}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              {label}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Provisioning Workspace Modal */}

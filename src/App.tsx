@@ -934,9 +934,17 @@ export default function App() {
     }
   }, [shifts, selectedFacilityId]);
 
-  // Safety guard: If active tab is administration/management, but the user switches to Staff Mode, redirect to home.
+  // Privileges follow the resolved access tier (from the authenticated email),
+  // not a manual toggle. Staff get the staff view; anyone above gets manager tools.
   useEffect(() => {
-    const managerOnlyTabs = ['manager', 'admin'];
+    if (firebaseUser) {
+      setIsManagerView(access.accessLevel !== 'staff');
+    }
+  }, [access.accessLevel, firebaseUser]);
+
+  // Safety guard: if the active tab is privileged but the user isn't a manager, redirect home.
+  useEffect(() => {
+    const managerOnlyTabs = ['manager', 'admin', 'register', 'analytics'];
     if (managerOnlyTabs.includes(currentTab) && !isManagerView && staffList.length > 0) {
       setCurrentTab('home');
     }
@@ -2030,6 +2038,7 @@ export default function App() {
         setActiveStaffId={setActiveStaffId}
         isManagerView={isManagerView}
         setIsManagerView={setIsManagerView}
+        accessLevel={access.accessLevel}
         facilities={facilities}
         selectedFacilityId={selectedFacilityId}
         setSelectedFacilityId={setSelectedFacilityId}
@@ -2046,6 +2055,7 @@ export default function App() {
           currentTab={currentTab}
           setCurrentTab={handleNavigation}
           isManagerView={isManagerView || staffList.length === 0}
+          accessLevel={access.accessLevel}
           taxonomy={taxonomy}
         />
 
