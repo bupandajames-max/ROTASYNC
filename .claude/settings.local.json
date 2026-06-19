@@ -17,7 +17,12 @@
       "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const d=JSON.parse\\(s\\);console.log\\('CATEGORIES:',JSON.stringify\\(d.categories\\)\\);console.log\\('TASKS:'\\);\\(d.tasks||[]\\).forEach\\(t=>console.log\\('  -',t.name,'=>',t.category,'['+t.pattern+']'\\)\\)}\\)\")",
       "Bash(git add *)",
       "Bash(git commit -q -m 'Make task categories department-agnostic \\(Phases 1+2\\) *)",
-      "Bash(git commit -q -m 'Update local Claude Code permission allowlist *)"
+      "Bash(git commit -q -m 'Update local Claude Code permission allowlist *)",
+      "WebSearch",
+      "Bash(node -e ' *)",
+      "Bash(git commit -q -m 'Add availability + fairness to task assignment engine \\(Increment 1\\) *)",
+      "Bash(git commit -q -m 'Neutralize pharmacy residue in task UI *)",
+      "Bash(git commit -q -m 'Add skills-based eligibility + smart auto-assign \\(Increment 2\\) *)"
     ]
   }
 }
