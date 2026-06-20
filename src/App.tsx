@@ -36,7 +36,7 @@ import TimesheetPortal from './components/TimesheetPortal';
 import TaskRegister from './components/TaskRegister';
 import ManagerDashboard from './components/ManagerDashboard';
 import Analytics from './components/Analytics';
-import WizardModal from './components/WizardModal';
+import RosterWizard from './components/RosterWizard';
 import NewStaffOnboardingModal from './components/NewStaffOnboardingModal';
 import StaffPortal from './components/StaffPortal';
 import EnterpriseAdmin from './components/EnterpriseAdmin';
@@ -1671,17 +1671,19 @@ export default function App() {
   };
 
   // Trigger setup Optimizer wizard
-  const handleRosterGenerate = (absences: AbsenceLog[], scTeamSize: number) => {
+  const handleRosterGenerate = (absences: AbsenceLog[], scTeamSize: number, dateRange?: { startDate: string; endDate: string }) => {
     if (staffList.length === 0) {
       toast.error('Add at least one team member before building a roster.');
       return;
     }
 
-    // Reuse the active cycle's dates, or fall back to the default cycle window so a
-    // brand-new workspace (no cycle yet) can create its first roster here.
-    const startDate = activeCycle?.startDate || '2026-06-15';
-    const endDate = activeCycle?.endDate || '2026-07-14';
-    const dates = (cycleDates && cycleDates.length > 0) ? cycleDates : getDatesForCycle(startDate);
+    // Use the wizard-chosen dates, else the active cycle's, else the default window
+    // (so a brand-new workspace can create its first roster here).
+    const startDate = dateRange?.startDate || activeCycle?.startDate || '2026-06-15';
+    const endDate = dateRange?.endDate || activeCycle?.endDate || '2026-07-14';
+    const dates = dateRange
+      ? getDatesForCycle(startDate, endDate)
+      : ((cycleDates && cycleDates.length > 0) ? cycleDates : getDatesForCycle(startDate));
 
     // Convert absences to daily fast lookup map
     const mappedAbsences: { [staffId: string]: { [date: string]: string } } = {};
@@ -1725,8 +1727,8 @@ export default function App() {
       isLocked: false // draft state
     };
 
-    // Ensure the date window is set (first-time creation) before the cycle goes live.
-    if (!cycleDates || cycleDates.length === 0) {
+    // Set the date window when creating the first cycle, or when the wizard chose dates.
+    if (dateRange || !cycleDates || cycleDates.length === 0) {
       setCycleDates(dates);
       try { localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(dates)); } catch {}
     }
@@ -2341,17 +2343,18 @@ export default function App() {
         </main>
       </div>
 
-      {/* Roster Optimizer setup Wizard modal overlay */}
-      <WizardModal
+      {/* Guided roster builder */}
+      <RosterWizard
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         staffList={staffList}
         setStaffList={setStaffList}
-        taskMasterList={taskMasterList}
-        setTaskMasterList={setTaskMasterList}
+        shifts={shifts}
+        setShifts={setShifts}
         departments={departments}
         selectedFacilityId={selectedFacilityId}
         onGenerate={handleRosterGenerate}
+        onOpenRoster={() => handleNavigation('roster')}
       />
 
       {/* New Staff Onboarding Wizard Modal Overlay */}
