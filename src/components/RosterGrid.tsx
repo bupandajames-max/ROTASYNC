@@ -585,7 +585,7 @@ export default function RosterGrid({
                 className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#4C0B1E] to-[#7A1230] hover:from-[#7A1230] hover:to-[#4C0B1E] text-white border border-[#E29E25]/40 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#E29E25]" />
-                Roster Setup Wizard
+                Plan roster
               </button>
               
               {updateCycleDates && (

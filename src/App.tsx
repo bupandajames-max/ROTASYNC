@@ -953,6 +953,19 @@ export default function App() {
     }
   }, [selectedFacilityId]);
 
+  // One-time friendly welcome that points a manager at the Get started checklist.
+  useEffect(() => {
+    if (!isHydrated || !isManagerView || !selectedFacilityId) return;
+    const rosterPlanned = !!activeCycle && Object.values(activeCycle.shifts || {}).some((a: any) => Array.isArray(a) && a.some((c: string) => c && c !== 'OFF'));
+    const setupComplete = staffList.length > 0 && rosterPlanned && taskMasterList.length > 0 && dailyTasks.length > 0;
+    if (setupComplete) return;
+    try {
+      if (localStorage.getItem(`welcomed_${selectedFacilityId}`) === '1') return;
+      localStorage.setItem(`welcomed_${selectedFacilityId}`, '1');
+    } catch { return; }
+    toast.success('Welcome! Follow the “Get started” steps on your dashboard to set up your workspace.');
+  }, [isHydrated, isManagerView, selectedFacilityId, staffList.length, taskMasterList.length, dailyTasks.length, activeCycle]);
+
   // Safety guard: if the active tab is privileged but the user isn't a manager, redirect home.
   useEffect(() => {
     const managerOnlyTabs = ['manager', 'admin', 'register', 'analytics'];

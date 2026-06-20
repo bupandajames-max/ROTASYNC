@@ -180,7 +180,10 @@ export default function WizardModal({
   onGenerate 
 }: WizardModalProps) {
   const toast = useToast();
-  const [activeStep, setActiveStep] = useState<number>(1); // 1: Staff, 2: Tasks, 3: Launch
+  const [activeStep, setActiveStep] = useState<number>(3); // roster step
+  // This modal is now single-purpose: team & tasks are handled by the dashboard
+  // 'Get started' checklist (Settings / Manage Tasks). Here we only plan the roster.
+  const rosterOnly = true;
 
   // Step 1: Staff Onboarding State
   const [newStaffName, setNewStaffName] = useState('');
@@ -354,55 +357,9 @@ export default function WizardModal({
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="font-sans font-black text-lg text-slate-900 tracking-tight">Onboarding & Setup Wizard</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Set up your team, tasks, and first roster — step by step</p>
+              <h2 className="font-sans font-black text-lg text-slate-900 tracking-tight">Plan &amp; generate roster</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Record any leave, set how many you need on shift, then build this cycle's roster.</p>
             </div>
-          </div>
-
-          {/* Stepper Progress Indicator */}
-          <div className="grid grid-cols-3 gap-2 mt-6">
-            <button 
-              onClick={() => setActiveStep(1)}
-              className={`py-2 px-3 rounded-xl border text-left cursor-pointer transition-all ${
-                activeStep === 1 
-                  ? 'border-amber-500 bg-amber-50/50 text-amber-900 font-extrabold shadow-xs' 
-                  : 'border-slate-100 bg-slate-50/50 text-slate-400 font-bold hover:bg-slate-100/50'
-              }`}
-            >
-              <div className="text-[10px] opacity-60">Step 01</div>
-              <div className="text-xs flex items-center gap-1.5 mt-0.5">
-                <UserPlus className="w-3.5 h-3.5" />
-                Staff Onboard
-              </div>
-            </button>
-            <button 
-              onClick={() => setActiveStep(2)}
-              className={`py-2 px-3 rounded-xl border text-left cursor-pointer transition-all ${
-                activeStep === 2 
-                  ? 'border-amber-500 bg-amber-50/50 text-amber-900 font-extrabold shadow-xs' 
-                  : 'border-slate-100 bg-slate-50/50 text-slate-400 font-bold hover:bg-slate-100/50'
-              }`}
-            >
-              <div className="text-[10px] opacity-60">Step 02</div>
-              <div className="text-xs flex items-center gap-1.5 mt-0.5">
-                <ClipboardList className="w-3.5 h-3.5" />
-                Task Templates
-              </div>
-            </button>
-            <button 
-              onClick={() => setActiveStep(3)}
-              className={`py-2 px-3 rounded-xl border text-left cursor-pointer transition-all ${
-                activeStep === 3 
-                  ? 'border-amber-500 bg-amber-50/50 text-amber-900 font-extrabold shadow-xs' 
-                  : 'border-slate-100 bg-slate-50/50 text-slate-400 font-bold hover:bg-slate-100/50'
-              }`}
-            >
-              <div className="text-[10px] opacity-60">Step 03</div>
-              <div className="text-xs flex items-center gap-1.5 mt-0.5">
-                <Settings className="w-3.5 h-3.5" />
-                Roster Cycle
-              </div>
-            </button>
           </div>
         </div>
 
@@ -410,7 +367,7 @@ export default function WizardModal({
         <div className="flex-1 min-h-0 overflow-y-auto py-1 pr-1">
           
           {/* STEP 1: Staff Onboarding */}
-          {activeStep === 1 && (
+          {!rosterOnly && activeStep === 1 && (
             <div className="space-y-5 animate-[fadeIn_0.15s_ease-out]">
               <div className="bg-slate-50/60 p-4 border border-slate-100 rounded-2xl flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -513,7 +470,7 @@ export default function WizardModal({
           )}
 
           {/* STEP 2: Task Templates Import */}
-          {activeStep === 2 && (
+          {!rosterOnly && activeStep === 2 && (
             <div className="space-y-5 animate-[fadeIn_0.15s_ease-out]">
               <div className="bg-slate-50/60 p-4 border border-slate-100 rounded-2xl flex gap-3">
                 <Briefcase className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -594,7 +551,7 @@ export default function WizardModal({
           )}
 
           {/* STEP 3: Roster Setup & Initialization */}
-          {activeStep === 3 && (
+          {(rosterOnly || activeStep === 3) && (
             <div className="space-y-5 animate-[fadeIn_0.15s_ease-out]">
               <div className="bg-slate-50/60 p-4 border border-slate-100 rounded-2xl flex gap-3">
                 <Calendar className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -709,40 +666,20 @@ export default function WizardModal({
 
         </div>
 
-        {/* Wizard Footer Controls — pinned below the scroll area */}
-        <div className="flex justify-between items-center gap-3 border-t border-slate-100 pt-4 mt-4 shrink-0">
-          <div>
-            <p className="text-[10px] text-slate-400 font-mono">
-              ★ Active step {activeStep} of 3
-            </p>
-          </div>
-
-          <div className="flex gap-2">
-            {activeStep > 1 && (
-              <button
-                onClick={() => setActiveStep(activeStep - 1)}
-                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" /> Back
-              </button>
-            )}
-
-            {activeStep < 3 ? (
-              <button
-                onClick={() => setActiveStep(activeStep + 1)}
-                className="py-2.5 px-4 bg-[#7A1230] hover:bg-[#4C0B1E] text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer"
-              >
-                Next Step <ChevronRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={handleFinishLaunch}
-                className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-amber-200" /> Build roster &amp; finish
-              </button>
-            )}
-          </div>
+        {/* Footer — pinned below the scroll area */}
+        <div className="flex justify-end items-center gap-2 border-t border-slate-100 pt-4 mt-4 shrink-0">
+          <button
+            onClick={onClose}
+            className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleFinishLaunch}
+            className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-amber-200" /> Build roster
+          </button>
         </div>
 
       </div>
