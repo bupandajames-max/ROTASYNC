@@ -2182,6 +2182,8 @@ export default function App() {
               openWizard={() => setIsWizardOpen(true)}
               openOnboarding={() => setIsOnboardingOpen(true)}
               isManagerView={isManagerView}
+              shifts={shifts}
+              onEditShifts={() => handleNavigation('admin')}
             />
           )}
 

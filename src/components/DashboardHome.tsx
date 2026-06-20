@@ -70,6 +70,8 @@ export default function DashboardHome({
   taxonomy,
 }: DashboardHomeProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Use the workspace's editable shift definitions (falls back to defaults).
+  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
 
   // Asset/log audit modal (writes real tracker increments)
   const [auditTarget, setAuditTarget] = useState<'ward' | 'firstaid' | null>(null);
@@ -103,7 +105,7 @@ export default function DashboardHome({
 
   // Today's Shift for current user
   const shiftToday = dayIdx !== -1 ? (activeCycle.shifts[staff.id]?.[dayIdx] || 'OFF') : 'OFF';
-  const shiftDef = SHIFTS[shiftToday];
+  const shiftDef = shiftDefs[shiftToday];
 
   // Daily Tasks stats
   const todayTasks = dailyTasks.filter(t => t.staffName === staff.name);
@@ -148,7 +150,7 @@ export default function DashboardHome({
       return {
         staff: s,
         shiftCode: code,
-        shiftDef: SHIFTS[code],
+        shiftDef: shiftDefs[code],
         isActiveNow
       };
     })

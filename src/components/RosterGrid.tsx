@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RosterCycle, StaffMember, PublicHoliday } from '../types';
+import { RosterCycle, StaffMember, PublicHoliday, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { isWeekend, isPublicHoliday } from '../utils/rosterUtils';
 import { dbGetCollection, dbSetDoc, dbDeleteDoc } from '../firebase';
@@ -50,6 +50,8 @@ interface RosterGridProps {
   openWizard: () => void;
   openOnboarding?: () => void;
   isManagerView?: boolean;
+  shifts?: { [code: string]: ShiftDef };
+  onEditShifts?: () => void;
 }
 
 export default function RosterGrid({
@@ -65,8 +67,13 @@ export default function RosterGrid({
   openWizard,
   openOnboarding,
   isManagerView = true,
+  shifts,
+  onEditShifts,
 }: RosterGridProps) {
   const confirm = useConfirm();
+  // Use the workspace's editable shift definitions, falling back to the built-in
+  // defaults. This is what makes Settings -> Shift Planner edits show up here.
+  const shiftDefs: { [code: string]: ShiftDef } = { ...SHIFTS, ...(shifts || {}) };
   // Enforce read-only locks for standard staff
   const isGridLocked = activeCycle.isLocked || !isManagerView;
 
@@ -393,7 +400,7 @@ export default function RosterGrid({
     let tot = 0;
     cycleDates.forEach((_, dIdx) => {
       const shift = activeCycle.shifts[staffId]?.[dIdx] || 'OFF';
-      const def = SHIFTS[shift];
+      const def = shiftDefs[shift];
       if (def) {
         tot += def.hours;
       }
@@ -778,6 +785,30 @@ export default function RosterGrid({
             </div>
           )}
 
+          {/* Shift legend — what each code means; edit in Settings → Shift Planner */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 mr-1">Shifts:</span>
+            {Object.entries(shiftDefs)
+              .filter(([code, d]) => d.active !== false && code !== 'OFF')
+              .map(([code, d]) => (
+                <span key={code} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 px-2 py-1 rounded-lg border border-slate-150 bg-slate-50">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.bg || d.fg || '#94a3b8' }} />
+                  <strong className="text-slate-800">{code}</strong> {d.name}{d.time ? ` · ${d.time}` : ''}
+                </span>
+              ))}
+            <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 px-2 py-1">
+              💡 Tip: click any cell in the grid to assign a shift.
+            </span>
+            {isManagerView && onEditShifts && (
+              <button
+                onClick={onEditShifts}
+                className="ml-auto text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg cursor-pointer transition-colors"
+              >
+                Edit shifts
+              </button>
+            )}
+          </div>
+
           {/* Interactive Rostering Grid */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto relative scrollbar-thin">
@@ -900,7 +931,7 @@ export default function RosterGrid({
                         </td>
                         {cycleDates.map((_dKey, dIdx) => {
                           const value = activeCycle.shifts[staff.id]?.[dIdx] || 'OFF';
-                          const def = SHIFTS[value];
+                          const def = shiftDefs[value];
                           const style = def
                             ? { backgroundColor: def.bg, color: def.fg }
                             : { backgroundColor: '#ffffff', color: '#000000' };
@@ -981,9 +1012,9 @@ export default function RosterGrid({
                                       style={{ color: def?.fg }}
                                       className="w-full h-full text-center bg-transparent border-none appearance-none font-mono focus:outline-none focus:ring-1 focus:ring-[#7A1230] cursor-pointer block text-xs font-black relative z-25 bg-white text-gray-900"
                                     >
-                                      {Object.keys(SHIFTS).map(code => (
+                                      {Object.keys(shiftDefs).map(code => (
                                         <option key={code} value={code} className="text-gray-900 bg-white text-xs font-sans font-medium text-left">
-                                          {code} - {SHIFTS[code].name} ({SHIFTS[code].hours}h)
+                                          {code} - {shiftDefs[code].name} ({shiftDefs[code].hours}h)
                                         </option>
                                       ))}
                                     </select>
@@ -1068,7 +1099,7 @@ export default function RosterGrid({
                     <tbody>
                       {/* Render Heatmap rows for standard station layers */}
                       {['A', 'A+', 'B', 'C', 'D', 'E', 'SC', 'N'].map((code) => {
-                        const def = SHIFTS[code];
+                        const def = shiftDefs[code];
                         return (
                           <tr key={code} className="border-b border-gray-100 transition-colors hover:bg-slate-55/40">
                             <td className="sticky left-0 bg-white z-10 px-4 py-1.5 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] font-bold text-xs uppercase flex flex-col justify-center min-h-[44px]">
