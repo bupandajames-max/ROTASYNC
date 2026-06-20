@@ -205,7 +205,7 @@ export default function Header({
           >
             <Building2 className="w-3.5 h-3.5 text-sky-300 shrink-0" />
             <div className="flex flex-col leading-none">
-              <span className="text-[11px] text-[#009EE2] font-mono font-extrabold uppercase tracking-wider block">Active {taxonomy.workspaceSingular}</span>
+              <span className="text-[11px] text-[#009EE2] font-bold block">Active {taxonomy.workspaceSingular.toLowerCase()}</span>
               <span className="text-xs font-black text-white flex items-center gap-1.5 mt-0.5 animate-none">
                 {activeFacility?.name}
                 <ChevronDown className={`w-3 h-3 text-sky-400 transition-transform ${isFacilityDropdownOpen ? 'rotate-180' : ''}`} />
@@ -217,7 +217,7 @@ export default function Header({
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3.5 text-slate-800 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="flex items-center gap-2 px-1 pb-2 border-b border-slate-100">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 font-mono">Select {taxonomy.workspaceSingular}</span>
+                <span className="text-[10px] font-bold text-slate-500">Switch {taxonomy.workspaceSingular.toLowerCase()}</span>
               </div>
               <div className="relative mt-2">
                 <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
@@ -299,7 +299,7 @@ export default function Header({
           >
             <User className="w-3.5 h-3.5 text-sky-300 shrink-0" />
             <div className="flex flex-col leading-none">
-              <span className="text-[11px] text-sky-400 font-mono font-extrabold uppercase tracking-wider block">Account</span>
+              <span className="text-[11px] text-sky-400 font-bold block">Account</span>
               <span className="text-xs font-black text-white flex items-center gap-1.5 mt-0.5 animate-none">
                 {activeStaff?.name}
                 <ChevronDown className={`w-3 h-3 text-sky-450 transition-transform ${isStaffDropdownOpen ? 'rotate-180' : ''}`} />
@@ -313,7 +313,7 @@ export default function Header({
               <div className="flex flex-col gap-2 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <Fingerprint className="w-4 h-4 text-indigo-900" />
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 font-mono">Account</span>
+                  <span className="text-[10px] font-bold text-slate-500">Account</span>
                 </div>
                 {firebaseUser ? (
                   <p className="text-[10px] text-slate-400 font-semibold truncate">

@@ -497,7 +497,7 @@ export default function RosterGrid({
       {/* Management Toolbar */}
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
         <div>
-          <div className="text-xs text-gray-400 font-extrabold uppercase tracking-wider">Active Cycle</div>
+          <div className="text-xs text-gray-400 font-extrabold">Active Cycle</div>
           <h2 className="text-[#7A1230] text-xl font-black font-sans flex items-center gap-2">
             Roster &amp; Schedule
             {isGridLocked ? (
@@ -654,7 +654,7 @@ export default function RosterGrid({
 
               <form onSubmit={handleApplyCustomDates} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-5 rounded-2xl border border-slate-100/80">
                 <div className="flex flex-col gap-1.5 md:col-span-2">
-                  <label className="text-[10px] font-bold text-slate-405 uppercase tracking-wider">Select Roster Cycle Template</label>
+                  <label className="text-[10px] font-bold text-slate-405">Select Roster Cycle Template</label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -693,7 +693,7 @@ export default function RosterGrid({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider">Start Date</label>
+                  <label className="text-[10px] font-bold text-slate-455">Start Date</label>
                   <input
                     type="date"
                     value={customStart}
@@ -710,7 +710,7 @@ export default function RosterGrid({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-455 uppercase tracking-wider">End Date</label>
+                  <label className="text-[10px] font-bold text-slate-455">End Date</label>
                   <input
                     type="date"
                     value={customEnd}
@@ -737,7 +737,7 @@ export default function RosterGrid({
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#7A1230] hover:bg-[#5C0D24] text-white rounded-xl text-xs font-black shadow-xs cursor-pointer transition-colors uppercase tracking-wider"
+                    className="px-5 py-2 bg-[#7A1230] hover:bg-[#5C0D24] text-white rounded-xl text-xs font-black shadow-xs cursor-pointer transition-colors"
                   >
                     Save date changes
                   </button>
@@ -1218,7 +1218,7 @@ export default function RosterGrid({
 
                 <form onSubmit={handleCreateSnapshot} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Snapshot Label / Version</label>
+                    <label className="text-[10px] font-bold text-gray-500">Snapshot Label / Version</label>
                     <input
                       type="text"
                       placeholder="e.g. Mid-June Backup V1"
@@ -1230,7 +1230,7 @@ export default function RosterGrid({
                   </div>
                   
                   <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Cycle Start Date</label>
+                    <label className="text-[10px] font-bold text-gray-500">Cycle Start Date</label>
                     <input
                       type="date"
                       value={snapshotStartDate}
@@ -1398,11 +1398,11 @@ export default function RosterGrid({
                         {/* Metric Summaries / Counts */}
                         <div className="grid grid-cols-2 gap-3.5">
                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-150 text-center">
-                            <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Mismatch Count</div>
+                            <div className="text-[11px] font-black text-slate-500">Mismatch Count</div>
                             <div className="text-lg font-black text-rose-700 mt-0.5">{discrepancies.length}</div>
                           </div>
                           <div className="bg-slate-50 p-3 rounded-xl border border-slate-150 text-center">
-                            <div className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Identical Slots</div>
+                            <div className="text-[11px] font-black text-slate-500">Identical Slots</div>
                             <div className="text-lg font-black text-emerald-700 mt-0.5">{matchCount}</div>
                           </div>
                         </div>
