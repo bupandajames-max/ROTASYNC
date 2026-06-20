@@ -337,7 +337,7 @@ export default function NewStaffOnboardingModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 md:col-span-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Short Name / Call Sign <span className="text-red-500">*</span></label>
+                      <label className="text-[10px] font-black text-slate-500 block">Short Name / Call Sign <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         required
@@ -350,7 +350,7 @@ export default function NewStaffOnboardingModal({
                     </div>
 
                     <div className="col-span-2 md:col-span-1">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Full Professional Name <span className="text-red-500">*</span></label>
+                      <label className="text-[10px] font-black text-slate-500 block">Full Professional Name <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         required
@@ -364,7 +364,7 @@ export default function NewStaffOnboardingModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Gender <span className="text-red-500">*</span></label>
+                      <label className="text-[10px] font-black text-slate-500 block">Gender <span className="text-red-500">*</span></label>
                       <div className="grid grid-cols-2 gap-2 mt-1.5">
                         <button
                           type="button"
@@ -392,7 +392,7 @@ export default function NewStaffOnboardingModal({
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Employee ID No.</label>
+                      <label className="text-[10px] font-black text-slate-500 block">Employee ID No.</label>
                       <div className="flex gap-1.5 mt-1.5">
                         <input
                           type="text"
@@ -414,7 +414,7 @@ export default function NewStaffOnboardingModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Title / Primary Role</label>
+                      <label className="text-[10px] font-black text-slate-500 block">Title / Primary Role</label>
                       <select
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
@@ -440,7 +440,7 @@ export default function NewStaffOnboardingModal({
                         />
                         <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7A1230]"></div>
                         <div>
-                          <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider block">Manager Account</span>
+                          <span className="text-[11px] font-black text-slate-800 block">Manager Account</span>
                           <span className="text-[10px] text-slate-400 block font-medium leading-none">Permit site configuration access</span>
                         </div>
                       </label>
@@ -449,7 +449,7 @@ export default function NewStaffOnboardingModal({
 
                   <div className="grid grid-cols-2 gap-4 pt-1">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Corporate Email</label>
+                      <label className="text-[10px] font-black text-slate-500 block">Corporate Email</label>
                       <div className="relative mt-1.5">
                         <Mail className="absolute left-3 top-3.5 text-slate-400 w-4 h-4" />
                         <input
@@ -463,7 +463,7 @@ export default function NewStaffOnboardingModal({
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Phone Contact</label>
+                      <label className="text-[10px] font-black text-slate-500 block">Phone Contact</label>
                       <div className="relative mt-1.5">
                         <Phone className="absolute left-3 top-3.5 text-slate-400 w-4 h-4" />
                         <input
@@ -495,7 +495,7 @@ export default function NewStaffOnboardingModal({
 
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1.5">Assigned Facility Workspace</label>
+                      <label className="text-[10px] font-black text-slate-500 block mb-1.5">Assigned Facility Workspace</label>
                       <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-150 flex items-center gap-3">
                         <Building2 className="text-[#7A1230] w-5 h-5" />
                         <div>
@@ -510,7 +510,7 @@ export default function NewStaffOnboardingModal({
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Initial Department Assignment <span className="text-red-500">*</span></label>
+                      <label className="text-[10px] font-black text-slate-500 block">Initial Department Assignment <span className="text-red-500">*</span></label>
                       <select
                         value={departmentId}
                         onChange={(e) => setDepartmentId(e.target.value)}
@@ -532,7 +532,7 @@ export default function NewStaffOnboardingModal({
 
                     <div>
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Contracted Weekly Target Hours</label>
+                        <label className="text-[10px] font-black text-slate-500 block">Contracted Weekly Target Hours</label>
                         <span className="text-xs font-black text-[#7A1230] bg-[#7A1230]/5 px-2.5 py-0.5 rounded-full">{contractedHours} Hours / Week</span>
                       </div>
                       
@@ -650,7 +650,7 @@ export default function NewStaffOnboardingModal({
 
                   {/* Special roster notes */}
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Special scheduling preferences / notes</label>
+                    <label className="text-[10px] font-black text-slate-500 block">Special scheduling preferences / notes</label>
                     <textarea
                       value={rosterNotes}
                       onChange={(e) => setRosterNotes(e.target.value)}
@@ -692,7 +692,7 @@ export default function NewStaffOnboardingModal({
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] hover:opacity-95 text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer uppercase tracking-wider transition-all"
+                  className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] hover:opacity-95 text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer transition-all"
                 >
                   <Sparkles className="w-4 h-4 text-amber-200 animate-spin" /> Complete Onboarding
                 </button>

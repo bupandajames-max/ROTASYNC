@@ -369,7 +369,7 @@ export default function WizardModal({
                   : 'border-slate-100 bg-slate-50/50 text-slate-400 font-bold hover:bg-slate-100/50'
               }`}
             >
-              <div className="text-[10px] uppercase tracking-wider opacity-60">Step 01</div>
+              <div className="text-[10px] opacity-60">Step 01</div>
               <div className="text-xs flex items-center gap-1.5 mt-0.5">
                 <UserPlus className="w-3.5 h-3.5" />
                 Staff Onboard
@@ -383,7 +383,7 @@ export default function WizardModal({
                   : 'border-slate-100 bg-slate-50/50 text-slate-400 font-bold hover:bg-slate-100/50'
               }`}
             >
-              <div className="text-[10px] uppercase tracking-wider opacity-60">Step 02</div>
+              <div className="text-[10px] opacity-60">Step 02</div>
               <div className="text-xs flex items-center gap-1.5 mt-0.5">
                 <ClipboardList className="w-3.5 h-3.5" />
                 Task Templates
@@ -397,7 +397,7 @@ export default function WizardModal({
                   : 'border-slate-100 bg-slate-50/50 text-slate-400 font-bold hover:bg-slate-100/50'
               }`}
             >
-              <div className="text-[10px] uppercase tracking-wider opacity-60">Step 03</div>
+              <div className="text-[10px] opacity-60">Step 03</div>
               <div className="text-xs flex items-center gap-1.5 mt-0.5">
                 <Settings className="w-3.5 h-3.5" />
                 Roster Cycle
@@ -421,13 +421,13 @@ export default function WizardModal({
 
               {/* Add Staff form */}
               <form onSubmit={handleAddOnboardStaff} className="bg-white border border-slate-200/85 p-5 rounded-2xl space-y-4">
-                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                   <UserPlus className="w-4 h-4 text-[#7A1230]" /> Add New Facility Staff Member
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Full Professional Name</label>
+                    <label className="text-[10px] font-black text-slate-500 block">Full Professional Name</label>
                     <input
                       type="text"
                       placeholder="e.g. Alex Banda"
@@ -438,7 +438,7 @@ export default function WizardModal({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Role / Designation</label>
+                    <label className="text-[10px] font-black text-slate-500 block">Role / Designation</label>
                     <select
                       value={newStaffRole}
                       onChange={(e) => setNewStaffRole(e.target.value)}
@@ -456,7 +456,7 @@ export default function WizardModal({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Assigned Department</label>
+                    <label className="text-[10px] font-black text-slate-500 block">Assigned Department</label>
                     <select
                       value={newStaffDept}
                       onChange={(e) => setNewStaffDept(e.target.value)}
@@ -469,7 +469,7 @@ export default function WizardModal({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Weekly Target Hours</label>
+                    <label className="text-[10px] font-black text-slate-500 block">Weekly Target Hours</label>
                     <input
                       type="number"
                       min="20"
@@ -525,7 +525,7 @@ export default function WizardModal({
               {/* Templates Checklist Selection */}
               <div className="bg-white border border-slate-200/85 p-5 rounded-2xl space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                     <ClipboardList className="w-4 h-4 text-[#7A1230]" /> Standard Procedures Preset
                   </h3>
                   <button 
@@ -606,12 +606,12 @@ export default function WizardModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Absence logger inside step 3 */}
                 <div className="bg-white border border-slate-200/85 p-4.5 rounded-2xl space-y-3">
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  <h3 className="text-xs font-black text-slate-900">
                     Calendar Leaves & Absences
                   </h3>
 
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block block">Staff Member</label>
+                    <label className="text-[10px] font-bold text-slate-400 block block">Staff Member</label>
                     <select
                       value={selectedStaffForAbsence}
                       onChange={(e) => setSelectedStaffForAbsence(e.target.value)}
@@ -624,7 +624,7 @@ export default function WizardModal({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Type</label>
+                    <label className="text-[10px] font-bold text-slate-400 block">Type</label>
                     <select
                       value={absenceType}
                       onChange={(e) => setAbsenceType(e.target.value as any)}
@@ -639,7 +639,7 @@ export default function WizardModal({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Start Date</label>
+                      <label className="text-[10px] font-bold text-slate-400 block">Start Date</label>
                       <input
                         type="date"
                         value={absenceStartDate}
@@ -648,7 +648,7 @@ export default function WizardModal({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">End Date</label>
+                      <label className="text-[10px] font-bold text-slate-400 block">End Date</label>
                       <input
                         type="date"
                         value={absenceEndDate}
@@ -737,7 +737,7 @@ export default function WizardModal({
             ) : (
               <button
                 onClick={handleFinishLaunch}
-                className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer uppercase tracking-wider"
+                className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] text-white font-sans font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-200" /> Build roster &amp; finish
               </button>

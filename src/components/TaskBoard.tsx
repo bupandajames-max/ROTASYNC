@@ -353,7 +353,7 @@ export default function TaskBoard({
       <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-indigo-50/40 to-transparent opacity-40 pointer-events-none"></div>
         <div>
-          <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest font-mono select-none">{taxonomy.appName} Operations Console</span>
+          <span className="text-[10px] text-gray-400 font-extrabold font-mono select-none">{taxonomy.appName} Operations Console</span>
           <h2 className="text-slate-900 text-xl font-black font-sans flex items-center gap-1.5 leading-tight select-none">
             {taxonomy.workspaceSingular} Action Board & Checklist
           </h2>
@@ -415,7 +415,7 @@ export default function TaskBoard({
               <div className="bg-indigo-900/40 border border-indigo-800/50 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-amber-400 font-black">
                   <span className="font-mono text-xs">01</span>
-                  <span className="text-[11px] uppercase tracking-wider">Log Metrics</span>
+                  <span className="text-[11px]">Log Metrics</span>
                 </div>
                 <h5 className="text-xs font-bold text-white leading-snug">Environmental Conditions</h5>
                 <p className="text-[11px] text-indigo-200/80 leading-relaxed">
@@ -426,7 +426,7 @@ export default function TaskBoard({
               <div className="bg-indigo-900/40 border border-indigo-800/50 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-emerald-400 font-black">
                   <span className="font-mono text-xs">02</span>
-                  <span className="text-[11px] uppercase tracking-wider">Security Tagging</span>
+                  <span className="text-[11px]">Security Tagging</span>
                 </div>
                 <h5 className="text-xs font-bold text-white leading-snug">Asset & Tag Validation</h5>
                 <p className="text-[11px] text-indigo-200/80 leading-relaxed">
@@ -437,7 +437,7 @@ export default function TaskBoard({
               <div className="bg-indigo-900/40 border border-indigo-800/50 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-sky-400 font-black">
                   <span className="font-mono text-xs">03</span>
-                  <span className="text-[11px] uppercase tracking-wider">Dual Witnessing</span>
+                  <span className="text-[11px]">Dual Witnessing</span>
                 </div>
                 <h5 className="text-xs font-bold text-white leading-snug">Supervisor Co-Sign</h5>
                 <p className="text-[11px] text-indigo-200/80 leading-relaxed">
@@ -448,7 +448,7 @@ export default function TaskBoard({
               <div className="bg-indigo-900/40 border border-indigo-800/50 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-violet-400 font-black">
                   <span className="font-mono text-xs">04</span>
-                  <span className="text-[11px] uppercase tracking-wider">Role Adapting</span>
+                  <span className="text-[11px]">Role Adapting</span>
                 </div>
                 <h5 className="text-xs font-bold text-white leading-snug">Flexible Departments</h5>
                 <p className="text-[11px] text-indigo-200/80 leading-relaxed">
@@ -474,7 +474,7 @@ export default function TaskBoard({
       {/* Category Filter Tabs */}
       <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest font-mono select-none flex items-center gap-1">
+          <span className="text-[10px] text-gray-400 font-extrabold font-mono select-none flex items-center gap-1">
             <Layers className="w-3.5 h-3.5 text-indigo-900" /> Filter by area
           </span>
           <div className="flex items-center bg-slate-100 rounded-xl p-0.5 text-[11px] font-bold">
@@ -596,7 +596,7 @@ export default function TaskBoard({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] font-mono font-black border uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      <span className={`text-[10px] font-mono font-black border px-2 py-0.5 rounded-full ${
                         task.priority === 'Critical' || task.priority === 'High'
                           ? 'bg-rose-50 border-rose-200 text-rose-700'
                           : task.priority === 'Standard'
@@ -609,7 +609,7 @@ export default function TaskBoard({
                         Shift {task.shiftCode} · {task.category}
                       </span>
                       {task.compliance && (
-                        <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-black uppercase tracking-widest flex items-center gap-1 animate-pulse">
+                        <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-black flex items-center gap-1 animate-pulse">
                           <ShieldCheck className="w-2.5 h-2.5" /> Dual Signature
                         </span>
                       )}
@@ -708,7 +708,7 @@ export default function TaskBoard({
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-sans font-black text-xs uppercase tracking-widest text-[#009EE2]">Compliant Completed Folder Panel</h3>
+              <h3 className="font-sans font-black text-xs text-[#009EE2]">Compliant Completed Folder Panel</h3>
               <p className="text-[10px] text-slate-400 mt-0.5">Immutable audit checks ({completedTasks.length} cycles completed)</p>
             </div>
           </div>
@@ -806,7 +806,7 @@ export default function TaskBoard({
                         </div>
                       </div>
                       
-                      <span className="bg-emerald-500/10 text-emerald-400 text-[11px] px-2.5 py-1 rounded-full font-black border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <span className="bg-emerald-500/10 text-emerald-400 text-[11px] px-2.5 py-1 rounded-full font-black border border-emerald-500/20 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Check className="w-3 h-3" strokeWidth={3} /> Certified Compliant
                       </span>
                     </div>

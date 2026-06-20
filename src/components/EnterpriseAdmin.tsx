@@ -623,14 +623,14 @@ export default function EnterpriseAdmin({
       {/* Title & Description */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-5">
         <div>
-          <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider">
-            {taxonomy.appName} Enterprise Configuration Control Panel
+          <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-semibold">
+            {taxonomy.appName} settings
           </span>
-          <h2 className="text-xl font-black text-slate-800 uppercase mt-1 flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-indigo-600" /> Administrative Setup Center
+          <h2 className="text-xl font-black text-slate-800 mt-1 flex items-center gap-2">
+            <Sliders className="w-5 h-5 text-indigo-600" /> Settings
           </h2>
           <p className="text-xs text-slate-500 font-sans mt-0.5">
-            Design custom shifts, configure operational {taxonomy.groupPlural.toLowerCase()}, define compliance {taxonomy.taskPlural.toLowerCase()}, and enforce multi-tenant silos.
+            Set up shifts, {taxonomy.groupPlural.toLowerCase()}, staff, tasks, and roster rules — and control who can see what.
           </p>
         </div>
 
@@ -646,7 +646,7 @@ export default function EnterpriseAdmin({
               <span className="text-xs font-black text-slate-700">Show one {taxonomy.groupSingular.toLowerCase()} at a time</span>
               <button 
                 onClick={() => setIsSandboxStrictMode(!isSandboxStrictMode)}
-                className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                className={`text-[9px] px-2 py-0.5 rounded font-bold ${
                   isSandboxStrictMode ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-800'
                 }`}
               >
@@ -743,7 +743,7 @@ export default function EnterpriseAdmin({
           <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 text-left">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-0.5 flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-800 mb-0.5 flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-indigo-650" /> Configure & Manage {taxonomy.workspacePlural}
                 </h3>
                 <p className="text-xs text-slate-500 font-sans leading-relaxed">
@@ -767,7 +767,7 @@ export default function EnterpriseAdmin({
                 <h4 className="text-xs font-black uppercase text-indigo-950">Add New {taxonomy.workspaceSingular}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Workspace Name *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Workspace Name *</label>
                     <input
                       type="text"
                       required
@@ -778,7 +778,7 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Location / Region *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Location / Region *</label>
                     <input
                       type="text"
                       required
@@ -789,7 +789,7 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Lead Operations Manager *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Lead Operations Manager *</label>
                     <input
                       type="text"
                       required
@@ -803,7 +803,7 @@ export default function EnterpriseAdmin({
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Workspace Classification</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Workspace Classification</label>
                     <select
                       value={facNewType}
                       onChange={(e) => setFacNewType(e.target.value)}
@@ -813,7 +813,7 @@ export default function EnterpriseAdmin({
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Fridge SLA Temp Range</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Fridge SLA Temp Range</label>
                     <input
                       type="text"
                       placeholder="e.g. 2.0°C – 8.0°C SLA"
@@ -823,7 +823,7 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">KPI Audit Phrase</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">KPI Audit Phrase</label>
                     <input
                       type="text"
                       placeholder="e.g. System Backup completed"
@@ -833,7 +833,7 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Compliance Gateway IP</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Compliance Gateway IP</label>
                     <input
                       type="text"
                       placeholder="e.g. 192.168.10.15"
@@ -878,7 +878,7 @@ export default function EnterpriseAdmin({
                     <div className="space-y-2">
                       <div className="flex justify-between items-start gap-1">
                         <div>
-                          <span className="text-[9px] bg-indigo-50 text-indigo-750 px-2 py-0.5 rounded-full font-mono font-black uppercase tracking-wider block w-max">
+                          <span className="text-[9px] bg-indigo-50 text-indigo-750 px-2 py-0.5 rounded-full font-mono font-black block w-max">
                             {fac.facilitiesType || 'Custom Site'}
                           </span>
                           <h4 className="text-xs font-black text-slate-850 mt-1 leading-snug">{fac.name}</h4>
@@ -954,14 +954,14 @@ export default function EnterpriseAdmin({
           <div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-3xl border border-slate-100 text-left">
-                <h3 className="text-xs font-black text-slate-805 uppercase tracking-wider mb-2">Add custom {taxonomy.groupSingular}</h3>
+                <h3 className="text-xs font-black text-slate-805 mb-2">Add custom {taxonomy.groupSingular}</h3>
                 <p className="text-[11px] text-slate-500 mb-4">
                   Partition the <strong className="text-slate-750">{activeFacility.name}</strong> workspace into dynamic sub-teams for discrete roster scheduling.
                 </p>
 
                 <form onSubmit={handleCreateDept} className="space-y-3">
                   <div>
-                    <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">{(taxonomy.groupSingular)} name *</label>
+                    <label className="text-[9.5px] font-black text-slate-400 font-mono">{(taxonomy.groupSingular)} name *</label>
                     <input
                       type="text"
                       required
@@ -972,7 +972,7 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Description / Objectives</label>
+                    <label className="text-[9.5px] font-black text-slate-400 font-mono">Description / Objectives</label>
                     <textarea
                       placeholder="Define the primary operational objectives..."
                       value={newDeptDesc}
@@ -1017,7 +1017,7 @@ export default function EnterpriseAdmin({
                       </div>
                       
                       <div className="space-y-1">
-                        <div className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Suggested Description:</div>
+                        <div className="text-[10px] text-slate-400 font-mono font-bold">Suggested Description:</div>
                         <p className="text-slate-700 italic font-medium leading-relaxed">"{suggestedObjective}"</p>
                         <button
                           type="button"
@@ -1030,7 +1030,7 @@ export default function EnterpriseAdmin({
 
                       {suggestedCategories.length > 0 && (
                         <div className="space-y-1 pt-2 border-t border-indigo-100/50">
-                          <div className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">
+                          <div className="text-[10px] text-slate-400 font-mono font-bold mb-1">
                             Proposed Categories <span className="text-slate-300">(added to this workspace on create)</span>:
                           </div>
                           <div className="flex flex-wrap gap-1.5">
@@ -1049,7 +1049,7 @@ export default function EnterpriseAdmin({
 
                       {suggestedTasks && suggestedTasks.length > 0 && (
                         <div className="space-y-2 pt-2 border-t border-indigo-100/50">
-                          <div className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider mb-1.5">
+                          <div className="text-[10px] text-slate-400 font-mono font-bold mb-1.5">
                             Suggested Core Roster Tasks:
                           </div>
                           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -1193,7 +1193,7 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'shifts' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-            <h3 className="text-xs font-black text-slate-850 uppercase tracking-wider mb-2">Design Shift Block</h3>
+            <h3 className="text-xs font-black text-slate-850 mb-2">Design Shift Block</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
               Establish clock ranges, identifiers, and customized visual presets for the roster map.
             </p>
@@ -1201,7 +1201,7 @@ export default function EnterpriseAdmin({
             <form onSubmit={handleCreateShift} className="space-y-3">
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">CODE *</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">CODE *</label>
                   <input
                     type="text"
                     required
@@ -1213,7 +1213,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Shift Name *</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Shift Name *</label>
                   <input
                     type="text"
                     required
@@ -1227,7 +1227,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Time hours range</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Time hours range</label>
                   <input
                     type="text"
                     placeholder="07:00 – 16:00"
@@ -1237,7 +1237,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Paid hours count</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Paid hours count</label>
                   <input
                     type="number"
                     min={0}
@@ -1251,7 +1251,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Theme BG</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Theme BG</label>
                   <div className="flex gap-2 items-center mt-1">
                     <input
                       type="color"
@@ -1263,7 +1263,7 @@ export default function EnterpriseAdmin({
                   </div>
                 </div>
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Theme Text</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Theme Text</label>
                   <div className="flex gap-2 items-center mt-1">
                     <input
                       type="color"
@@ -1297,7 +1297,7 @@ export default function EnterpriseAdmin({
           </div>
 
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider">Active Shift Patterns</h3>
+            <h3 className="text-xs font-black text-slate-600">Active Shift Patterns</h3>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Object.entries(shifts).map(([code, sDef]) => {
@@ -1350,7 +1350,7 @@ export default function EnterpriseAdmin({
         <div className="space-y-6 animate-[fadeIn_0.15s_ease-out] text-left">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
                 <Layers className="w-5 h-5 text-indigo-650" /> Roster Generation Rules
               </h3>
               <p className="text-xs text-slate-500">Define how the auto-scheduler builds rosters. Every rule is org-specific and applies the next time you generate a roster.</p>
@@ -1369,13 +1369,13 @@ export default function EnterpriseAdmin({
               <h4 className="text-xs font-black text-slate-700 uppercase tracking-wide mb-3">Manager standard track</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Weekday shift</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Weekday shift</label>
                   <select value={ruleSet.managerTrack?.weekdayShift || ''} onChange={e => setRuleSet({ ...ruleSet, managerTrack: { weekdayShift: e.target.value, weekendShift: ruleSet.managerTrack?.weekendShift || 'OFF' } })} className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 mt-1">
                     {Object.keys(shifts).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Weekend / holiday</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Weekend / holiday</label>
                   <select value={ruleSet.managerTrack?.weekendShift || ''} onChange={e => setRuleSet({ ...ruleSet, managerTrack: { weekdayShift: ruleSet.managerTrack?.weekdayShift || 'A', weekendShift: e.target.value } })} className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 mt-1">
                     {Object.keys(shifts).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -1387,24 +1387,24 @@ export default function EnterpriseAdmin({
               <h4 className="text-xs font-black text-slate-700 uppercase tracking-wide mb-3">Rest constraints</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Max consecutive work days</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Max consecutive work days</label>
                   <input type="number" min={0} max={14} value={ruleSet.restConstraints.maxConsecutiveWorkDays} onChange={e => setRuleSet({ ...ruleSet, restConstraints: { ...ruleSet.restConstraints, maxConsecutiveWorkDays: Number(e.target.value) } })} className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" />
                 </div>
                 <div></div>
                 <div className="col-span-2">
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Late shifts (no early shift next day)</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Late shifts (no early shift next day)</label>
                   <input value={ruleSet.restConstraints.lateShifts.join(', ')} onChange={e => setRuleSet({ ...ruleSet, restConstraints: { ...ruleSet.restConstraints, lateShifts: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } })} className="w-full text-xs font-mono font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" placeholder="D, SC, N, E" />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Early shifts (blocked after a late shift)</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Early shifts (blocked after a late shift)</label>
                   <input value={ruleSet.restConstraints.earlyShifts.join(', ')} onChange={e => setRuleSet({ ...ruleSet, restConstraints: { ...ruleSet.restConstraints, earlyShifts: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } })} className="w-full text-xs font-mono font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" placeholder="A, A+, B" />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Non-working codes</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Non-working codes</label>
                   <input value={ruleSet.restConstraints.nonWorkingCodes.join(', ')} onChange={e => setRuleSet({ ...ruleSet, restConstraints: { ...ruleSet.restConstraints, nonWorkingCodes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } })} className="w-full text-xs font-mono font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" placeholder="OFF, AL, SL, CO, MD" />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Paid leave codes</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Paid leave codes</label>
                   <input value={ruleSet.restConstraints.leaveCodes.join(', ')} onChange={e => setRuleSet({ ...ruleSet, restConstraints: { ...ruleSet.restConstraints, leaveCodes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } })} className="w-full text-xs font-mono font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" placeholder="AL, SL, CO" />
                 </div>
               </div>
@@ -1423,7 +1423,7 @@ export default function EnterpriseAdmin({
             {ruleSet.personalDayOff?.enabled && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Eligibility</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Eligibility</label>
                   <select value={ruleSet.personalDayOff.eligibility.field} onChange={e => setRuleSet({ ...ruleSet, personalDayOff: { ...ruleSet.personalDayOff!, eligibility: { field: e.target.value as any, value: e.target.value === 'all' ? undefined : (ruleSet.personalDayOff!.eligibility.value || '') } } })} className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 mt-1">
                     <option value="all">Everyone</option>
                     <option value="gender">By gender</option>
@@ -1432,12 +1432,12 @@ export default function EnterpriseAdmin({
                 </div>
                 {ruleSet.personalDayOff.eligibility.field !== 'all' && (
                   <div>
-                    <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Match value</label>
+                    <label className="text-[9.5px] font-black text-slate-400">Match value</label>
                     <input value={ruleSet.personalDayOff.eligibility.value || ''} onChange={e => setRuleSet({ ...ruleSet, personalDayOff: { ...ruleSet.personalDayOff!, eligibility: { ...ruleSet.personalDayOff!.eligibility, value: e.target.value } } })} className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" placeholder={ruleSet.personalDayOff.eligibility.field === 'gender' ? 'F or M' : 'role name'} />
                   </div>
                 )}
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Day-off shift code</label>
+                  <label className="text-[9.5px] font-black text-slate-400">Day-off shift code</label>
                   <select value={ruleSet.personalDayOff.shiftCode} onChange={e => setRuleSet({ ...ruleSet, personalDayOff: { ...ruleSet.personalDayOff!, shiftCode: e.target.value } })} className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 mt-1">
                     {Object.keys(shifts).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -1513,7 +1513,7 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'regional' && (
         <div className="space-y-6 animate-[fadeIn_0.15s_ease-out] text-left">
           <div>
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
               <Globe className="w-5 h-5 text-indigo-650" /> Regional Settings
             </h3>
             <p className="text-xs text-slate-500">Public holidays affect overtime, Sunday/holiday pay, and rest rules. Load a preset to start, then edit freely.</p>
@@ -1521,7 +1521,7 @@ export default function EnterpriseAdmin({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-              <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Holiday preset</label>
+              <label className="text-[9.5px] font-black text-slate-400">Holiday preset</label>
               <div className="flex gap-2 mt-1">
                 <select value={regionPresetId || 'none'} onChange={e => setRegionPresetId(e.target.value === 'none' ? undefined : e.target.value)} className="flex-1 text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5">
                   {HOLIDAY_PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
@@ -1538,7 +1538,7 @@ export default function EnterpriseAdmin({
               </div>
             </div>
             <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-              <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest">Timezone label (display only)</label>
+              <label className="text-[9.5px] font-black text-slate-400">Timezone label (display only)</label>
               <input value={timezoneLabel} onChange={e => setTimezoneLabel(e.target.value)} className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1" placeholder="e.g. Zambia (CAT)" />
             </div>
           </div>
@@ -1567,14 +1567,14 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'staff' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100 h-fit">
-            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-2">Register Live {taxonomy.memberSingular}</h3>
+            <h3 className="text-xs font-black text-slate-800 mb-2">Register Live {taxonomy.memberSingular}</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
               Add new credentials to specific workspaces and dynamic sub-team isolation groups.
             </p>
 
             <form onSubmit={handleCreateStaff} className="space-y-3 text-left">
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">First Name Mnemonic *</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">First Name Mnemonic *</label>
                 <input
                   type="text"
                   required
@@ -1586,7 +1586,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Full Official Name *</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Full Official Name *</label>
                 <input
                   type="text"
                   required
@@ -1599,7 +1599,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest font-mono">colleague ID *</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">colleague ID *</label>
                   <input
                     type="text"
                     required
@@ -1610,7 +1610,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest font-mono">Contract Hrs</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">Contract Hrs</label>
                   <input
                     type="number"
                     placeholder="168"
@@ -1623,7 +1623,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest font-mono">Gender</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">Gender</label>
                   <select
                     value={newStaffGender}
                     onChange={(e) => setNewStaffGender(e.target.value as any)}
@@ -1635,7 +1635,7 @@ export default function EnterpriseAdmin({
                   </select>
                 </div>
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest font-mono">{taxonomy.groupSingular} Assign</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">{taxonomy.groupSingular} Assign</label>
                   <select
                     value={newStaffDeptId}
                     onChange={(e) => setNewStaffDeptId(e.target.value)}
@@ -1650,7 +1650,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Corporate Email</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Corporate Email</label>
                 <input
                   type="email"
                   placeholder="name@tenant.com"
@@ -1661,7 +1661,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Phone Contact</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Phone Contact</label>
                 <input
                   type="text"
                   placeholder="+260 971 000 000"
@@ -1672,7 +1672,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Skills / Competencies</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Skills / Competencies</label>
                 <input
                   type="text"
                   placeholder="comma-separated, e.g. First Aid, Forklift License"
@@ -1684,7 +1684,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Access Level</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Access Level</label>
                 <select
                   value={newStaffAccessLevel}
                   onChange={(e) => setNewStaffAccessLevel(e.target.value)}
@@ -1706,7 +1706,7 @@ export default function EnterpriseAdmin({
 
           <div className="lg:col-span-3 space-y-4 text-left">
             <div className="flex justify-between items-center bg-white flex-wrap gap-2">
-              <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider">Operational {taxonomy.memberPlural} directory</h3>
+              <h3 className="text-xs font-black text-slate-600">Operational {taxonomy.memberPlural} directory</h3>
               <div className="flex items-center gap-2">
                 {openOnboarding && (
                   <button
@@ -1807,14 +1807,14 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'tasks' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100 text-left">
-            <h3 className="text-xs font-black text-slate-805 uppercase tracking-wider mb-2">Bespoke {taxonomy.taskSingular} Rules</h3>
+            <h3 className="text-xs font-black text-slate-805 mb-2">Bespoke {taxonomy.taskSingular} Rules</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
               Establish core procedural audits and verify rule bindings.
             </p>
 
             <form onSubmit={handleCreateTask} className="space-y-3">
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">{taxonomy.taskSingular} Title *</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">{taxonomy.taskSingular} Title *</label>
                 <input
                   type="text"
                   required
@@ -1827,7 +1827,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest font-mono">Category</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">Category</label>
                   <select
                     value={newTaskCategory}
                     onChange={(e) => setNewTaskCategory(e.target.value)}
@@ -1837,7 +1837,7 @@ export default function EnterpriseAdmin({
                   </select>
                 </div>
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest font-mono">Priority</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">Priority</label>
                   <select
                     value={newTaskPriority}
                     onChange={(e) => setNewTaskPriority(e.target.value as any)}
@@ -1852,7 +1852,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-indigo-950 uppercase tracking-wider block font-mono">Assignment Processing Workflow Pattern *</label>
+                <label className="text-[9.5px] font-black text-indigo-950 block font-mono">Assignment Processing Workflow Pattern *</label>
                 <select
                   value={newTaskPattern}
                   onChange={(e) => {
@@ -1880,7 +1880,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Frequency Bounds</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Frequency Bounds</label>
                 <select
                   value={newTaskFreq}
                   onChange={(e) => setNewTaskFreq(e.target.value)}
@@ -1894,7 +1894,7 @@ export default function EnterpriseAdmin({
 
               {newTaskFreq.includes('Continuous') && (
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Continuous Target Units Target</label>
+                  <label className="text-[9.5px] font-black text-slate-400 font-mono">Continuous Target Units Target</label>
                   <input
                     type="number"
                     placeholder="10"
@@ -1906,7 +1906,7 @@ export default function EnterpriseAdmin({
               )}
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest font-mono">Specific SOP Instruction Notes</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Specific SOP Instruction Notes</label>
                 <textarea
                   placeholder="e.g. Ensure physical logs align strictly with digital counts before verifying compliance..."
                   value={newTaskNotes}
@@ -1926,7 +1926,7 @@ export default function EnterpriseAdmin({
           </div>
 
           <div className="lg:col-span-2 space-y-4 text-left">
-            <h3 className="text-xs font-black text-slate-600 uppercase tracking-wider">Dynamic Task Rules Library</h3>
+            <h3 className="text-xs font-black text-slate-600">Dynamic Task Rules Library</h3>
 
             <div className="flex bg-indigo-50 p-3.5 rounded-xl border border-indigo-150 gap-2.5 items-start">
               <Info className="text-indigo-950 w-4.5 h-4.5 shrink-0 mt-0.5 animate-pulse" />
@@ -2028,7 +2028,7 @@ export default function EnterpriseAdmin({
                         }
                       }
                     }}
-                    className="mt-3.5 w-full bg-red-650 hover:bg-red-700 text-white font-black text-xs py-2 rounded-xl uppercase tracking-wider cursor-pointer text-center block transition-all shadow-md"
+                    className="mt-3.5 w-full bg-red-650 hover:bg-red-700 text-white font-black text-xs py-2 rounded-xl cursor-pointer text-center block transition-all shadow-md"
                   >
                     Wipe Persistent Storage & Reset
                   </button>
@@ -2135,7 +2135,7 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'taxonomy' && (
         <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 space-y-6 text-left">
           <div>
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-black text-slate-800 mb-1 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-indigo-600" /> Customize Platform Terminology & Nomenclature
             </h3>
             <p className="text-xs text-slate-500 font-sans leading-relaxed">
@@ -2145,7 +2145,7 @@ export default function EnterpriseAdmin({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
+              <label className="text-[10px] font-black text-slate-400 font-mono">
                 Platform Brand Name
               </label>
               <input
@@ -2159,7 +2159,7 @@ export default function EnterpriseAdmin({
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
+              <label className="text-[10px] font-black text-slate-400 font-mono">
                 Workspace (Singular / Plural)
               </label>
               <div className="grid grid-cols-2 gap-2 mt-1.5">
@@ -2182,7 +2182,7 @@ export default function EnterpriseAdmin({
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
+              <label className="text-[10px] font-black text-slate-400 font-mono">
                 Team Member (Singular / Plural)
               </label>
               <div className="grid grid-cols-2 gap-2 mt-1.5">
@@ -2205,7 +2205,7 @@ export default function EnterpriseAdmin({
             </div>
 
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
+              <label className="text-[10px] font-black text-slate-400 font-mono">
                 Dynamic Sub-Team (Singular / Plural)
               </label>
               <div className="grid grid-cols-2 gap-2 mt-1.5">
@@ -2228,7 +2228,7 @@ export default function EnterpriseAdmin({
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
+              <label className="text-[10px] font-black text-slate-400 font-mono">
                 Task / Auditable Chore (Singular / Plural)
               </label>
               <div className="grid grid-cols-2 gap-2 mt-1.5">
@@ -2264,7 +2264,7 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'purge' && (
         <div className="bg-rose-50/20 p-6 rounded-3xl border border-rose-100/60 text-left space-y-6 animate-[fadeIn_0.15s_ease-out]">
           <div>
-            <h3 className="text-sm font-black text-rose-850 uppercase tracking-wider mb-1 flex items-center gap-2">
+            <h3 className="text-sm font-black text-rose-850 mb-1 flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-rose-650" /> System Factory Reset
             </h3>
             <p className="text-xs text-slate-500 font-sans leading-relaxed">
@@ -2315,7 +2315,7 @@ export default function EnterpriseAdmin({
                     }
                   }
                 }}
-                className="w-full py-3 bg-rose-900 hover:bg-rose-950 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+                className="w-full py-3 bg-rose-900 hover:bg-rose-950 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" /> Purge Workspace Data & Reset to Blank Slate
               </button>
@@ -2330,7 +2330,7 @@ export default function EnterpriseAdmin({
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden text-left flex flex-col max-h-[90vh]">
             <div className="bg-indigo-950 text-white p-5 flex justify-between items-center">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider">Modify {taxonomy.workspaceSingular}</h3>
+                <h3 className="text-sm font-black">Modify {taxonomy.workspaceSingular}</h3>
                 <p className="text-[10px] text-sky-100 mt-0.5 font-semibold">
                   Updating Settings for {editingFacility.name}
                 </p>
@@ -2345,7 +2345,7 @@ export default function EnterpriseAdmin({
             
             <form onSubmit={handleUpdateFacilitySubmit} className="p-5 space-y-4 overflow-y-auto">
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Name *</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Name *</label>
                 <input
                   type="text"
                   required
@@ -2356,7 +2356,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Location *</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Location *</label>
                 <input
                   type="text"
                   required
@@ -2367,7 +2367,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Supervisor / Lead Manager *</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Supervisor / Lead Manager *</label>
                 <input
                   type="text"
                   required
@@ -2379,7 +2379,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">SLA Target Temperature</label>
+                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">SLA Target Temperature</label>
                   <input
                     type="text"
                     value={facEditSlaTemp}
@@ -2388,7 +2388,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Compliance IP Target</label>
+                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">Compliance IP Target</label>
                   <input
                     type="text"
                     value={facEditIp}
@@ -2399,7 +2399,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Daily KPI Audit Check Phrase</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Daily KPI Audit Check Phrase</label>
                 <input
                   type="text"
                   value={facEditKpi}
@@ -2409,7 +2409,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Classification Type</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Classification Type</label>
                 <select
                   value={facEditType}
                   onChange={(e) => setFacEditType(e.target.value)}
@@ -2445,7 +2445,7 @@ export default function EnterpriseAdmin({
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden text-left flex flex-col max-h-[95vh]">
             <div className="bg-indigo-955 bg-indigo-950 text-white p-5 flex justify-between items-center">
               <div>
-                <h3 className="text-sm font-black uppercase tracking-wider">Edit Personnel Details</h3>
+                <h3 className="text-sm font-black">Edit Personnel Details</h3>
                 <p className="text-[10px] text-sky-100 mt-0.5 font-semibold">
                   Modifying {editingStaff.fullName || editingStaff.name}
                 </p>
@@ -2461,7 +2461,7 @@ export default function EnterpriseAdmin({
             <form onSubmit={handleSaveEdit} className="p-5 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">First Name Mnemonic *</label>
+                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">First Name Mnemonic *</label>
                   <input
                     type="text"
                     required
@@ -2472,7 +2472,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">colleague ID *</label>
+                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">colleague ID *</label>
                   <input
                     type="text"
                     required
@@ -2485,7 +2485,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Full Official Name *</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Full Official Name *</label>
                 <input
                   type="text"
                   required
@@ -2498,7 +2498,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Role / Designation *</label>
+                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">Role / Designation *</label>
                   <input
                     type="text"
                     required
@@ -2509,7 +2509,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest block mb-1">Contract Hrs</label>
+                  <label className="text-[9.2px] font-black text-slate-400 block mb-1">Contract Hrs</label>
                   <input
                     type="number"
                     placeholder="168"
@@ -2522,7 +2522,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest block mb-1">Gender</label>
+                  <label className="text-[9.2px] font-black text-slate-400 block mb-1">Gender</label>
                   <select
                     value={editGender}
                     onChange={(e) => setEditGender(e.target.value as any)}
@@ -2534,7 +2534,7 @@ export default function EnterpriseAdmin({
                   </select>
                 </div>
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 uppercase tracking-widest block mb-1">{taxonomy.groupSingular} Assign</label>
+                  <label className="text-[9.2px] font-black text-slate-400 block mb-1">{taxonomy.groupSingular} Assign</label>
                   <select
                     value={editDeptId}
                     onChange={(e) => setEditDeptId(e.target.value)}
@@ -2549,7 +2549,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Corporate Email</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Corporate Email</label>
                 <input
                   type="email"
                   placeholder="name@tenant.com"
@@ -2560,7 +2560,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Phone Contact</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Phone Contact</label>
                 <input
                   type="text"
                   placeholder="+260 971 000 000"
@@ -2571,7 +2571,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Skills / Competencies</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Skills / Competencies</label>
                 <input
                   type="text"
                   placeholder="comma-separated, e.g. First Aid, Forklift License"
@@ -2582,7 +2582,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest block mb-1">Access Level</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Access Level</label>
                 <select
                   value={editAccessLevel}
                   onChange={(e) => setEditAccessLevel(e.target.value)}

@@ -634,10 +634,10 @@ export default function RosterGrid({
             <div className="bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 border border-indigo-200 rounded-3xl p-6 shadow-xs flex flex-col gap-4 animate-[fadeIn_0.15s_ease-out] mb-1">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[11px] bg-indigo-100 text-indigo-900 font-extrabold border border-indigo-200 px-2 py-0.5 rounded-sm uppercase tracking-wider font-mono">
+                  <span className="text-[11px] bg-indigo-100 text-indigo-900 font-extrabold border border-indigo-200 px-2 py-0.5 rounded-sm font-mono">
                     ⚙️ Operational Cycle Configurations
                   </span>
-                  <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider mt-1.5 flex items-center gap-2">
+                  <h3 className="text-slate-900 font-black text-sm mt-1.5 flex items-center gap-2">
                     Custom Operational & Billing Period
                   </h3>
                   <p className="text-xs text-slate-550 leading-relaxed mt-0.5">
@@ -784,7 +784,7 @@ export default function RosterGrid({
               <table className="min-w-full border-collapse table-fixed select-none">
                 <thead>
                   <tr className="bg-slate-50 border-b border-gray-100">
-                    <th className="sticky left-0 bg-slate-50 z-20 w-48 min-w-48 px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                    <th className="sticky left-0 bg-slate-50 z-20 w-48 min-w-48 px-4 py-3 text-left text-xs font-bold text-slate-500 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                       Staff Member & Roster Stats
                     </th>
                     {cycleDates.map((dKey, dIdx) => {
@@ -1162,7 +1162,7 @@ export default function RosterGrid({
               {/* Legend Information Box */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-150 pb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-gray-700 border-b border-gray-150 pb-2 flex items-center gap-1.5">
                     <span className="w-1.5 h-3 bg-red-500 rounded-sm"></span>
                     Heatmap Color Rules & Analytics
                   </h4>
@@ -1174,7 +1174,7 @@ export default function RosterGrid({
                 </div>
 
                 <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-150 pb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-gray-700 border-b border-gray-150 pb-2 flex items-center gap-1.5">
                     <span className="w-1.5 h-3 bg-[#7A1230] rounded-sm"></span>
                     Special Shifts & Warns
                   </h4>
@@ -1185,7 +1185,7 @@ export default function RosterGrid({
                 </div>
 
                 <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-150 pb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-gray-700 border-b border-gray-150 pb-2 flex items-center gap-1.5">
                     <span className="w-1.5 h-3 bg-blue-500 rounded-sm"></span>
                     Zambian Labor Compliance
                   </h4>
@@ -1208,7 +1208,7 @@ export default function RosterGrid({
             <div className="lg:col-span-2 flex flex-col gap-6">
               {/* Create Snapshot Card */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                <h3 className="text-slate-900 font-black text-sm mb-2.5 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" /> Archive Current Roster Snapshot
                 </h3>
                 <p className="text-xs text-slate-550 mb-4 leading-relaxed">
@@ -1254,7 +1254,7 @@ export default function RosterGrid({
               {/* List of Previous Cycles */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
                 <div className="flex justify-between items-center border-b border-gray-105 pb-3">
-                  <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="text-slate-900 font-black text-sm flex items-center gap-2">
                     <CalendarRange className="w-4 h-4 text-indigo-500 animate-pulse" /> Archived & Previous Cycles
                   </h3>
                   <button
@@ -1354,7 +1354,7 @@ export default function RosterGrid({
 
             {/* Col 3: Comparison Summary Stats */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
-              <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider pb-2 border-b border-gray-105 flex items-center gap-2">
+              <h3 className="text-slate-900 font-black text-sm pb-2 border-b border-gray-105 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-emerald-500 animate-pulse" /> Live Analysis Hub
               </h3>
 

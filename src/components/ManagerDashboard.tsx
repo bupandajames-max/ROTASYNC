@@ -149,7 +149,7 @@ export default function ManagerDashboard({
 
           <div className="flex flex-col gap-3">
             <div className="max-h-44 overflow-y-auto flex flex-col gap-2 pr-1">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider font-mono">Duty Staff on Workspace deck:</span>
+              <span className="text-[10px] text-gray-400 font-bold font-mono">Duty Staff on Workspace deck:</span>
               {activeFloorPlan.onShift.map((s, idx) => (
                 <div key={idx} className="flex justify-between items-center text-xs font-bold bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
                   <span>{s.name}</span>
@@ -168,7 +168,7 @@ export default function ManagerDashboard({
 
             {activeFloorPlan.onLeave.length > 0 && (
               <div className="pt-3 border-t border-dashed border-gray-150">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1.5 font-mono">Authorized Absences Today:</span>
+                <span className="text-[10px] text-gray-400 font-bold block mb-1.5 font-mono">Authorized Absences Today:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {activeFloorPlan.onLeave.map((s, idx) => (
                     <span key={idx} className="bg-indigo-50 text-indigo-700 text-[9.5px] px-2.5 py-1 rounded-lg border border-indigo-100 font-bold uppercase tracking-wide">
@@ -335,7 +335,7 @@ export default function ManagerDashboard({
                   <p className="text-[10.5px] text-slate-500 font-medium font-sans">Role: {currentInspectStaff.role} · ID: {currentInspectStaff.employeeNo || "EMP-MB01"}</p>
                 </div>
                 
-                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black font-mono uppercase tracking-widest border ${
+                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black font-mono border ${
                   currentInspectTimesheet.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                   currentInspectTimesheet.status === 'Submitted' ? 'bg-indigo-50 text-indigo-700 border-indigo-100 animate-pulse' :
                   currentInspectTimesheet.status === 'Rejected' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-slate-50 text-slate-600 border-slate-200'
@@ -368,7 +368,7 @@ export default function ManagerDashboard({
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-400 uppercase tracking-widest text-[8.5px] font-mono border-b border-gray-100 font-bold select-none">
+                    <tr className="bg-slate-50 text-slate-400 text-[8.5px] font-mono border-b border-gray-100 font-bold select-none">
                       <th className="py-2.5 px-5 font-bold">Date Log</th>
                       <th className="py-2.5 px-3 font-bold text-center">Planned Shift</th>
                       <th className="py-2.5 px-3 font-bold">Type</th>

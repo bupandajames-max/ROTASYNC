@@ -353,7 +353,7 @@ export default function PortalGateway({
         {/* Header containing name and auth details */}
         <div className="flex items-start justify-between border-b border-slate-800 pb-6 mb-8">
           <div className="space-y-1">
-            <span className="px-2.5 py-0.8 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-extrabold rounded-full uppercase tracking-wider block w-max">
+            <span className="px-2.5 py-0.8 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-extrabold rounded-full block w-max">
               ✨ PROFILE REGISTRATION
             </span>
             <h2 className="text-2xl font-black text-white mt-2">Finish Setting Up Your Profile</h2>
@@ -364,7 +364,7 @@ export default function PortalGateway({
           
           <button
             onClick={onSignOut}
-            className="text-[10px] font-black text-slate-400 hover:text-indigo-400 border border-slate-700 hover:border-indigo-400/30 px-3 py-1.5 rounded-xl transition-all uppercase tracking-wider cursor-pointer"
+            className="text-[10px] font-black text-slate-400 hover:text-indigo-400 border border-slate-700 hover:border-indigo-400/30 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
           >
             Sign Out
           </button>
@@ -442,7 +442,7 @@ export default function PortalGateway({
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-[fadeIn_0.1s_ease-out]">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Workspace Name *</label>
+                      <label className="text-[9px] font-black text-slate-400 font-mono">Workspace Name *</label>
                       <input
                         type="text"
                         required={selectedFacId === 'new_fac_option'}
@@ -453,7 +453,7 @@ export default function PortalGateway({
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Location / Region *</label>
+                      <label className="text-[9px] font-black text-slate-400 font-mono">Location / Region *</label>
                       <input
                         type="text"
                         required={selectedFacId === 'new_fac_option'}
@@ -466,7 +466,7 @@ export default function PortalGateway({
                   </div>
 
                   <div className="space-y-1 animate-[fadeIn_0.1s_ease-out]">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Lead Supervisor *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Lead Supervisor *</label>
                     <input
                       type="text"
                       placeholder="Supervisor or Operations Director"
@@ -517,7 +517,7 @@ export default function PortalGateway({
                   
                   <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Department Name *</label>
+                      <label className="text-[9px] font-black text-slate-400 font-mono">Department Name *</label>
                       <input
                         type="text"
                         required={selectedDeptId === 'new_dept_option'}
@@ -529,7 +529,7 @@ export default function PortalGateway({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Description / Objectives</label>
+                      <label className="text-[9px] font-black text-slate-400 font-mono">Description / Objectives</label>
                       <textarea
                         placeholder="e.g. Core nursing shift roster group for inpatient unit"
                         value={newDeptDesc}

@@ -200,7 +200,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
                 }`}>
                   {done ? <Check className="w-4 h-4" /> : <Ico className="w-4 h-4" />}
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider hidden sm:block ${current ? 'text-indigo-700' : 'text-slate-400'}`}>{s.label}</span>
+                <span className={`text-[10px] font-bold hidden sm:block ${current ? 'text-indigo-700' : 'text-slate-400'}`}>{s.label}</span>
               </div>
             );
           })}
@@ -269,7 +269,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
             <div className="space-y-5">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">{groupSingular || 'Department'}s</span>
+                  <span className="text-[11px] font-black text-slate-500">{groupSingular || 'Department'}s</span>
                   <button onClick={() => setDepartments([...departments, { name: '', description: '' }])} className="text-[11px] font-bold text-indigo-600 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
                 </div>
                 <div className="space-y-2">
@@ -285,7 +285,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Team (at least one manager) *</span>
+                  <span className="text-[11px] font-black text-slate-500">Team (at least one manager) *</span>
                   <button onClick={() => setTeam([...team, { fullName: '', role: 'Member', email: '', gender: '', isManager: false }])} className="text-[11px] font-bold text-indigo-600 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
                 </div>
                 <div className="space-y-2">
@@ -357,7 +357,7 @@ const inputCls = 'w-full text-xs font-semibold bg-white border border-slate-200 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+      <label className="text-[10px] font-black text-slate-400">{label}</label>
       <div className="mt-1">{children}</div>
     </div>
   );

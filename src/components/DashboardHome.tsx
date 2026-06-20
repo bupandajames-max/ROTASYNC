@@ -452,7 +452,7 @@ export default function DashboardHome({
         <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
           <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-4 flex-wrap gap-2">
             <div>
-              <h3 className="font-sans font-extrabold text-[#003764] text-xs uppercase tracking-widest flex items-center gap-1.5">
+              <h3 className="font-sans font-extrabold text-[#003764] text-xs flex items-center gap-1.5">
                 <MapPin className="w-4.5 h-4.5 text-[#009EE2]" /> Daily checks
               </h3>
               <p className="text-[11px] text-gray-400 mt-1 font-medium font-mono">
@@ -496,7 +496,7 @@ export default function DashboardHome({
                 </div>
               </div>
               <div className="flex-1">
-                <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Inspections Checked</span>
+                <span className="text-[11px] text-gray-400 font-bold block">Inspections Checked</span>
                 <h4 className="font-extrabold text-xs text-slate-800 mt-1">Field Service Stations</h4>
                 <p className="text-[10px] text-slate-500 mt-1 font-bold leading-normal">Completed {curFaVal} of {targetFaVal} stations.</p>
                 <button 
@@ -534,7 +534,7 @@ export default function DashboardHome({
                 </div>
               </div>
               <div className="flex-1">
-                <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Verification Audits</span>
+                <span className="text-[11px] text-gray-400 font-bold block">Verification Audits</span>
                 <h4 className="font-extrabold text-xs text-slate-800 mt-1">Secure Asset Lockers</h4>
                 <p className="text-[10px] text-slate-500 mt-1 font-bold leading-normal">Completed {curWardVal} of {targetWardVal} units.</p>
                 <button 
@@ -552,7 +552,7 @@ export default function DashboardHome({
         {/* Compact quick actions */}
         <div className="lg:col-span-4 bg-indigo-505/10 p-6 rounded-3xl border border-indigo-500/10 flex flex-col justify-between">
           <div>
-            <h3 className="font-sans font-extrabold text-indigo-950 text-xs uppercase tracking-widest border-b border-indigo-250/20 pb-2.5 mb-3 flex items-center gap-1.5">
+            <h3 className="font-sans font-extrabold text-indigo-950 text-xs border-b border-indigo-250/20 pb-2.5 mb-3 flex items-center gap-1.5">
               Quick actions
             </h3>
             <p className="text-[11px] text-slate-600 leading-relaxed mb-4">
@@ -633,7 +633,7 @@ export default function DashboardHome({
 
             <div className="flex flex-col gap-4 mb-5">
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Inspected Unit Location</label>
+                <label className="text-[10px] font-bold text-slate-400 block">Inspected Unit Location</label>
                 <select
                   value={auditLocation}
                   onChange={(e) => setAuditLocation(e.target.value)}
@@ -655,7 +655,7 @@ export default function DashboardHome({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Auditing Coordinator Signature</label>
+                  <label className="text-[10px] font-bold text-slate-400 block">Auditing Coordinator Signature</label>
                   <input
                     type="text"
                     value={staff.name}
@@ -664,7 +664,7 @@ export default function DashboardHome({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider block">Verified Wire Seal / Tag ID</label>
+                  <label className="text-[10px] font-bold text-indigo-900 block">Verified Wire Seal / Tag ID</label>
                   <input
                     type="text"
                     value={sealNumber}
@@ -676,7 +676,7 @@ export default function DashboardHome({
               </div>
 
               <div className="border border-slate-100 bg-slate-50 p-4 rounded-2xl flex flex-col gap-3 mt-1 shadow-inner">
-                <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider block">Physical SOP Checks Checklist</span>
+                <span className="text-[10px] font-bold text-indigo-900 block">Physical SOP Checks Checklist</span>
                 
                 <label className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer select-none">
                   <input

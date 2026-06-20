@@ -144,7 +144,7 @@ export default function TimesheetPortal({
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Timesheet State</span>
+              <span className="text-[10px] text-gray-400 font-bold">Timesheet State</span>
               <h3 className="text-xl font-black mt-1 flex items-center gap-1.5">
                 {myTimesheet.status === 'Draft' && <span className="text-slate-500 font-sans">📄 Draft Mode</span>}
                 {myTimesheet.status === 'Submitted' && <span className="text-indigo-600 font-sans">⏳ Pending Review</span>}
@@ -173,7 +173,7 @@ export default function TimesheetPortal({
         {/* Regular standard hours */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Regular net worked</span>
+            <span className="text-[10px] text-gray-400 font-bold">Regular net worked</span>
             <h3 className="text-slate-800 text-2xl font-black mt-1">{totals.regular} h</h3>
             <p className="text-[11px] text-slate-500 font-medium mt-1">Capped standard: {activeStaff.contractedHours} h</p>
           </div>
@@ -185,7 +185,7 @@ export default function TimesheetPortal({
         {/* sunday worked */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Sunday hours worked</span>
+            <span className="text-[10px] text-gray-400 font-bold">Sunday hours worked</span>
             <h3 className="text-[#005c93] text-2xl font-black mt-1">{totals.sunday} h</h3>
             <p className="text-[11px] text-[#005c93]/70 font-semibold mt-1">1.5x Premium rate</p>
           </div>
@@ -197,7 +197,7 @@ export default function TimesheetPortal({
         {/* Approved Overtime & Holiday */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">OT & Holiday Premium</span>
+            <span className="text-[10px] text-gray-400 font-bold">OT & Holiday Premium</span>
             <h3 className="text-amber-600 text-2xl font-black mt-1">+{totals.overtime + totals.holiday} h</h3>
             <p className="text-[11px] text-slate-500 font-medium mt-1">OT: {totals.overtime}h · Holiday: {totals.holiday}h</p>
           </div>
@@ -258,7 +258,7 @@ export default function TimesheetPortal({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-400 font-mono text-[11px] uppercase tracking-wider border-b border-gray-100 select-none">
+              <tr className="bg-slate-50 text-slate-400 font-mono text-[11px] border-b border-gray-100 select-none">
                 <th className="py-3.5 px-5 font-bold">Date of Month</th>
                 <th className="py-3.5 px-3 font-bold">Scheduled Roster</th>
                 <th className="py-3.5 px-3 font-bold">Classification type</th>
@@ -404,7 +404,7 @@ export default function TimesheetPortal({
                 <h3 className="font-sans font-black text-base text-[#005c93] flex items-center gap-1.5">
                   <span>✎</span> Log Actual Clock - {new Date(selectedDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                 </h3>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-bold uppercase tracking-wider font-mono">
+                <p className="text-[10px] text-slate-400 mt-0.5 font-bold font-mono">
                   Scheduled block: {selectedDay.scheduledShift} ({SHIFTS[selectedDay.scheduledShift]?.name})
                 </p>
               </div>
@@ -589,9 +589,9 @@ export default function TimesheetPortal({
               
               {/* Report Header Logo Section */}
               <div className="border-b-2 border-[#1f3864] pb-5 mb-5 text-center">
-                <h2 className="text-[#009EE2] uppercase tracking-wider font-extrabold text-base">Mary Begg Health Services</h2>
+                <h2 className="text-[#009EE2] font-extrabold text-base">Mary Begg Health Services</h2>
                 <h3 className="text-gray-800 text-xs font-bold uppercase mt-1">{activeFacility?.name} — {activeFacility?.location}</h3>
-                <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-widest font-black text-rose-800">Official Cycle Timesheet Record (Zambia CAT)</p>
+                <p className="text-[10px] text-gray-500 mt-2 font-black text-rose-800">Official Cycle Timesheet Record (Zambia CAT)</p>
               </div>
 
               {/* Master Data Grid Header */}
@@ -682,7 +682,7 @@ export default function TimesheetPortal({
               <div className="mt-8 pt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs border-t border-dashed border-gray-200 select-none">
                 <div className="flex flex-col gap-6">
                   <div>
-                    <span className="font-extrabold block text-slate-400 uppercase tracking-widest text-[10px] font-mono">Employee Signature</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Employee Signature</span>
                     <div className="border-b border-gray-300 w-44 mt-6"></div>
                     <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date Signed: ____/____/2026</span>
                   </div>
@@ -691,7 +691,7 @@ export default function TimesheetPortal({
 
                 <div className="flex flex-col gap-6">
                   <div>
-                    <span className="font-extrabold block text-slate-400 uppercase tracking-widest text-[10px] font-mono">Supervisor Authorization</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Supervisor Authorization</span>
                     <div className="border-b border-gray-300 w-44 mt-6"></div>
                     <span className="text-[10px] text-gray-400 font-mono italic mt-1.5 inline-block">{activeFacility?.leadManager ? `Authorized by: ${activeFacility.leadManager}` : ''}</span>
                   </div>

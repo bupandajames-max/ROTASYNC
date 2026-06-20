@@ -337,7 +337,7 @@ export default function TaskRegister({
       {/* Upper info band */}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Directory Control</div>
+          <div className="text-xs text-gray-500 font-bold">Directory Control</div>
           <h2 className="text-[#1f3864] text-lg font-bold font-sans flex items-center gap-1.5">
             <Database className="w-5 h-5 text-[#00aeff]" /> Task Master Directory
           </h2>
@@ -359,7 +359,7 @@ export default function TaskRegister({
         <div className="flex-1 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-[#1f3864]/10 text-[#1f3864] font-extrabold px-2 py-0.5 rounded-sm uppercase tracking-wider font-mono flex items-center gap-1">
+              <span className="text-[10px] bg-[#1f3864]/10 text-[#1f3864] font-extrabold px-2 py-0.5 rounded-sm font-mono flex items-center gap-1">
                 <Zap className="w-3 h-3 text-[#00aeff] animate-pulse" /> Autonomous Routing Active
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -455,7 +455,7 @@ export default function TaskRegister({
         {/* Active Tasks */}
         <div className="bg-gradient-to-br from-emerald-50 to-white px-3.5 py-3 rounded-2xl border border-emerald-100 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm">
           <div className="flex items-center justify-between gap-1.5 text-emerald-800">
-            <span className="text-[10px] font-black uppercase tracking-wider">Active</span>
+            <span className="text-[10px] font-black">Active</span>
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
@@ -468,7 +468,7 @@ export default function TaskRegister({
         {/* Inactive Tasks */}
         <div className="bg-gradient-to-br from-slate-50 to-white px-3.5 py-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm">
           <div className="flex items-center justify-between gap-1.5 text-slate-500">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">Inactive</span>
+            <span className="text-[10px] font-black text-slate-600">Inactive</span>
             <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
@@ -481,7 +481,7 @@ export default function TaskRegister({
         {/* Critical Priority */}
         <div className="bg-gradient-to-br from-red-50 to-white px-3.5 py-3 rounded-2xl border border-red-100 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm">
           <div className="flex items-center justify-between gap-1.5 text-red-800">
-            <span className="text-[10px] font-black uppercase tracking-wider">Critical</span>
+            <span className="text-[10px] font-black">Critical</span>
             <span className="text-[10px] bg-red-100 px-1.5 py-0.5 rounded-full font-black text-red-700">Level 4</span>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
@@ -494,7 +494,7 @@ export default function TaskRegister({
         {/* High Priority */}
         <div className="bg-gradient-to-br from-orange-50 to-white px-3.5 py-3 rounded-2xl border border-orange-100 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm">
           <div className="flex items-center justify-between gap-1.5 text-orange-850">
-            <span className="text-[10px] font-black uppercase tracking-wider text-orange-800">High</span>
+            <span className="text-[10px] font-black text-orange-800">High</span>
             <span className="text-[10px] bg-orange-100 px-1.5 py-0.5 rounded-full font-black text-orange-700">Level 3</span>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
@@ -507,7 +507,7 @@ export default function TaskRegister({
         {/* Standard Priority */}
         <div className="bg-gradient-to-br from-blue-50 to-white px-3.5 py-3 rounded-2xl border border-blue-100 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm">
           <div className="flex items-center justify-between gap-1.5 text-blue-850">
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-800">Standard</span>
+            <span className="text-[10px] font-black text-blue-800">Standard</span>
             <span className="text-[10px] bg-blue-100 px-1.5 py-0.5 rounded-full font-black text-blue-700">Level 2</span>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
@@ -520,7 +520,7 @@ export default function TaskRegister({
         {/* Routine Priority */}
         <div className="bg-gradient-to-br from-slate-100/30 to-white px-3.5 py-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm">
           <div className="flex items-center justify-between gap-1.5 text-slate-800">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">Routine</span>
+            <span className="text-[10px] font-black text-slate-600">Routine</span>
             <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded-full font-black text-slate-600">Level 1</span>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
@@ -550,7 +550,7 @@ export default function TaskRegister({
           
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Priority:</span>
+              <span className="text-[9px] font-bold text-slate-500">Priority:</span>
               <select
                 value={bulkPriority}
                 onChange={(e) => setBulkPriority(e.target.value as any)}
@@ -565,7 +565,7 @@ export default function TaskRegister({
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Frequency:</span>
+              <span className="text-[9px] font-bold text-slate-500">Frequency:</span>
               <select
                 value={bulkFrequency}
                 onChange={(e) => setBulkFrequency(e.target.value)}
@@ -1150,7 +1150,7 @@ export default function TaskRegister({
 
             <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 p-4 rounded-2xl mb-4 flex items-center justify-between shadow-xs">
               <div>
-                <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider block">Best Candidate Match:</span>
+                <span className="text-[10px] text-emerald-600 font-bold block">Best Candidate Match:</span>
                 <span className="font-extrabold text-lg text-emerald-950 flex items-center gap-1 mt-0.5">
                   <Star className="w-5 h-5 text-amber-500 fill-amber-300 animate-pulse" /> {aiSuggestionReport.bestCandidate}
                 </span>

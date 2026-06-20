@@ -266,7 +266,7 @@ export default function Header({
                             <Check className="w-3.5 h-3.5" />
                           </div>
                         ) : (
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest shrink-0 hover:text-indigo-700">Switch</span>
+                          <span className="text-[11px] font-bold text-slate-400 shrink-0 hover:text-indigo-700">Switch</span>
                         )}
                       </button>
                     );
@@ -400,7 +400,7 @@ export default function Header({
                             <Check className="w-3.5 h-3.5" />
                           </div>
                         ) : (
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest shrink-0 hover:text-indigo-700">Select</span>
+                          <span className="text-[11px] font-bold text-slate-400 shrink-0 hover:text-indigo-700">Select</span>
                         )}
                       </button>
                     );
@@ -473,7 +473,7 @@ export default function Header({
 
             <form onSubmit={handleProvisionSubmit} className="space-y-3.5">
               <div>
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">{taxonomy.workspaceSingular} Name *</label>
+                <label className="text-[11px] font-black text-slate-400 font-mono">{taxonomy.workspaceSingular} Name *</label>
                 <input
                   type="text"
                   required
@@ -486,7 +486,7 @@ export default function Header({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">Location Province *</label>
+                  <label className="text-[11px] font-black text-slate-400 font-mono">Location Province *</label>
                   <input
                     type="text"
                     required
@@ -497,7 +497,7 @@ export default function Header({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">Lead Supervisor *</label>
+                  <label className="text-[11px] font-black text-slate-400 font-mono">Lead Supervisor *</label>
                   <input
                     type="text"
                     required
@@ -511,7 +511,7 @@ export default function Header({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">Workspace Type</label>
+                  <label className="text-[11px] font-black text-slate-400 font-mono">Workspace Type</label>
                   <input
                     type="text"
                     required
@@ -522,7 +522,7 @@ export default function Header({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">Primary Goal</label>
+                  <label className="text-[11px] font-black text-slate-400 font-mono">Primary Goal</label>
                   <input
                     type="text"
                     placeholder="e.g. Full shift coverage"
@@ -535,7 +535,7 @@ export default function Header({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">Site / Device ID</label>
+                  <label className="text-[11px] font-black text-slate-400 font-mono">Site / Device ID</label>
                   <input
                     type="text"
                     placeholder="e.g. Main building"
@@ -545,7 +545,7 @@ export default function Header({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest font-mono">Key Measure</label>
+                  <label className="text-[11px] font-black text-slate-400 font-mono">Key Measure</label>
                   <input
                     type="text"
                     placeholder="e.g. Roster compliance"

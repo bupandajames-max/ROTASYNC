@@ -257,7 +257,7 @@ export default function StaffPortal({
         {/* Total Hours Card */}
         <div className="bg-white p-3.5 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Pace Check</span>
+            <span className="text-[11px] text-gray-400 font-bold block">Pace Check</span>
             <h3 className="text-[#1f3864] text-lg font-black mt-0.5">{stats.totalHrs.toFixed(1)} hrs</h3>
             <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-none">Logged</p>
           </div>
@@ -269,7 +269,7 @@ export default function StaffPortal({
         {/* Contract Capacity target */}
         <div className="bg-white p-3.5 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Contract Target</span>
+            <span className="text-[11px] text-gray-400 font-bold block">Contract Target</span>
             <h3 className="text-gray-900 text-lg font-black mt-0.5">{activeStaff.contractedHours} hrs</h3>
             <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
               <div
@@ -286,7 +286,7 @@ export default function StaffPortal({
         {/* Overtime hrs */}
         <div className="bg-white p-3.5 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Calculated Overtime</span>
+            <span className="text-[11px] text-gray-400 font-bold block">Calculated Overtime</span>
             <h3 className="text-amber-600 text-lg font-black mt-0.5">+{stats.overtime} hrs</h3>
             <p className="text-[10px] text-slate-500 font-medium mt-0.5 leading-none">payout</p>
           </div>
@@ -298,7 +298,7 @@ export default function StaffPortal({
         {/* Call shifts */}
         <div className="bg-white p-3.5 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">Stand-by Count</span>
+            <span className="text-[11px] text-gray-400 font-bold block">Stand-by Count</span>
             <h3 className="text-purple-600 text-lg font-black mt-0.5">{stats.callShiftCount}</h3>
             <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-none">shifts</p>
           </div>
@@ -444,7 +444,7 @@ export default function StaffPortal({
               {swapMyDate && myShiftCode !== 'OFF' && (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mt-1 flex flex-col gap-2.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-black text-[#1f3864] uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-[11px] font-black text-[#1f3864] flex items-center gap-1">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> 
                       Smart Swap Suggestions
                     </span>
@@ -666,9 +666,9 @@ export default function StaffPortal({
             {/* Branded Timesheet Preview */}
             <div id="timesheetPrintable" className="p-4 border border-gray-200 rounded-xl bg-white font-sans max-h-[70vh] overflow-y-auto">
               <div className="border-b-2 border-[#1f3864] pb-4 mb-4 text-center">
-                <h2 className="text-[#009EE2] uppercase tracking-wider font-extrabold text-base">Mary Begg Health Services</h2>
+                <h2 className="text-[#009EE2] font-extrabold text-base">Mary Begg Health Services</h2>
                 <h3 className="text-gray-800 text-sm font-semibold">{activeFacility?.name} — {activeFacility?.location}</h3>
-                <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Official Cycle Timesheet Record</p>
+                <p className="text-[10px] text-gray-500 mt-1 font-bold">Official Cycle Timesheet Record</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 border border-slate-100 p-3 rounded-xl mb-4 font-mono">

@@ -72,7 +72,7 @@ export default function Analytics({
         {/* Total Hours */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Team Output</span>
+            <span className="text-[10px] text-gray-400 font-bold block">Total Team Output</span>
             <span className="text-xl font-extrabold text-[#005c93] mt-1 block">{totalOverallHrs.toFixed(1)} hrs</span>
             <span className="text-[10px] text-[#005c93] font-semibold block mt-0.5">
               ⏱ +{totalExtraShifted.toFixed(1)} extension hrs added
@@ -86,7 +86,7 @@ export default function Analytics({
         {/* Avg hours per standard candidate */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Equity Index (Avg load)</span>
+            <span className="text-[10px] text-gray-400 font-bold block">Equity Index (Avg load)</span>
             <span className="text-xl font-extrabold text-[#005c93] mt-1 block">{averageHours.toFixed(1)} hrs</span>
             <span className="text-[10px] text-gray-500 font-semibold block mt-0.5">
               excludes manager from bias math
@@ -100,7 +100,7 @@ export default function Analytics({
         {/* Audit status checks */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Daily Tasks Logged</span>
+            <span className="text-[10px] text-gray-400 font-bold block">Daily Tasks Logged</span>
             <span className="text-xl font-extrabold text-[#005c93] mt-1 block">{completedTasks} / {totalTasks}</span>
             <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5 whitespace-nowrap">
               🎉 {completionRate}% compliance Rate
@@ -114,7 +114,7 @@ export default function Analytics({
         {/* Escalation limits */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Escalation checks</span>
+            <span className="text-[10px] text-gray-400 font-bold block">Escalation checks</span>
             <span className="text-xl font-extrabold text-[#005c93] mt-1 block">All Clear</span>
             <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
               ✓ zero update gaps detected
@@ -188,7 +188,7 @@ export default function Analytics({
         <div className="flex flex-col gap-6">
           {/* Overtime Audit Flags */}
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2">
+            <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2">
               <AlertTriangle className="w-5 h-5 text-amber-500" /> Overtime Fatigue Auditor
             </h3>
             <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
@@ -213,7 +213,7 @@ export default function Analytics({
 
           {/* Absence pattern audits */}
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2">
+            <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2">
               <Calendar className="w-5 h-5 text-purple-500" /> Absence Pattern Reviewer
             </h3>
             <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
