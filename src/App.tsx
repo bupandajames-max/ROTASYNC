@@ -21,6 +21,7 @@ import {
 import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig } from './data/initialData';
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
 import SetupWizard from './components/SetupWizard';
+import SetupChecklist from './components/SetupChecklist';
 import { useToast } from './components/ui/ToastProvider';
 import { useConfirm } from './components/ui/ConfirmProvider';
 import { generateDefaultTimesheet } from './utils/timesheetUtils';
@@ -97,6 +98,7 @@ export default function App() {
   const [isManagerView, setIsManagerView] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [setupHidden, setSetupHidden] = useState(false);
 
   // Core Database States
   const [facilities, setFacilities] = useState<Facility[]>(DEFAULT_FACILITIES);
@@ -941,6 +943,15 @@ export default function App() {
       setIsManagerView(access.accessLevel !== 'staff');
     }
   }, [access.accessLevel, firebaseUser]);
+
+  // Restore whether the setup checklist was hidden for the active workspace.
+  useEffect(() => {
+    try {
+      setSetupHidden(localStorage.getItem(`setup_hidden_${selectedFacilityId}`) === '1');
+    } catch {
+      setSetupHidden(false);
+    }
+  }, [selectedFacilityId]);
 
   // Safety guard: if the active tab is privileged but the user isn't a manager, redirect home.
   useEffect(() => {
@@ -2062,24 +2073,51 @@ export default function App() {
         {/* Main Panel views */}
         <main className="flex-1 p-6 w-full overflow-hidden">
           {/* Home Dashboard */}
-          {currentTab === 'home' && activeCycle && (
-            <DashboardHome
-              activeStaffId={activeStaffId}
-              staffList={displayedStaffList}
-              activeCycle={activeCycle}
-              cycleDates={cycleDates}
-              dailyTasks={displayedDailyTasks}
-              onNavigate={handleNavigation}
-              onIncrementTracker={handleIncrementTracker}
-              onUpdateTask={handleUpdateTaskStatus}
-              selectedFacilityId={selectedFacilityId}
-              facilities={facilities}
-              departments={departments}
-              shifts={shifts}
-              holidays={holidays}
-              ruleSet={ruleSet}
-              taxonomy={taxonomy}
-            />
+          {currentTab === 'home' && (
+            <div className="flex flex-col gap-6">
+              {/* First-time guided setup checklist (managers only, until complete) */}
+              {isManagerView && (() => {
+                const setupSteps = {
+                  team: displayedStaffList.length > 0,
+                  roster: !!activeCycle && Object.values(activeCycle.shifts || {}).some((a: any) => Array.isArray(a) && a.some((c: string) => c && c !== 'OFF')),
+                  tasks: taskMasterList.length > 0,
+                  golive: displayedDailyTasks.length > 0,
+                };
+                const complete = setupSteps.team && setupSteps.roster && setupSteps.tasks && setupSteps.golive;
+                if (complete || setupHidden) return null;
+                return (
+                  <SetupChecklist
+                    steps={setupSteps}
+                    onAddTeam={() => handleNavigation('admin')}
+                    onPlanRoster={() => activeCycle ? handleNavigation('roster') : setIsWizardOpen(true)}
+                    onSetupTasks={() => handleNavigation('register')}
+                    onGoLive={() => handleNavigation('tasks')}
+                    onDismiss={() => { try { localStorage.setItem(`setup_hidden_${selectedFacilityId}`, '1'); } catch {} setSetupHidden(true); }}
+                    taxonomy={taxonomy}
+                  />
+                );
+              })()}
+
+              {activeCycle && (
+                <DashboardHome
+                  activeStaffId={activeStaffId}
+                  staffList={displayedStaffList}
+                  activeCycle={activeCycle}
+                  cycleDates={cycleDates}
+                  dailyTasks={displayedDailyTasks}
+                  onNavigate={handleNavigation}
+                  onIncrementTracker={handleIncrementTracker}
+                  onUpdateTask={handleUpdateTaskStatus}
+                  selectedFacilityId={selectedFacilityId}
+                  facilities={facilities}
+                  departments={departments}
+                  shifts={shifts}
+                  holidays={holidays}
+                  ruleSet={ruleSet}
+                  taxonomy={taxonomy}
+                />
+              )}
+            </div>
           )}
 
           {/* Roster & Coverage Calendar */}
