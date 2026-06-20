@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Personal, per-user Claude Code settings (permission allowlist etc.) — not shared.
+.claude/settings.local.json
