@@ -1672,7 +1672,16 @@ export default function App() {
 
   // Trigger setup Optimizer wizard
   const handleRosterGenerate = (absences: AbsenceLog[], scTeamSize: number) => {
-    if (!activeCycle) return;
+    if (staffList.length === 0) {
+      toast.error('Add at least one team member before building a roster.');
+      return;
+    }
+
+    // Reuse the active cycle's dates, or fall back to the default cycle window so a
+    // brand-new workspace (no cycle yet) can create its first roster here.
+    const startDate = activeCycle?.startDate || '2026-06-15';
+    const endDate = activeCycle?.endDate || '2026-07-14';
+    const dates = (cycleDates && cycleDates.length > 0) ? cycleDates : getDatesForCycle(startDate);
 
     // Convert absences to daily fast lookup map
     const mappedAbsences: { [staffId: string]: { [date: string]: string } } = {};
@@ -1691,7 +1700,7 @@ export default function App() {
 
       while (current <= end) {
         const dateStr = current.toISOString().split('T')[0];
-        if (cycleDates.includes(dateStr)) {
+        if (dates.includes(dateStr)) {
           mappedAbsences[sMember.id][dateStr] = log.type;
         }
         current.setDate(current.getDate() + 1);
@@ -1706,17 +1715,24 @@ export default function App() {
         a.trigger === 'last-day' ? { ...a, count: scTeamSize } : a
       ),
     };
-    const suggestedShifts = runSmartPersonaOptimizer(staffList, cycleDates, holidays, mappedAbsences, effectiveRuleSet);
+    const suggestedShifts = runSmartPersonaOptimizer(staffList, dates, holidays, mappedAbsences, effectiveRuleSet);
 
     const updatedCycle: RosterCycle = {
-      ...activeCycle,
+      id: activeCycle?.id || `cycle-${selectedFacilityId}-${startDate}`,
+      startDate,
+      endDate,
       shifts: suggestedShifts,
       isLocked: false // draft state
     };
 
+    // Ensure the date window is set (first-time creation) before the cycle goes live.
+    if (!cycleDates || cycleDates.length === 0) {
+      setCycleDates(dates);
+      try { localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(dates)); } catch {}
+    }
     setActiveCycle(updatedCycle);
     persistState('active_cycle', updatedCycle);
-    toast.success('Roster created — staff are spread across your configured rotation tracks.');
+    toast.success('Roster created — staff are spread across your rotation tracks.');
   };
 
   const toggleRosterLock = () => {

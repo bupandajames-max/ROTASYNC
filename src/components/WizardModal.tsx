@@ -556,7 +556,7 @@ export default function WizardModal({
               <div className="bg-slate-50/60 p-4 border border-slate-100 rounded-2xl flex gap-3">
                 <Calendar className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="text-xs text-slate-600 leading-relaxed font-semibold">
-                  Record planned leaves first to ensure optimized coverage. Decide on-site staffing loading for extreme cycles, then execute the smart simulator.
+                  Record any planned leave first so coverage is accurate, set how many people you need on shift, then build the roster.
                 </div>
               </div>
 
@@ -628,7 +628,7 @@ export default function WizardModal({
                   {/* Sizing list */}
                   <div className="bg-slate-50/60 border border-slate-200/50 p-4.5 rounded-2xl space-y-3">
                     <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5 select-none">
-                      <Users className="w-4 h-4 text-[#7A1230]" /> Required Pharmacists:
+                      <Users className="w-4 h-4 text-[#7A1230]" /> People needed on shift:
                     </label>
                     <input
                       type="number"
@@ -639,7 +639,7 @@ export default function WizardModal({
                       className="w-20 text-xs font-black bg-white border border-slate-200 rounded-xl p-2.5 font-mono focus:border-[#7A1230] outline-none text-center text-[#7A1230]"
                     />
                     <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                      This represents targeted on-site staff loadings during heavy stock-count shifts.
+                      How many people you want on the busiest shifts.
                     </p>
                   </div>
 
