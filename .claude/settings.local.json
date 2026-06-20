@@ -31,7 +31,10 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(git commit -q -m 'Fix cramped modal layouts: fixed header, scroll body, pinned footer *)",
       "Bash(git commit -q -m 'Header: show demo role on the badge in no-login sandbox *)",
-      "Bash(git commit -q -m 'Make sign-out discoverable and clarify the staff picker *)"
+      "Bash(git commit -q -m 'Make sign-out discoverable and clarify the staff picker *)",
+      "Bash(git commit -q -m 'Visual calm-down: declutter header and dashboard hero \\(Pass 2\\) *)",
+      "Bash(git commit -q -m 'De-clinical content: genericise seed templates & examples \\(Pass 3\\) *)",
+      "Bash(git commit -q -m 'Consistency + gateway plain-language \\(Pass 4\\) *)"
     ]
   }
 }
