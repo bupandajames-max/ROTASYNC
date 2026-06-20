@@ -241,7 +241,7 @@ export default function DashboardHome({
       <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-7 rounded-3xl shadow-xl border border-indigo-500/10 flex justify-between items-center flex-wrap gap-6 relative overflow-hidden">
         
         <div className="relative z-10 flex-1 min-w-[280px]">
-          <span className="text-[10px] bg-indigo-505/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider inline-block mb-3 select-none">
+          <span className="text-[11px] bg-indigo-505/20 text-indigo-200 border border-indigo-500/30 px-3 py-1 rounded-full font-semibold inline-block mb-3 select-none">
             {taxonomy.appName} · {activeFacility?.name}
           </span>
           <h2 className="text-3xl font-extrabold flex items-center gap-2 font-sans tracking-tight leading-tight">
@@ -278,10 +278,10 @@ export default function DashboardHome({
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
         <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-4 flex-wrap gap-2">
           <div>
-            <h3 className="font-sans font-extrabold text-[#003764] text-xs uppercase tracking-widest flex items-center gap-2">
-              <Activity className="w-4.5 h-4.5 text-[#009EE2] animate-pulse" /> Who's on now
+            <h3 className="font-sans font-extrabold text-[#003764] text-sm flex items-center gap-2">
+              <Activity className="w-4.5 h-4.5 text-[#009EE2]" /> Who's on now
             </h3>
-            <p className="text-[11px] text-gray-400 mt-1 font-medium font-mono">
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">
               Team coverage by station as of {currentHour}:00.
             </p>
           </div>
@@ -300,15 +300,15 @@ export default function DashboardHome({
               className="group cursor-pointer bg-slate-50 hover:bg-sky-50/20 border border-slate-100 hover:border-indigo-500/20 p-4 rounded-2xl transition-all flex flex-col justify-between min-h-[140px] shadow-sm relative overflow-hidden"
             >
               <div>
-                <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider font-mono">
-                  POST {String(idx + 1).padStart(2, '0')}
+                <span className="text-[11px] text-gray-400 font-semibold">
+                  Station {idx + 1}
                 </span>
                 <h4 className="font-bold text-slate-800 text-sm mt-1">{station.title}</h4>
                 <p className="text-[10px] text-gray-500 mt-1 leading-normal line-clamp-2">{station.lead}</p>
               </div>
               <div className="mt-3 pt-2.5 border-t border-slate-100/60 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm"></div>
-                <span className="text-[10px] font-mono text-slate-600 font-bold">
+                <span className="text-[11px] text-slate-600 font-semibold">
                   {memberForStation(station)}
                 </span>
               </div>
@@ -316,7 +316,7 @@ export default function DashboardHome({
           ))}
         </div>
 
-        <p className="text-[10px] text-gray-400 mt-3 font-mono text-center">
+        <p className="text-[10px] text-gray-400 mt-3 text-center">
           💡 Click a station to view its {taxonomy.groupSingular.toLowerCase()} details.
         </p>
       </div>
