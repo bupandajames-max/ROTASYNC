@@ -22,6 +22,7 @@ import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedF
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
 import SetupWizard from './components/SetupWizard';
 import SetupChecklist from './components/SetupChecklist';
+import EmptyState from './components/EmptyState';
 import { useToast } from './components/ui/ToastProvider';
 import { useConfirm } from './components/ui/ConfirmProvider';
 import { generateDefaultTimesheet } from './utils/timesheetUtils';
@@ -2097,7 +2098,9 @@ export default function App() {
                   golive: displayedDailyTasks.length > 0,
                 };
                 const complete = setupSteps.team && setupSteps.roster && setupSteps.tasks && setupSteps.golive;
-                if (complete || setupHidden) return null;
+                // The checklist can be dismissed once a roster exists; but never let
+                // it stay hidden when there's no roster yet (that would be a dead end).
+                if (complete || (setupHidden && !!activeCycle)) return null;
                 return (
                   <SetupChecklist
                     steps={setupSteps}
@@ -2111,7 +2114,7 @@ export default function App() {
                 );
               })()}
 
-              {activeCycle && (
+              {activeCycle ? (
                 <DashboardHome
                   activeStaffId={activeStaffId}
                   staffList={displayedStaffList}
@@ -2129,8 +2132,23 @@ export default function App() {
                   ruleSet={ruleSet}
                   taxonomy={taxonomy}
                 />
-              )}
+              ) : (!isManagerView && (
+                <EmptyState
+                  title="Nothing here yet"
+                  message="Your manager is still setting up this cycle's roster. Check back soon."
+                />
+              ))}
             </div>
+          )}
+
+          {/* Fallback for cycle-gated tabs when no roster exists yet — never leave a blank screen */}
+          {!activeCycle && ['roster', 'tasks', 'timesheets', 'manager', 'analytics'].includes(currentTab) && (
+            <EmptyState
+              title="No roster yet"
+              message="Plan this cycle's roster first — then schedules, the task board, timesheets and reports all appear here."
+              actionLabel={isManagerView ? 'Plan roster' : undefined}
+              onAction={isManagerView ? () => setIsWizardOpen(true) : undefined}
+            />
           )}
 
           {/* Roster & Coverage Calendar */}
