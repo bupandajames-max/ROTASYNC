@@ -158,7 +158,7 @@ export default function RosterGrid({
   // Drag and drop states
   const [draggedCell, setDraggedCell] = useState<{ staffId: string; dayIdx: number; shiftCode: string } | null>(null);
   const [draggedOverCell, setDraggedOverCell] = useState<{ staffId: string; dayIdx: number } | null>(null);
-  const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number; x: number; y: number } | null>(null);
 
   const handleDragStart = (e: React.DragEvent, staffId: string, dayIdx: number, shiftCode: string) => {
     if (isGridLocked) return;
@@ -1000,28 +1000,13 @@ export default function RosterGrid({
                                 </div>
                               ) : (
                                 <>
-                                  {editingCell?.staffId === staff.id && editingCell?.dayIdx === dIdx ? (
-                                    <select
-                                      autoFocus
-                                      value={value}
-                                      onChange={(e) => {
-                                        updateShift(staff.id, dIdx, e.target.value);
-                                        setEditingCell(null);
-                                      }}
-                                      onBlur={() => setEditingCell(null)}
-                                      style={{ color: def?.fg }}
-                                      className="w-full h-full text-center bg-transparent border-none appearance-none font-mono focus:outline-none focus:ring-1 focus:ring-[#7A1230] cursor-pointer block text-xs font-black relative z-25 bg-white text-gray-900"
-                                    >
-                                      {Object.keys(shiftDefs).map(code => (
-                                        <option key={code} value={code} className="text-gray-900 bg-white text-xs font-sans font-medium text-left">
-                                          {code} - {shiftDefs[code].name} ({shiftDefs[code].hours}h)
-                                        </option>
-                                      ))}
-                                    </select>
-                                  ) : (
-                                    <div 
+                                  {(
+                                    <div
                                       className="w-full h-full flex flex-col justify-center items-center cursor-pointer select-none py-1 group/btn"
-                                      onClick={() => setEditingCell({ staffId: staff.id, dayIdx: dIdx })}
+                                      onClick={(e) => {
+                                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                        setEditingCell({ staffId: staff.id, dayIdx: dIdx, x: r.left, y: r.bottom + 4 });
+                                      }}
                                     >
                                       <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs border border-black/5 bg-white/40 tracking-wider group-hover/btn:scale-105 transition-transform" style={{ color: def?.fg }}>
                                         {value}
@@ -1060,6 +1045,34 @@ export default function RosterGrid({
               </table>
             </div>
           </div>
+
+          {/* Shift picker popover — colour swatch + name, fixed so the grid scroll can't clip it */}
+          {editingCell && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setEditingCell(null)} />
+              <div
+                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-56 max-h-72 overflow-y-auto"
+                style={{ left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 232)), top: editingCell.y }}
+              >
+                {['OFF', ...Object.keys(shiftDefs).filter(c => c !== 'OFF' && shiftDefs[c].active !== false)].map(code => {
+                  const d = shiftDefs[code];
+                  const current = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
+                  return (
+                    <button
+                      key={code}
+                      onClick={() => { updateShift(editingCell.staffId, editingCell.dayIdx, code); setEditingCell(null); }}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors ${code === current ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
+                    >
+                      <span className="w-3 h-3 rounded-full shrink-0 border border-black/10" style={{ background: d?.bg || (code === 'OFF' ? '#cbd5e1' : '#94a3b8') }} />
+                      <span className="text-xs font-black text-slate-800 w-9 shrink-0">{code}</span>
+                      <span className="text-xs text-slate-600 flex-1 truncate">{code === 'OFF' ? 'Off / Rest' : (d?.name || code)}</span>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0">{d?.time || (d?.hours ? `${d.hours}h` : '')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Real-time Coverage Heatmap (Manager Only) */}
           {isManagerView && (
