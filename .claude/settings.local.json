@@ -34,7 +34,14 @@
       "Bash(git commit -q -m 'Make sign-out discoverable and clarify the staff picker *)",
       "Bash(git commit -q -m 'Visual calm-down: declutter header and dashboard hero \\(Pass 2\\) *)",
       "Bash(git commit -q -m 'De-clinical content: genericise seed templates & examples \\(Pass 3\\) *)",
-      "Bash(git commit -q -m 'Consistency + gateway plain-language \\(Pass 4\\) *)"
+      "Bash(git commit -q -m 'Consistency + gateway plain-language \\(Pass 4\\) *)",
+      "Bash(git commit -q -m 'De-shout dashboard: sentence case over UPPERCASE/mono \\(Pass 5, part 1\\) *)",
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(git commit -q -m 'De-shout header & roster labels \\(Pass 5, part 2\\) *)",
+      "Bash(git commit -q -m 'De-shout app-wide: sentence-case labels & headers \\(Pass 5, part 3\\) *)",
+      "Bash(git commit -q -m 'Add first-time '\\\\''Get started'\\\\'' setup checklist for admins *)",
+      "Bash(git commit -q -m 'Single setup flow: focus the wizard on roster + first-login welcome *)",
+      "Bash(git commit -q -m 'Fix blank screens / unreachable wizard when no roster exists *)"
     ]
   }
 }
