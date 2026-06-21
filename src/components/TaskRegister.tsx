@@ -42,6 +42,7 @@ export default function TaskRegister({
   const [category, setCategory] = useState<TaskMaster['category']>(taskCategories[0] || 'General');
   const [pattern, setPattern] = useState<TaskMaster['pattern']>('Shift-based');
   const [asgnVal, setAsgnVal] = useState('');
+  const [mgrNames, setMgrNames] = useState<string[]>([]); // specific people for Manager-assign / Collab
   const [priority, setPriority] = useState<TaskMaster['priority']>('Standard');
   const [freq, setFreq] = useState('Daily');
   const [compliance, setCompliance] = useState(false);
@@ -166,6 +167,7 @@ export default function TaskRegister({
       category,
       pattern,
       assignedValue: asgnVal,
+      managerAssignedName: (pattern === 'Manager-assign' || pattern === 'Collab') && mgrNames.length > 0 ? mgrNames.join(', ') : undefined,
       requiredSkills: parsedSkills.length > 0 ? parsedSkills : undefined,
       priority,
       frequency: freq,
@@ -182,6 +184,7 @@ export default function TaskRegister({
     // Reset Form
     setTaskName('');
     setAsgnVal('');
+    setMgrNames([]);
     setNotes('');
     setRequiredSkillsInput('');
     setTrackerTarget(0);
@@ -869,16 +872,52 @@ export default function TaskRegister({
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Fulfillment Value</label>
-                <input
-                  type="text"
-                  value={asgnVal}
-                  onChange={(e) => setAsgnVal(e.target.value)}
-                  placeholder={pattern === 'Auto' ? 'Optional: restrict to a role (e.g. Nurse)' : 'Shift A, Provide Relief, or Slot index (0,1,2)'}
-                  className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
-                />
-              </div>
+              {pattern === 'Person-specific' ? (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Assign to</label>
+                  <select
+                    value={asgnVal}
+                    onChange={(e) => setAsgnVal(e.target.value)}
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  >
+                    <option value="">Select a person…</option>
+                    {staffList.map(s => <option key={s.id} value={s.name}>{s.name} — {s.role}</option>)}
+                  </select>
+                  <p className="text-[9px] text-gray-400 mt-1">This task always goes to the chosen person.</p>
+                </div>
+              ) : (pattern === 'Manager-assign' || pattern === 'Collab') ? (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Assign to people</label>
+                  <div className="mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-1.5 bg-[#fafbfc] flex flex-wrap gap-1.5">
+                    {staffList.length === 0 && <span className="text-[10px] text-gray-400 italic p-1">No staff yet.</span>}
+                    {staffList.map(s => {
+                      const on = mgrNames.includes(s.name);
+                      return (
+                        <button
+                          type="button"
+                          key={s.id}
+                          onClick={() => setMgrNames(on ? mgrNames.filter(n => n !== s.name) : [...mgrNames, s.name])}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-md border transition-colors cursor-pointer ${on ? 'bg-[#1f3864] text-white border-[#1f3864]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                        >
+                          {on ? '✓ ' : ''}{s.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[9px] text-gray-400 mt-1">Pick everyone responsible for this task.</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Fulfillment Value</label>
+                  <input
+                    type="text"
+                    value={asgnVal}
+                    onChange={(e) => setAsgnVal(e.target.value)}
+                    placeholder={pattern === 'Auto' ? 'Optional: restrict to a role (e.g. Nurse)' : 'Shift A, Provide Relief, or Slot index (0,1,2)'}
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-[10px] font-bold text-gray-500 uppercase">Required Skills <span className="text-gray-400 normal-case font-medium">(optional, comma-separated)</span></label>
