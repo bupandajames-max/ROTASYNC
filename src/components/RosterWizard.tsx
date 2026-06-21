@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StaffMember, ShiftDef, Department, AbsenceLog } from '../types';
+import { StaffMember, ShiftDef, Department, AbsenceLog, RosterCycle } from '../types';
 import { useToast } from './ui/ToastProvider';
 import {
   X, Check, ChevronLeft, ChevronRight, Users, Clock, Calendar,
@@ -10,13 +10,17 @@ interface RosterWizardProps {
   isOpen: boolean;
   onClose: () => void;
   staffList: StaffMember[];
-  setStaffList: React.Dispatch<React.SetStateAction<StaffMember[]>>;
+  onAddStaff: (s: StaffMember) => void; // routes through App so the new staff syncs to the cloud
   shifts: { [code: string]: ShiftDef };
   setShifts: (s: { [code: string]: ShiftDef }) => void;
   departments: Department[];
   selectedFacilityId: string;
   onGenerate: (absences: AbsenceLog[], scTeamSize: number, dateRange?: { startDate: string; endDate: string }) => void;
   onOpenRoster: () => void;
+  // For light in-wizard tweaks after building
+  activeCycle: RosterCycle | null;
+  cycleDates: string[];
+  updateShift: (staffId: string, dayIdx: number, code: string) => void;
 }
 
 const COLOR_PRESETS = [
@@ -37,8 +41,9 @@ const STEPS = [
 ];
 
 export default function RosterWizard({
-  isOpen, onClose, staffList, setStaffList, shifts, setShifts,
+  isOpen, onClose, staffList, onAddStaff, shifts, setShifts,
   departments, selectedFacilityId, onGenerate, onOpenRoster,
+  activeCycle, cycleDates, updateShift,
 }: RosterWizardProps) {
   const toast = useToast();
   const [step, setStep] = useState(1);
@@ -98,9 +103,7 @@ export default function RosterWizard({
       gender: 'M',
       isManager: false,
     };
-    const updated = [...staffList, newStaff];
-    setStaffList(updated);
-    try { localStorage.setItem(`facility_${selectedFacilityId}_staff_list`, JSON.stringify(updated)); } catch {}
+    onAddStaff(newStaff); // persists locally AND to the cloud via App
     setSName('');
     toast.success(`Added ${newStaff.name}.`);
   };
@@ -314,11 +317,59 @@ export default function RosterWizard({
                   <p className="text-[11px] text-slate-500">We'll auto-build a balanced roster. You can review coverage gaps and fine-tune any cell afterward.</p>
                 </>
               ) : (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center space-y-3">
-                  <div className="inline-flex bg-emerald-500 text-white p-3 rounded-2xl"><Check className="w-6 h-6" strokeWidth={3} /></div>
-                  <h3 className="text-base font-black text-slate-900">Roster built 🎉</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">Open the roster to review coverage gaps and fine-tune any shift by clicking a cell.</p>
-                  <button onClick={() => { onOpenRoster(); onClose(); }} className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl cursor-pointer inline-flex items-center gap-1.5">Open roster <ArrowRight className="w-4 h-4" /></button>
+                <div className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div className="inline-flex bg-emerald-500 text-white p-2.5 rounded-2xl shrink-0"><Check className="w-5 h-5" strokeWidth={3} /></div>
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">Roster built 🎉</h3>
+                      <p className="text-xs text-slate-500">Quick-adjust the first week below, or open the full roster to review coverage gaps.</p>
+                    </div>
+                  </div>
+
+                  {/* Light in-wizard tweak: first-week editable mini-grid */}
+                  {activeCycle && cycleDates.length > 0 && (() => {
+                    const days = cycleDates.slice(0, 7);
+                    const codes = ['OFF', ...Object.keys(shifts).filter(c => c !== 'OFF' && shifts[c].active !== false)];
+                    return (
+                      <div className="border border-slate-200 rounded-2xl overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-500">
+                              <th className="text-left p-2 font-bold sticky left-0 bg-slate-50">Staff</th>
+                              {days.map((d, i) => <th key={i} className="p-1 font-bold whitespace-nowrap">{d.slice(8)}/{d.slice(5, 7)}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {staffList.map(s => (
+                              <tr key={s.id}>
+                                <td className="p-2 font-bold text-slate-700 whitespace-nowrap sticky left-0 bg-white">{s.name}</td>
+                                {days.map((_, dIdx) => {
+                                  const val = activeCycle.shifts[s.id]?.[dIdx] || 'OFF';
+                                  return (
+                                    <td key={dIdx} className="p-1">
+                                      <select
+                                        value={val}
+                                        onChange={e => updateShift(s.id, dIdx, e.target.value)}
+                                        className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 rounded p-1 outline-none cursor-pointer"
+                                        style={{ color: shifts[val]?.fg }}
+                                      >
+                                        {codes.map(c => <option key={c} value={c}>{c}</option>)}
+                                      </select>
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex justify-end gap-2">
+                    <button onClick={onClose} className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl cursor-pointer">Done</button>
+                    <button onClick={() => { onOpenRoster(); onClose(); }} className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl cursor-pointer inline-flex items-center gap-1.5">Open full roster <ArrowRight className="w-4 h-4" /></button>
+                  </div>
                 </div>
               )}
             </div>

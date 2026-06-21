@@ -2348,13 +2348,16 @@ export default function App() {
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         staffList={staffList}
-        setStaffList={setStaffList}
+        onAddStaff={handleOnboardNewStaff}
         shifts={shifts}
         setShifts={setShifts}
         departments={departments}
         selectedFacilityId={selectedFacilityId}
         onGenerate={handleRosterGenerate}
         onOpenRoster={() => handleNavigation('roster')}
+        activeCycle={activeCycle}
+        cycleDates={cycleDates}
+        updateShift={handleUpdateShift}
       />
 
       {/* New Staff Onboarding Wizard Modal Overlay */}
