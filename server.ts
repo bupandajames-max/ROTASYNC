@@ -140,10 +140,10 @@ Each task details should include:
   // API Route: suggest concrete tasks for a single category, in context.
   app.post('/api/suggest-category-tasks', async (req, res) => {
     try {
-      const { category, departmentName, facilityType, existingTaskNames } = req.body;
+      const { category, taskName, departmentName, facilityType, existingTaskNames } = req.body;
 
-      if (!category) {
-        return res.status(400).json({ error: 'Category is required' });
+      if (!category && !taskName) {
+        return res.status(400).json({ error: 'A category or task name is required' });
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
@@ -159,10 +159,14 @@ Each task details should include:
       });
 
       const existing: string[] = Array.isArray(existingTaskNames) ? existingTaskNames : [];
-      const prompt = `You are an expert operations consultant. List the concrete, real-world operational tasks that are routinely carried out under the category "${category}".
-${departmentName ? `Context: these are performed by the "${departmentName}" department.` : ''}
+      const named = typeof taskName === 'string' && taskName.trim().length > 0 ? taskName.trim() : '';
+      const prompt = `You are an expert operations consultant helping define operational tasks${category ? ` under the category "${category}"` : ''}.
+${named
+  ? `The user is creating a task and has typed: "${named}". Make the FIRST suggestion a clean, well-formed version of exactly that task, then add 4-7 closely related tasks. Bias every suggestion toward "${named}".`
+  : 'List the concrete, real-world operational tasks routinely carried out under this category.'}
+${departmentName ? `Context: performed by the "${departmentName}" department.` : ''}
 ${facilityType ? `The site is a "${facilityType}".` : ''}
-${existing.length ? `Do NOT repeat any of these tasks that already exist: ${existing.join('; ')}.` : ''}
+${existing.length ? `Do NOT repeat any of these existing tasks: ${existing.join('; ')}.` : ''}
 
 Provide 5 to 8 distinct tasks suitable for scheduling in a rostering system. For each task:
 - A concise, action-oriented name (e.g. "Cycle Count Reconciliation", "Expiry / FEFO Check").

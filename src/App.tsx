@@ -2312,6 +2312,7 @@ export default function App() {
               onUpdateTasksBulk={handleUpdateTasksBulk}
               onPreGenerate7DaysTasks={handlePreGenerate7DaysTasks}
               taskCategories={taskCategories}
+              onAddCategory={(name) => setTaskCategories([...taskCategories, name])}
             />
           )}
 

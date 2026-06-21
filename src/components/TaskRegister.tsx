@@ -23,6 +23,7 @@ interface TaskRegisterProps {
   onUpdateTasksBulk: (updatedTasks: TaskMaster[]) => void;
   onPreGenerate7DaysTasks?: () => { success: boolean; message: string; generatedDates: string[]; skippedDates: string[] };
   taskCategories: string[];
+  onAddCategory?: (name: string) => void;
 }
 
 export default function TaskRegister({
@@ -36,6 +37,7 @@ export default function TaskRegister({
   onUpdateTasksBulk,
   onPreGenerate7DaysTasks,
   taskCategories,
+  onAddCategory,
 }: TaskRegisterProps) {
   const [showAddModal, setShowAddTaskModal] = useState(false);
   const [taskName, setTaskName] = useState('');
@@ -48,6 +50,10 @@ export default function TaskRegister({
   const [compliance, setCompliance] = useState(false);
   const [notes, setNotes] = useState('');
   const [requiredSkillsInput, setRequiredSkillsInput] = useState('');
+
+  // Inline "add category"
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
 
   // AI category-task suggestions
   const [catSuggesting, setCatSuggesting] = useState(false);
@@ -191,9 +197,21 @@ export default function TaskRegister({
     setCustomFields([]);
   };
 
+  // Add a new task category inline (persists via App), then select it.
+  const commitNewCategory = () => {
+    const name = newCategoryInput.trim();
+    if (!name) { setAddingCategory(false); return; }
+    if (!taskCategories.some(c => c.toLowerCase() === name.toLowerCase())) {
+      onAddCategory?.(name);
+    }
+    setCategory(name);
+    setNewCategoryInput('');
+    setAddingCategory(false);
+  };
+
   // Ask the AI for concrete tasks under the chosen category, in context.
   const handleSuggestCategoryTasks = async () => {
-    if (!category) return;
+    if (!category && !taskName.trim()) return;
     setCatSuggesting(true);
     setCatSuggestError(null);
     setCatSuggestions([]);
@@ -205,7 +223,7 @@ export default function TaskRegister({
         const res = await fetch('/api/suggest-category-tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category, existingTaskNames: tasks.map(t => t.name) }),
+          body: JSON.stringify({ category, taskName, existingTaskNames: tasks.map(t => t.name) }),
         });
         if (res.ok) { data = await res.json(); break; }
         const err = await res.json().catch(() => ({}));
@@ -765,26 +783,42 @@ export default function TaskRegister({
                   <button
                     type="button"
                     onClick={handleSuggestCategoryTasks}
-                    disabled={catSuggesting || !category}
+                    disabled={catSuggesting || (!category && !taskName.trim())}
                     className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-md border border-indigo-200 transition-all cursor-pointer"
                   >
                     <Sparkles className={`w-3 h-3 ${catSuggesting ? 'animate-pulse' : ''}`} />
                     {catSuggesting ? 'Thinking…' : 'Suggest tasks'}
                   </button>
                 </div>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as any)}
-                  className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
-                >
-                  {taskCategories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                  {/* Preserve a value that isn't in the workspace taxonomy (e.g. legacy/AI-seeded) */}
-                  {category && !taskCategories.includes(category) && (
-                    <option value={category}>{category}</option>
-                  )}
-                </select>
+                {addingCategory ? (
+                  <div className="flex gap-1.5 mt-1">
+                    <input
+                      autoFocus
+                      value={newCategoryInput}
+                      onChange={(e) => setNewCategoryInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitNewCategory(); } }}
+                      placeholder="New category name"
+                      className="flex-1 text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 outline-none"
+                    />
+                    <button type="button" onClick={commitNewCategory} className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 rounded-lg cursor-pointer">Add</button>
+                    <button type="button" onClick={() => { setAddingCategory(false); setNewCategoryInput(''); }} className="text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 rounded-lg cursor-pointer">✕</button>
+                  </div>
+                ) : (
+                  <select
+                    value={category}
+                    onChange={(e) => { if (e.target.value === '__add__') { setAddingCategory(true); } else { setCategory(e.target.value as any); } }}
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  >
+                    {taskCategories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    {/* Preserve a value that isn't in the workspace taxonomy (e.g. legacy/AI-seeded) */}
+                    {category && !taskCategories.includes(category) && (
+                      <option value={category}>{category}</option>
+                    )}
+                    <option value="__add__">➕ Add new category…</option>
+                  </select>
+                )}
 
                 {catSuggestError && (
                   <p className="text-[10px] text-rose-600 font-semibold mt-1.5">⚠️ {catSuggestError}</p>
