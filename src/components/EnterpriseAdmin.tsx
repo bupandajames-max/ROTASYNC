@@ -282,6 +282,16 @@ export default function EnterpriseAdmin({
   // New Task Form State
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState<string>(taskCategories[0] || 'General');
+  const [addingTaskCat, setAddingTaskCat] = useState(false);
+  const [newTaskCatInput, setNewTaskCatInput] = useState('');
+  const commitNewTaskCat = () => {
+    const name = newTaskCatInput.trim();
+    if (!name) { setAddingTaskCat(false); return; }
+    if (!taskCategories.some(c => c.toLowerCase() === name.toLowerCase())) setTaskCategories([...taskCategories, name]);
+    setNewTaskCategory(name);
+    setNewTaskCatInput('');
+    setAddingTaskCat(false);
+  };
   const [newTaskPattern, setNewTaskPattern] = useState<TaskMaster['pattern']>('Shift-based');
   const [newTaskAssignedVal, setNewTaskAssignedVal] = useState('Shift A');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskMaster['priority']>('Standard');
@@ -1828,13 +1838,30 @@ export default function EnterpriseAdmin({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[9.2px] font-black text-slate-400 font-mono">Category</label>
-                  <select
-                    value={newTaskCategory}
-                    onChange={(e) => setNewTaskCategory(e.target.value)}
-                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
-                  >
-                    {taskCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  {addingTaskCat ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        autoFocus
+                        value={newTaskCatInput}
+                        onChange={(e) => setNewTaskCatInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitNewTaskCat(); } }}
+                        placeholder="New category"
+                        className="flex-1 text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                      />
+                      <button type="button" onClick={commitNewTaskCat} className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-2.5 rounded-xl cursor-pointer">Add</button>
+                      <button type="button" onClick={() => { setAddingTaskCat(false); setNewTaskCatInput(''); }} className="text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-2.5 rounded-xl cursor-pointer">✕</button>
+                    </div>
+                  ) : (
+                    <select
+                      value={newTaskCategory}
+                      onChange={(e) => { if (e.target.value === '__add__') setAddingTaskCat(true); else setNewTaskCategory(e.target.value); }}
+                      className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                    >
+                      {taskCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                      {newTaskCategory && !taskCategories.includes(newTaskCategory) && <option value={newTaskCategory}>{newTaskCategory}</option>}
+                      <option value="__add__">➕ Add new category…</option>
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="text-[9.2px] font-black text-slate-400 font-mono">Priority</label>
