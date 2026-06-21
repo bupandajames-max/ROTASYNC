@@ -1763,11 +1763,26 @@ export default function App() {
       isLocked: false,
     };
 
+    // Carry any unfinished tasks from the closing cycle onto the new cycle's first day,
+    // flagged 'Carried Fwd', so nothing is lost between cycles.
+    const UNFINISHED = ['Pending', 'In Progress', 'Pending Review', 'Carried Fwd'];
+    const oldDates = new Set(cycleDates);
+    const carried = dailyTasks
+      .filter(t => oldDates.has(t.date) && UNFINISHED.includes(t.status))
+      .map((t, i) => ({ ...t, id: `dt-carry-${Date.now()}-${i}`, date: newStart, status: 'Carried Fwd' as DailyTask['status'] }));
+
     setCycleDates(newDates);
     try { localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(newDates)); } catch {}
     setActiveCycle(newCycle);
     persistState('active_cycle', newCycle);
-    toast.success(`Next cycle started (${newStart} → ${newEnd}). Rotation continued; staff & tasks carried over.`);
+
+    if (carried.length > 0) {
+      const merged = [...carried, ...dailyTasks];
+      setDailyTasks(merged);
+      persistState('daily_tasks', merged);
+    }
+
+    toast.success(`Next cycle started (${newStart} → ${newEnd}). Rotation continued; ${carried.length} unfinished task${carried.length === 1 ? '' : 's'} carried over.`);
   };
 
   const toggleRosterLock = () => {
