@@ -52,6 +52,7 @@ interface RosterGridProps {
   isManagerView?: boolean;
   shifts?: { [code: string]: ShiftDef };
   onEditShifts?: () => void;
+  onRolloverCycle?: () => void;
 }
 
 export default function RosterGrid({
@@ -69,6 +70,7 @@ export default function RosterGrid({
   isManagerView = true,
   shifts,
   onEditShifts,
+  onRolloverCycle,
 }: RosterGridProps) {
   const confirm = useConfirm();
   // Use the workspace's editable shift definitions, falling back to the built-in
@@ -607,6 +609,21 @@ export default function RosterGrid({
                 >
                   <CalendarRange className="w-3.5 h-3.5 text-indigo-500" />
                   Edit roster dates
+                </button>
+              )}
+
+              {isManagerView && onRolloverCycle && (
+                <button
+                  onClick={async () => {
+                    if (await confirm({ title: 'Start the next cycle?', message: "This keeps the current roster (archived), rolls the dates forward one period, and continues the rotation. Staff, shifts and tasks carry over.", confirmLabel: 'Start next cycle' })) {
+                      onRolloverCycle();
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
+                  title="Roll dates forward and continue the rotation"
+                >
+                  <CalendarRange className="w-3.5 h-3.5 text-indigo-500" />
+                  Start next cycle
                 </button>
               )}
 

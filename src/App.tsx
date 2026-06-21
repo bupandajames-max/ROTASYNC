@@ -1737,6 +1737,39 @@ export default function App() {
     toast.success('Roster created — staff are spread across your rotation tracks.');
   };
 
+  // Roll over to the next cycle: keep the previous one (archived by its id), roll the
+  // dates forward by one period, and continue the rotation under the same rules.
+  // Staff, shift definitions, rules and task templates carry over automatically
+  // (they're workspace-level); the new period's daily tasks regenerate from them.
+  const handleRolloverCycle = () => {
+    if (!activeCycle) return;
+    const len = cycleDates.length || 30;
+    const lastStr = cycleDates[cycleDates.length - 1] || activeCycle.endDate;
+    const nextStart = new Date(lastStr + 'T00:00:00');
+    nextStart.setDate(nextStart.getDate() + 1);
+    const fmt = (d: Date) => d.toISOString().split('T')[0];
+    const newStart = fmt(nextStart);
+    const nextEnd = new Date(nextStart);
+    nextEnd.setDate(nextEnd.getDate() + len - 1);
+    const newEnd = fmt(nextEnd);
+
+    const newDates = getDatesForCycle(newStart, newEnd);
+    const shifts = runSmartPersonaOptimizer(staffList, newDates, holidays, {}, ruleSet);
+    const newCycle: RosterCycle = {
+      id: `cycle-${selectedFacilityId}-${newStart}`,
+      startDate: newStart,
+      endDate: newEnd,
+      shifts,
+      isLocked: false,
+    };
+
+    setCycleDates(newDates);
+    try { localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(newDates)); } catch {}
+    setActiveCycle(newCycle);
+    persistState('active_cycle', newCycle);
+    toast.success(`Next cycle started (${newStart} → ${newEnd}). Rotation continued; staff & tasks carried over.`);
+  };
+
   const toggleRosterLock = () => {
     if (!activeCycle) return;
     const nextLocked = !activeCycle.isLocked;
@@ -2186,6 +2219,7 @@ export default function App() {
               isManagerView={isManagerView}
               shifts={shifts}
               onEditShifts={() => handleNavigation('admin')}
+              onRolloverCycle={handleRolloverCycle}
             />
           )}
 
