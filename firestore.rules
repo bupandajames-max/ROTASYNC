@@ -162,18 +162,18 @@ service cloud.firestore {
       allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
 
-    // Roster cycles: department heads and above.
+    // Roster cycles: department heads and above, within their own facility.
     match /cycles/{cycleId} {
       allow read: if isSignedIn();
-      allow create, update: if isManagerLevel() && isValidId(cycleId) && isValidCycle(incoming());
-      allow delete: if isManagerLevel();
+      allow create, update: if isManagerLevel() && isValidId(cycleId) && isValidCycle(incoming()) && inMyFacility(incoming().facilityId);
+      allow delete: if isManagerLevel() && (isSuper() || inMyFacility(existing().facilityId));
     }
 
-    // Task master templates: department heads and above.
+    // Task master templates: department heads and above, within their own facility.
     match /taskMasters/{taskMasterId} {
       allow read: if isSignedIn();
-      allow create, update: if isManagerLevel() && isValidId(taskMasterId) && isValidTaskMaster(incoming());
-      allow delete: if isManagerLevel();
+      allow create, update: if isManagerLevel() && isValidId(taskMasterId) && isValidTaskMaster(incoming()) && inMyFacility(incoming().facilityId);
+      allow delete: if isManagerLevel() && (isSuper() || inMyFacility(existing().facilityId));
     }
 
     match /test/{testId} {

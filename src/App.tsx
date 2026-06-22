@@ -878,7 +878,7 @@ export default function App() {
           });
 
           toWrite.forEach(ts => {
-            dbSetDoc('timesheets', ts.id, ts).catch(err => {
+            dbSetDoc('timesheets', ts.id, { ...ts, facilityId: (ts as any).facilityId || selectedFacilityId }).catch(err => {
               console.error("Firestore timesheet cascading sync failure:", err);
               handleGenericError(err);
             });
@@ -1137,6 +1137,8 @@ export default function App() {
 
     // --- SECURE REAL-TIME CLOUD PROPAGATION ---
     if (firebaseUser) {
+      // Tag every cloud doc with its facility for per-tenant isolation in the rules.
+      const withFac = (o: any) => ({ ...o, facilityId: o.facilityId || selectedFacilityId });
       if (key === 'staff_list') {
         const prevStaff = lastStaffListRef.current;
         const toWrite = data.filter((item: StaffMember) => {
@@ -1158,7 +1160,7 @@ export default function App() {
 
         lastStaffListRef.current = data;
       } else if (key === 'active_cycle') {
-        dbSetDoc('cycles', data.id || `cycle-${selectedFacilityId}-2026-06-15`, data).catch(handleGenericError);
+        dbSetDoc('cycles', data.id || `cycle-${selectedFacilityId}-2026-06-15`, withFac(data)).catch(handleGenericError);
       } else if (key === 'task_master') {
         const prevTasks = lastTaskMasterListRef.current;
         const toWrite = data.filter((item: TaskMaster) => {
@@ -1172,7 +1174,7 @@ export default function App() {
         });
 
         toWrite.forEach((item: TaskMaster) => {
-          dbSetDoc('taskMasters', item.id, item).catch(handleGenericError);
+          dbSetDoc('taskMasters', item.id, withFac(item)).catch(handleGenericError);
         });
 
         lastTaskMasterListRef.current = data;
@@ -1189,7 +1191,7 @@ export default function App() {
         });
 
         toWrite.forEach((item: DailyTask) => {
-          dbSetDoc('dailyTasks', item.id, item).catch(handleGenericError);
+          dbSetDoc('dailyTasks', item.id, withFac(item)).catch(handleGenericError);
         });
 
         lastDailyTasksRef.current = data;
@@ -1206,7 +1208,7 @@ export default function App() {
         });
 
         toWrite.forEach((item: ApprovalRequest) => {
-          dbSetDoc('approvals', item.id, item).catch(handleGenericError);
+          dbSetDoc('approvals', item.id, withFac(item)).catch(handleGenericError);
         });
 
         lastApprovalsRef.current = data;
@@ -1223,7 +1225,7 @@ export default function App() {
         });
 
         toWrite.forEach((item: ExtraHoursEntry) => {
-          dbSetDoc('extraHours', item.id, item).catch(handleGenericError);
+          dbSetDoc('extraHours', item.id, withFac(item)).catch(handleGenericError);
         });
 
         lastExtraHoursLogRef.current = data;
@@ -2029,7 +2031,7 @@ export default function App() {
       localStorage.setItem(`facility_${selectedFacilityId}_timesheets_list`, JSON.stringify(updatedList));
     }
     if (firebaseUser) {
-      dbSetDoc('timesheets', updated.id, updated).catch(handleGenericError);
+      dbSetDoc('timesheets', updated.id, { ...updated, facilityId: (updated as any).facilityId || selectedFacilityId }).catch(handleGenericError);
     }
   };
 
