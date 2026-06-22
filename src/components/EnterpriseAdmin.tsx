@@ -299,6 +299,53 @@ export default function EnterpriseAdmin({
   const [newTaskNotes, setNewTaskNotes] = useState('');
   const [newTaskTarget, setNewTaskTarget] = useState<number | undefined>(undefined);
 
+  // Per-task AI suggest (name-aware) for the Settings task form
+  const [taskSuggesting, setTaskSuggesting] = useState(false);
+  const [taskSuggestErr, setTaskSuggestErr] = useState<string | null>(null);
+  const [taskSuggestions, setTaskSuggestions] = useState<{ name: string; pattern: string; priority: string; frequency: string; notes: string }[]>([]);
+  const FORM_PATTERNS = ['Auto', 'Shift-based', 'Dispensing-rotate', 'Person-specific', 'Collab'];
+
+  const handleSuggestTaskMaster = async () => {
+    if (!newTaskCategory && !newTaskName.trim()) return;
+    setTaskSuggesting(true);
+    setTaskSuggestErr(null);
+    setTaskSuggestions([]);
+    try {
+      let data: any = null;
+      let lastErr = '';
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await fetch('/api/suggest-category-tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: newTaskCategory, taskName: newTaskName, existingTaskNames: taskMasterList.map(t => t.name) }),
+        });
+        if (res.ok) { data = await res.json(); break; }
+        const err = await res.json().catch(() => ({}));
+        lastErr = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || `status ${res.status}`);
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
+      }
+      if (!data) throw new Error(lastErr.includes('high demand') ? 'The AI is busy — try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
+      if (Array.isArray(data.tasks)) {
+        setTaskSuggestions(data.tasks.map((t: any) => ({
+          name: t.name || '', pattern: t.pattern || 'Auto', priority: t.priority || 'Standard', frequency: t.frequency || 'Daily', notes: t.notes || '',
+        })));
+      }
+    } catch (e: any) {
+      setTaskSuggestErr(e.message || 'Failed to get suggestions.');
+    } finally {
+      setTaskSuggesting(false);
+    }
+  };
+
+  const applyTaskSuggestion = (s: { name: string; pattern: string; priority: string; frequency: string; notes: string }) => {
+    setNewTaskName(s.name);
+    setNewTaskPattern((FORM_PATTERNS.includes(s.pattern) ? s.pattern : 'Auto') as TaskMaster['pattern']);
+    setNewTaskPriority(s.priority as TaskMaster['priority']);
+    setNewTaskFreq(s.frequency);
+    setNewTaskNotes(s.notes);
+    setTaskSuggestions([]);
+  };
+
   const handleEditFacilitySelect = (fac: Facility) => {
     setEditingFacility(fac);
     setFacEditName(fac.name);
@@ -1824,15 +1871,40 @@ export default function EnterpriseAdmin({
 
             <form onSubmit={handleCreateTask} className="space-y-3">
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 font-mono">{taxonomy.taskSingular} Title *</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[9.5px] font-black text-slate-400 font-mono">{taxonomy.taskSingular} Title *</label>
+                  <button
+                    type="button"
+                    onClick={handleSuggestTaskMaster}
+                    disabled={taskSuggesting || (!newTaskCategory && !newTaskName.trim())}
+                    className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-md border border-indigo-200 cursor-pointer"
+                  >
+                    {taskSuggesting ? '✨ Thinking…' : '✨ Suggest'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Conduct High-Value Material Audit"
                   value={newTaskName}
                   onChange={(e) => setNewTaskName(e.target.value)}
-                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 mt-1 outline-none focus:border-indigo-650"
                 />
+                {taskSuggestErr && <p className="text-[10px] text-rose-600 font-semibold mt-1">⚠️ {taskSuggestErr}</p>}
+                {taskSuggestions.length > 0 && (
+                  <div className="mt-2 bg-indigo-50/50 border border-indigo-100 rounded-lg p-2 space-y-1 max-h-44 overflow-y-auto">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-indigo-900">Pick one to fill the form</span>
+                      <button type="button" onClick={() => setTaskSuggestions([])} className="text-[10px] text-slate-400 hover:text-slate-600 font-bold cursor-pointer">✕</button>
+                    </div>
+                    {taskSuggestions.map((s, i) => (
+                      <button key={i} type="button" onClick={() => applyTaskSuggestion(s)} className="w-full text-left p-2 rounded-md bg-white hover:bg-indigo-50 border border-slate-100 cursor-pointer">
+                        <div className="text-[11px] font-bold text-slate-800">{s.name}</div>
+                        <div className="text-[9px] text-slate-400 font-mono">{s.priority} · {s.frequency}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2">
