@@ -31,6 +31,16 @@ service cloud.firestore {
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accessLevel
         : 'staff';
     }
+    // The facility this caller belongs to (from their role doc). Super users have none.
+    function callerFacility() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.facilityId
+        : '';
+    }
+    // Per-tenant write isolation: a non-super user may only write within their facility.
+    function inMyFacility(fid) {
+      return isSuper() || fid == callerFacility();
+    }
     function isSuper() {
       return isSignedIn() && (isSuperEmail() || callerLevel() == 'superuser');
     }
@@ -131,24 +141,25 @@ service cloud.firestore {
       allow delete: if isSuper();
     }
 
-    // Departments: facility managers and above.
+    // Departments: facility managers and above, only within their own facility.
     match /departments/{departmentId} {
       allow read: if isSignedIn();
-      allow create, update: if isFacilityLevel() && isValidId(departmentId) && isValidDepartment(incoming());
-      allow delete: if isFacilityLevel();
+      allow create, update: if isFacilityLevel() && isValidId(departmentId) && isValidDepartment(incoming()) && inMyFacility(incoming().facilityId);
+      allow delete: if isFacilityLevel() && inMyFacility(existing().facilityId);
     }
 
-    // Workspace configuration (rules, categories, taxonomy): facility managers+.
+    // Workspace configuration is keyed by facility id, so the caller may only
+    // write their own facility's config (super users: any).
     match /workspaceConfigs/{configId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isFacilityLevel();
+      allow create, update, delete: if isFacilityLevel() && inMyFacility(configId);
     }
 
-    // Staff registry: department heads and above (manage their people).
+    // Staff registry: department heads and above, only within their own facility.
     match /staff/{staffId} {
       allow read: if isSignedIn();
-      allow create, update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming());
-      allow delete: if isManagerLevel();
+      allow create, update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
+      allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
 
     // Roster cycles: department heads and above.
