@@ -28,6 +28,7 @@ interface SetupWizardProps {
   }) => void;
   suggestedManagerName?: string;
   suggestedManagerEmail?: string;
+  suggestedManagerRole?: string;
 }
 
 const STEPS = [
@@ -40,7 +41,7 @@ const STEPS = [
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
-export default function SetupWizard({ onComplete, suggestedManagerName = '', suggestedManagerEmail = '' }: SetupWizardProps) {
+export default function SetupWizard({ onComplete, suggestedManagerName = '', suggestedManagerEmail = '', suggestedManagerRole = 'Manager' }: SetupWizardProps) {
   const [stepIdx, setStepIdx] = useState(0);
 
   // Step: Organization
@@ -66,7 +67,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
     { name: '', description: '' },
   ]);
   const [team, setTeam] = useState<{ fullName: string; role: string; email: string; gender: 'F' | 'M' | ''; isManager: boolean }[]>([
-    { fullName: suggestedManagerName, role: 'Manager', email: suggestedManagerEmail, gender: '', isManager: true },
+    { fullName: suggestedManagerName, role: suggestedManagerRole, email: suggestedManagerEmail, gender: '', isManager: true },
   ]);
 
   // Step: Regional

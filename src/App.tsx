@@ -21,6 +21,7 @@ import {
 import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig } from './data/initialData';
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
 import SetupWizard from './components/SetupWizard';
+import ConfirmIdentity from './components/ConfirmIdentity';
 import SetupChecklist from './components/SetupChecklist';
 import EmptyState from './components/EmptyState';
 import { useToast } from './components/ui/ToastProvider';
@@ -95,6 +96,9 @@ export default function App() {
 
   // RBAC Sandbox Bypass monitoring
   const [isSandboxBypassActive, setIsSandboxBypassActive] = useState<boolean>(false);
+
+  // First-run identity confirmation, shown once before the workspace setup wizard.
+  const [confirmedIdentity, setConfirmedIdentity] = useState<{ name: string; role: string } | null>(null);
 
   const [currentTab, setCurrentTab] = useState('home');
   const [isManagerView, setIsManagerView] = useState(false);
@@ -2083,12 +2087,23 @@ export default function App() {
   // First-run: an authorized user with no workspace yet provisions one via the setup wizard.
   const showSetupWizard = isAuthorized && isHydrated && facilities.length === 0;
 
+  if (showSetupWizard && firebaseUser && !confirmedIdentity) {
+    return (
+      <ConfirmIdentity
+        email={firebaseUser.email || ''}
+        suggestedName={firebaseUser.displayName || ''}
+        onConfirm={(name, role) => setConfirmedIdentity({ name, role })}
+      />
+    );
+  }
+
   if (showSetupWizard) {
     return (
       <SetupWizard
         onComplete={handleCompleteSetup}
-        suggestedManagerName={firebaseUser?.displayName || ''}
+        suggestedManagerName={confirmedIdentity?.name ?? (firebaseUser?.displayName || '')}
         suggestedManagerEmail={firebaseUser?.email || ''}
+        suggestedManagerRole={confirmedIdentity?.role ?? 'Manager'}
       />
     );
   }
