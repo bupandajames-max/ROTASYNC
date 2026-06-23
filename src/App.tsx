@@ -51,9 +51,10 @@ import {
   dbSetDoc,
   dbSaveListAtomic,
   dbDeleteDoc,
-  dbGetDoc
+  dbGetDoc,
+  dbGetCollectionByFacility
 } from './firebase';
-import { resolveAccess, ResolvedAccess } from './config/access';
+import { resolveAccess, ResolvedAccess, isSuperuserEmail } from './config/access';
 
 const DEFAULT_DEPARTMENTS: Department[] = [];
 
@@ -576,6 +577,13 @@ export default function App() {
       // --- STEP B: Hydrate from Cloud authority if firebase user is signed in ---
       if (firebaseUser) {
         try {
+          // Per-tenant read isolation: super users read everything (and filter
+          // client-side); everyone else reads only their facility's docs. Super is
+          // determined from the email allowlist so it's reliable before access resolves.
+          const scopeReads = !isSuperuserEmail(firebaseUser.email);
+          const readCol = <T,>(p: string): Promise<T[]> =>
+            scopeReads ? dbGetCollectionByFacility<T>(p, selectedFacilityId) : dbGetCollection<T>(p);
+
           const configDoc = await dbGetDoc<{ id: string; seeded: boolean }>('systemConfig', 'status');
           const cloudIsAlreadySeeded = configDoc !== null;
 
@@ -600,7 +608,7 @@ export default function App() {
           localStorage.setItem('care_departments', JSON.stringify(cloudDepts));
 
           // 3. Staff List
-          let cloudStaff = await dbGetCollection<StaffMember>('staff');
+          let cloudStaff = await readCol<StaffMember>('staff');
           cloudStaff = cloudStaff.map(s => ({
             id: s.id || `staff-${Math.random().toString(36).substring(2, 11)}`,
             name: s.name || 'Unnamed',
@@ -664,7 +672,7 @@ export default function App() {
           loadedStaff = partitionedCloudStaff;
 
           // 4. Active Cycle
-          const cloudCycles = await dbGetCollection<RosterCycle>('cycles');
+          const cloudCycles = await readCol<RosterCycle>('cycles');
           const targetCycleId = `cycle-${selectedFacilityId}-2026-06-15`;
           let cloudCycle = cloudCycles.find(c => c.id === targetCycleId);
           if (!cloudCycle && !cloudIsAlreadySeeded && loadedCycle) {
@@ -683,7 +691,7 @@ export default function App() {
           }
 
           // 5. Tasks Master
-          let cloudTasks = await dbGetCollection<TaskMaster>('taskMasters');
+          let cloudTasks = await readCol<TaskMaster>('taskMasters');
           if (cloudTasks.length === 0 && !cloudIsAlreadySeeded && loadedTasks.length > 0) {
             for (const t of loadedTasks) {
               await dbSetDoc('taskMasters', t.id, t);
@@ -698,7 +706,7 @@ export default function App() {
           loadedTasks = cloudTasks;
 
           // 6. Daily Tasks
-          let cloudDailyTasks = await dbGetCollection<DailyTask>('dailyTasks');
+          let cloudDailyTasks = await readCol<DailyTask>('dailyTasks');
           let partitionedCloudDaily = cloudDailyTasks.filter(t => 
             loadedStaff.some(s => s.name === t.staffName)
           );
@@ -716,7 +724,7 @@ export default function App() {
           loadedDaily = partitionedCloudDaily;
 
           // 7. Approvals
-          let cloudApprovals = await dbGetCollection<ApprovalRequest>('approvals');
+          let cloudApprovals = await readCol<ApprovalRequest>('approvals');
           if (cloudApprovals.length === 0 && !cloudIsAlreadySeeded && loadedApprovals.length > 0) {
             for (const a of loadedApprovals) {
               await dbSetDoc('approvals', a.id, a);
@@ -730,7 +738,7 @@ export default function App() {
           localStorage.setItem(`facility_${selectedFacilityId}_approvals`, JSON.stringify(cloudApprovals));
 
           // 8. Extra Hours Log
-          let cloudExtra = await dbGetCollection<ExtraHoursEntry>('extraHours');
+          let cloudExtra = await readCol<ExtraHoursEntry>('extraHours');
           if (cloudExtra.length === 0 && !cloudIsAlreadySeeded && loadedExtra.length > 0) {
             for (const e of loadedExtra) {
               await dbSetDoc('extraHours', e.id, e);
@@ -744,7 +752,7 @@ export default function App() {
           localStorage.setItem(`facility_${selectedFacilityId}_extra_hours_log`, JSON.stringify(cloudExtra));
 
           // 9. Timesheets
-          const cloudTimesheets = await dbGetCollection<Timesheet>('timesheets');
+          const cloudTimesheets = await readCol<Timesheet>('timesheets');
           let partitionedCloudTimesheets = cloudTimesheets.filter(t => 
             loadedStaff.some(s => s.id === t.staffId)
           );

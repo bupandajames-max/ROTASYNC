@@ -157,21 +157,21 @@ service cloud.firestore {
 
     // Staff registry: department heads and above, only within their own facility.
     match /staff/{staffId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
       allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
 
     // Roster cycles: department heads and above, within their own facility.
     match /cycles/{cycleId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isManagerLevel() && isValidId(cycleId) && isValidCycle(incoming()) && inMyFacility(incoming().facilityId);
       allow delete: if isManagerLevel() && (isSuper() || inMyFacility(existing().facilityId));
     }
 
     // Task master templates: department heads and above, within their own facility.
     match /taskMasters/{taskMasterId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isManagerLevel() && isValidId(taskMasterId) && isValidTaskMaster(incoming()) && inMyFacility(incoming().facilityId);
       allow delete: if isManagerLevel() && (isSuper() || inMyFacility(existing().facilityId));
     }
@@ -184,25 +184,25 @@ service cloud.firestore {
     // Any signed-in user may write: staff complete tasks, submit timesheets,
     // and raise requests. (Per-record ownership scoping is a future hardening.)
     match /dailyTasks/{taskId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isSignedIn() && isValidId(taskId);
       allow delete: if isSignedIn();
     }
 
     match /timesheets/{timesheetId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isSignedIn() && isValidId(timesheetId);
       allow delete: if isSignedIn();
     }
 
     match /approvals/{approvalId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isSignedIn() && isValidId(approvalId);
       allow delete: if isSignedIn();
     }
 
     match /extraHours/{extraHoursId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isSignedIn() && isValidId(extraHoursId);
       allow delete: if isSignedIn();
     }

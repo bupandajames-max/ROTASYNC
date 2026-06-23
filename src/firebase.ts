@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, collection, getDocs, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, collection, getDocs, setDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase
@@ -95,6 +95,18 @@ export async function logoutUser() {
 export async function dbGetCollection<T>(path: string): Promise<T[]> {
   try {
     const snap = await getDocs(collection(db, path));
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }) as T);
+  } catch (err) {
+    return handleFirestoreError(err, OperationType.GET, path);
+  }
+}
+
+// Read only the docs belonging to a facility — used for per-tenant read isolation
+// (non-super users). The where() constraint keeps the query allowed under
+// facility-scoped read rules.
+export async function dbGetCollectionByFacility<T>(path: string, facilityId: string): Promise<T[]> {
+  try {
+    const snap = await getDocs(query(collection(db, path), where('facilityId', '==', facilityId)));
     return snap.docs.map(d => ({ ...d.data(), id: d.id }) as T);
   } catch (err) {
     return handleFirestoreError(err, OperationType.GET, path);
