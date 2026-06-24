@@ -2180,8 +2180,6 @@ export default function App() {
                 setTaskMasterList(list);
                 persistState('task_master', list);
               }}
-              shifts={shifts}
-              setShifts={setShifts}
               departments={departments}
               setDepartments={setDepartments}
               onCreateDepartment={handleCreateDepartment}
@@ -2191,21 +2189,17 @@ export default function App() {
               isSandboxStrictMode={isSandboxStrictMode}
               setIsSandboxStrictMode={setIsSandboxStrictMode}
               openOnboarding={() => setIsOnboardingOpen(true)}
-              taxonomy={taxonomy}
-              setTaxonomy={setTaxonomy}
               onFullReset={handleDeepAtomicPurge}
-              ruleSet={ruleSet}
-              setRuleSet={setRuleSet}
-              taskCategories={taskCategories}
-              setTaskCategories={setTaskCategories}
-              facilityTypes={facilityTypes}
-              setFacilityTypes={setFacilityTypes}
-              holidays={holidays}
-              setHolidays={setHolidays}
-              timezoneLabel={timezoneLabel}
-              setTimezoneLabel={setTimezoneLabel}
-              regionPresetId={regionPresetId}
-              setRegionPresetId={setRegionPresetId}
+              workspaceConfig={{
+                shifts, setShifts,
+                taxonomy, setTaxonomy,
+                ruleSet, setRuleSet,
+                taskCategories, setTaskCategories,
+                facilityTypes, setFacilityTypes,
+                holidays, setHolidays,
+                timezoneLabel, setTimezoneLabel,
+                regionPresetId, setRegionPresetId,
+              }}
               accessLevel={access.accessLevel}
             />
           )}

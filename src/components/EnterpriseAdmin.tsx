@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, patternLabel } from '../types';
+import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel } from '../types';
 import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
 import { useToast } from './ui/ToastProvider';
 import { useConfirm } from './ui/ConfirmProvider';
@@ -27,43 +27,15 @@ import {
   RotateCcw
 } from 'lucide-react';
 
-interface EnterpriseAdminProps {
-  facilities: Facility[];
-  onCreateFacility: (newFac: Facility) => void;
-  onUpdateFacility: (fac: Facility) => void;
-  onDeleteFacility: (id: string) => void;
-  selectedFacilityId: string;
-  setSelectedFacilityId: (id: string) => void;
-  staffList: StaffMember[];
-  setStaffList: (list: StaffMember[]) => void;
-  taskMasterList: TaskMaster[];
-  setTaskMasterList: (list: TaskMaster[]) => void;
+// Per-facility workspace configuration — same shape as the App-level
+// useWorkspaceConfig hook's return value. Bundled into one prop instead of
+// 16 separate ones; destructured back to identical local names below so
+// nothing else in this file needs to change.
+interface WorkspaceConfigBundle {
   shifts: { [code: string]: ShiftDef };
   setShifts: (shifts: { [code: string]: ShiftDef }) => void;
-  // Multi-tenant controls
-  departments: Department[];
-  setDepartments: (depts: Department[]) => void;
-  onCreateDepartment?: (newDept: Department) => void;
-  onDeleteDepartment?: (id: string) => void;
-  currentDeptId: string;
-  setCurrentDeptId: (id: string) => void;
-  isSandboxStrictMode: boolean;
-  setIsSandboxStrictMode: (val: boolean) => void;
-  openOnboarding?: () => void;
-  taxonomy: {
-    appName: string;
-    workspaceSingular: string;
-    workspacePlural: string;
-    memberSingular: string;
-    memberPlural: string;
-    groupSingular: string;
-    groupPlural: string;
-    taskSingular: string;
-    taskPlural: string;
-  };
+  taxonomy: Taxonomy;
   setTaxonomy: (tax: any) => void;
-  onFullReset?: () => Promise<void>;
-  // Configuration-driven workspace settings
   ruleSet: RosterRuleSet;
   setRuleSet: (rs: RosterRuleSet) => void;
   taskCategories: string[];
@@ -76,6 +48,31 @@ interface EnterpriseAdminProps {
   setTimezoneLabel: (tz: string) => void;
   regionPresetId?: string;
   setRegionPresetId: (id: string | undefined) => void;
+}
+
+interface EnterpriseAdminProps {
+  facilities: Facility[];
+  onCreateFacility: (newFac: Facility) => void;
+  onUpdateFacility: (fac: Facility) => void;
+  onDeleteFacility: (id: string) => void;
+  selectedFacilityId: string;
+  setSelectedFacilityId: (id: string) => void;
+  staffList: StaffMember[];
+  setStaffList: (list: StaffMember[]) => void;
+  taskMasterList: TaskMaster[];
+  setTaskMasterList: (list: TaskMaster[]) => void;
+  // Multi-tenant controls
+  departments: Department[];
+  setDepartments: (depts: Department[]) => void;
+  onCreateDepartment?: (newDept: Department) => void;
+  onDeleteDepartment?: (id: string) => void;
+  currentDeptId: string;
+  setCurrentDeptId: (id: string) => void;
+  isSandboxStrictMode: boolean;
+  setIsSandboxStrictMode: (val: boolean) => void;
+  openOnboarding?: () => void;
+  onFullReset?: () => Promise<void>;
+  workspaceConfig: WorkspaceConfigBundle;
   accessLevel?: string; // current user's tier — gates role assignment + facility ops
 }
 
@@ -90,8 +87,6 @@ export default function EnterpriseAdmin({
   setStaffList,
   taskMasterList,
   setTaskMasterList,
-  shifts,
-  setShifts,
   departments,
   setDepartments,
   onCreateDepartment,
@@ -101,25 +96,23 @@ export default function EnterpriseAdmin({
   isSandboxStrictMode,
   setIsSandboxStrictMode,
   openOnboarding,
-  taxonomy,
-  setTaxonomy,
   onFullReset,
-  ruleSet,
-  setRuleSet,
-  taskCategories,
-  setTaskCategories,
-  facilityTypes,
-  setFacilityTypes,
-  holidays,
-  setHolidays,
-  timezoneLabel,
-  setTimezoneLabel,
-  regionPresetId,
-  setRegionPresetId,
+  workspaceConfig,
   accessLevel = 'staff',
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
+
+  const {
+    shifts, setShifts,
+    taxonomy, setTaxonomy,
+    ruleSet, setRuleSet,
+    taskCategories, setTaskCategories,
+    facilityTypes, setFacilityTypes,
+    holidays, setHolidays,
+    timezoneLabel, setTimezoneLabel,
+    regionPresetId, setRegionPresetId,
+  } = workspaceConfig;
 
   // Which access tiers the current user may grant to others. Super users can
   // appoint facility managers; facility managers and dept heads can appoint
