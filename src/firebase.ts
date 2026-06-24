@@ -113,6 +113,28 @@ export async function dbGetCollectionByFacility<T>(path: string, facilityId: str
   }
 }
 
+/**
+ * First-run bootstrap: if the cloud collection came back empty and has never
+ * been seeded before, push the given local fallback items up to Firestore
+ * one by one and treat them as the result. Otherwise, the cloud read stands
+ * as-is. This exact sequence was previously duplicated inline at 7 call
+ * sites in the app's hydration flow (one per collection).
+ */
+export async function seedCollectionFromLocalIfEmpty<T extends { id: string }>(
+  path: string,
+  cloudItems: T[],
+  cloudIsAlreadySeeded: boolean,
+  localFallback: T[]
+): Promise<T[]> {
+  if (cloudItems.length > 0 || cloudIsAlreadySeeded || localFallback.length === 0) {
+    return cloudItems;
+  }
+  for (const item of localFallback) {
+    await dbSetDoc(path, item.id, item);
+  }
+  return localFallback;
+}
+
 function sanitizePayload<T>(obj: T): any {
   if (obj === undefined) return null;
   if (obj === null) return null;

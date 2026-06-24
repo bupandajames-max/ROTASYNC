@@ -55,7 +55,8 @@ import {
   dbSaveListAtomic,
   dbDeleteDoc,
   dbGetDoc,
-  dbGetCollectionByFacility
+  dbGetCollectionByFacility,
+  seedCollectionFromLocalIfEmpty
 } from './firebase';
 import { resolveAccess, ResolvedAccess, isSuperuserEmail } from './config/access';
 
@@ -606,12 +607,7 @@ export default function App() {
 
           // 1. Facilities
           let cloudFacs = await dbGetCollection<Facility>('facilities');
-          if (cloudFacs.length === 0 && !cloudIsAlreadySeeded && loadedFacs.length > 0) {
-            for (const f of loadedFacs) {
-              await dbSetDoc('facilities', f.id, f);
-            }
-            cloudFacs = loadedFacs;
-          }
+          cloudFacs = await seedCollectionFromLocalIfEmpty('facilities', cloudFacs, cloudIsAlreadySeeded, loadedFacs);
           if (cloudFacs.length > 0) {
             const { upgraded, changed } = upgradeFacilitiesList(cloudFacs);
             cloudFacs = upgraded;
@@ -712,12 +708,7 @@ export default function App() {
           // 5. Tasks Master
           let cloudTasks = await readCol<TaskMaster>('taskMasters');
           backfillFacility('taskMasters', cloudTasks);
-          if (cloudTasks.length === 0 && !cloudIsAlreadySeeded && loadedTasks.length > 0) {
-            for (const t of loadedTasks) {
-              await dbSetDoc('taskMasters', t.id, t);
-            }
-            cloudTasks = loadedTasks;
-          }
+          cloudTasks = await seedCollectionFromLocalIfEmpty('taskMasters', cloudTasks, cloudIsAlreadySeeded, loadedTasks);
           if (active) {
             setTaskMasterList(cloudTasks);
             lastTaskMasterListRef.current = cloudTasks;
@@ -728,15 +719,10 @@ export default function App() {
           // 6. Daily Tasks
           let cloudDailyTasks = await readCol<DailyTask>('dailyTasks');
           backfillFacility('dailyTasks', cloudDailyTasks);
-          let partitionedCloudDaily = cloudDailyTasks.filter(t => 
+          let partitionedCloudDaily = cloudDailyTasks.filter(t =>
             loadedStaff.some(s => s.name === t.staffName)
           );
-          if (partitionedCloudDaily.length === 0 && !cloudIsAlreadySeeded && loadedDaily.length > 0) {
-            for (const t of loadedDaily) {
-              await dbSetDoc('dailyTasks', t.id, t);
-            }
-            partitionedCloudDaily = loadedDaily;
-          }
+          partitionedCloudDaily = await seedCollectionFromLocalIfEmpty('dailyTasks', partitionedCloudDaily, cloudIsAlreadySeeded, loadedDaily);
           if (active) {
             setDailyTasks(partitionedCloudDaily);
             lastDailyTasksRef.current = partitionedCloudDaily;
@@ -747,12 +733,7 @@ export default function App() {
           // 7. Approvals
           let cloudApprovals = await readCol<ApprovalRequest>('approvals');
           backfillFacility('approvals', cloudApprovals);
-          if (cloudApprovals.length === 0 && !cloudIsAlreadySeeded && loadedApprovals.length > 0) {
-            for (const a of loadedApprovals) {
-              await dbSetDoc('approvals', a.id, a);
-            }
-            cloudApprovals = loadedApprovals;
-          }
+          cloudApprovals = await seedCollectionFromLocalIfEmpty('approvals', cloudApprovals, cloudIsAlreadySeeded, loadedApprovals);
           if (active) {
             setApprovals(cloudApprovals);
             lastApprovalsRef.current = cloudApprovals;
@@ -762,12 +743,7 @@ export default function App() {
           // 8. Extra Hours Log
           let cloudExtra = await readCol<ExtraHoursEntry>('extraHours');
           backfillFacility('extraHours', cloudExtra);
-          if (cloudExtra.length === 0 && !cloudIsAlreadySeeded && loadedExtra.length > 0) {
-            for (const e of loadedExtra) {
-              await dbSetDoc('extraHours', e.id, e);
-            }
-            cloudExtra = loadedExtra;
-          }
+          cloudExtra = await seedCollectionFromLocalIfEmpty('extraHours', cloudExtra, cloudIsAlreadySeeded, loadedExtra);
           if (active) {
             setExtraHoursLog(cloudExtra);
             lastExtraHoursLogRef.current = cloudExtra;
@@ -780,12 +756,7 @@ export default function App() {
           let partitionedCloudTimesheets = cloudTimesheets.filter(t =>
             loadedStaff.some(s => s.id === t.staffId)
           );
-          if (partitionedCloudTimesheets.length === 0 && !cloudIsAlreadySeeded && loadedTimesheets.length > 0) {
-            for (const t of loadedTimesheets) {
-              await dbSetDoc('timesheets', t.id, t);
-            }
-            partitionedCloudTimesheets = loadedTimesheets;
-          }
+          partitionedCloudTimesheets = await seedCollectionFromLocalIfEmpty('timesheets', partitionedCloudTimesheets, cloudIsAlreadySeeded, loadedTimesheets);
           if (active) {
             setTimesheets(partitionedCloudTimesheets);
           }
