@@ -28,6 +28,7 @@ import EmptyState from './components/EmptyState';
 import { useToast } from './components/ui/ToastProvider';
 import { useConfirm } from './components/ui/ConfirmProvider';
 import { generateDefaultTimesheet } from './utils/timesheetUtils';
+import { GLOBAL_KEYS, facilityKey, seededFlagKey, setupHiddenKey, welcomedKey, mirrorLegacyFacilityKey } from './utils/storageKeys';
 import firebaseConfig from '../firebase-applet-config.json';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
@@ -110,7 +111,7 @@ export default function App() {
   // Core Database States
   const [facilities, setFacilities] = useState<Facility[]>(DEFAULT_FACILITIES);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>(() => {
-    try { return localStorage.getItem('care_last_facility') || ''; } catch { return ''; }
+    try { return localStorage.getItem(GLOBAL_KEYS.lastFacility) || ''; } catch { return ''; }
   });
 
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -225,7 +226,7 @@ export default function App() {
     
     // Save to Firestore and local storage cache
     persistState('staff_list', updatedStaff);
-    localStorage.setItem(`facility_${newStaff.facilityId}_active_staff_id`, newStaff.id);
+    localStorage.setItem(facilityKey(newStaff.facilityId, 'active_staff_id'), newStaff.id);
   };
 
   const handleOnboardNewStaff = (newStaff: StaffMember) => {
@@ -242,7 +243,7 @@ export default function App() {
       if (staffMember) {
         setActiveStaffId(staffMember.id);
         setIsManagerView(false);
-        localStorage.setItem(`facility_${selectedFacilityId}_active_staff_id`, staffMember.id);
+        localStorage.setItem(facilityKey(selectedFacilityId, 'active_staff_id'), staffMember.id);
       } else {
         // Fallback or guest staff on the fly
         const guestStaff: StaffMember = {
@@ -263,7 +264,7 @@ export default function App() {
         setActiveStaffId(guestStaff.id);
         setIsManagerView(false);
         persistState('staff_list', updated);
-        localStorage.setItem(`facility_${selectedFacilityId}_active_staff_id`, guestStaff.id);
+        localStorage.setItem(facilityKey(selectedFacilityId, 'active_staff_id'), guestStaff.id);
       }
     } else {
       setActiveStaffId(staffId);
@@ -271,7 +272,7 @@ export default function App() {
       if (matched) {
         setIsManagerView(matched.isManager);
       }
-      localStorage.setItem(`facility_${selectedFacilityId}_active_staff_id`, staffId);
+      localStorage.setItem(facilityKey(selectedFacilityId, 'active_staff_id'), staffId);
     }
   };
 
@@ -300,7 +301,7 @@ export default function App() {
 
       // --- STEP A: Load Local Cache first so UI is immediately responsive ---
       // Load Facilities
-      const storedFacilities = localStorage.getItem('care_facilities_list');
+      const storedFacilities = localStorage.getItem(GLOBAL_KEYS.facilitiesList);
       let loadedFacs = DEFAULT_FACILITIES;
       if (storedFacilities) {
         try {
@@ -308,7 +309,7 @@ export default function App() {
           const { upgraded, changed } = upgradeFacilitiesList(parsed);
           loadedFacs = upgraded;
           if (changed) {
-            localStorage.setItem('care_facilities_list', JSON.stringify(upgraded));
+            localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(upgraded));
           }
         } catch (e) {
           loadedFacs = DEFAULT_FACILITIES;
@@ -330,10 +331,10 @@ export default function App() {
         return;
       }
 
-      const isSeededInitially = localStorage.getItem(`seeded_initially_${selectedFacilityId}`) === 'true';
+      const isSeededInitially = localStorage.getItem(seededFlagKey(selectedFacilityId)) === 'true';
 
       // Load Departments
-      const storedDepts = localStorage.getItem('care_departments');
+      const storedDepts = localStorage.getItem(GLOBAL_KEYS.departments);
       let loadedDepts: Department[] = [];
       if (storedDepts) {
         try {
@@ -348,7 +349,7 @@ export default function App() {
 
       // Load Holidays (no region baked in; sourced from workspace config / region preset)
       let loadedHolidays: PublicHoliday[] = [];
-      const storedHolidays = localStorage.getItem(`facility_${selectedFacilityId}_holidays`) || localStorage.getItem('kmh_holidays');
+      const storedHolidays = localStorage.getItem(facilityKey(selectedFacilityId, 'holidays')) || localStorage.getItem('kmh_holidays');
       if (storedHolidays) {
         try {
           loadedHolidays = JSON.parse(storedHolidays);
@@ -359,7 +360,7 @@ export default function App() {
       }
 
       // Load custom shifts
-      const storedShifts = localStorage.getItem(`facility_${selectedFacilityId}_custom_shifts`);
+      const storedShifts = localStorage.getItem(facilityKey(selectedFacilityId, 'custom_shifts'));
       let loadedShifts = SHIFTS;
       if (storedShifts) {
         try {
@@ -373,7 +374,7 @@ export default function App() {
       // Load workspace configuration (ruleset, categories, facility types, regional).
       // Migration: if no bundled config exists yet, wrap the loose settings already
       // loaded above into a default config so existing installs keep working.
-      const storedConfig = localStorage.getItem(`facility_${selectedFacilityId}_config`);
+      const storedConfig = localStorage.getItem(facilityKey(selectedFacilityId, 'config'));
       let loadedRuleSet = buildDefaultRuleSet();
       let loadedCategories = buildDefaultWorkspaceConfig().taskCategories;
       let loadedFacTypes = buildDefaultWorkspaceConfig().facilityTypes;
@@ -399,7 +400,7 @@ export default function App() {
 
       // Load Staff
       let loadedStaff: StaffMember[] = [];
-      const storedStaff = localStorage.getItem(`facility_${selectedFacilityId}_staff_list`);
+      const storedStaff = localStorage.getItem(facilityKey(selectedFacilityId, 'staff_list'));
       if (storedStaff) {
         try {
           loadedStaff = JSON.parse(storedStaff);
@@ -459,7 +460,7 @@ export default function App() {
       }
 
       // Load cycle dates
-      const storedDates = localStorage.getItem(`facility_${selectedFacilityId}_cycle_dates`);
+      const storedDates = localStorage.getItem(facilityKey(selectedFacilityId, 'cycle_dates'));
       let loadedDates = getDatesForCycle('2026-06-15');
       if (storedDates) {
         try {
@@ -471,7 +472,7 @@ export default function App() {
       }
 
       // Load Active Cycle
-      const storedCycle = localStorage.getItem(`facility_${selectedFacilityId}_active_cycle`);
+      const storedCycle = localStorage.getItem(facilityKey(selectedFacilityId, 'active_cycle'));
       let loadedCycle: RosterCycle | null = null;
       if (storedCycle) {
         try {
@@ -493,7 +494,7 @@ export default function App() {
       }
 
       // Load Task Master
-      const storedTaskMaster = localStorage.getItem(`facility_${selectedFacilityId}_task_master`);
+      const storedTaskMaster = localStorage.getItem(facilityKey(selectedFacilityId, 'task_master'));
       let loadedTasks: TaskMaster[] = [];
       if (storedTaskMaster) {
         try {
@@ -510,7 +511,7 @@ export default function App() {
       }
 
       // Load Approvals
-      const storedApprovals = localStorage.getItem(`facility_${selectedFacilityId}_approvals`);
+      const storedApprovals = localStorage.getItem(facilityKey(selectedFacilityId, 'approvals'));
       let loadedApprovals: ApprovalRequest[] = [];
       if (storedApprovals) {
         try {
@@ -523,7 +524,7 @@ export default function App() {
       }
 
       // Load Overtime logs
-      const storedExtra = localStorage.getItem(`facility_${selectedFacilityId}_extra_hours_log`);
+      const storedExtra = localStorage.getItem(facilityKey(selectedFacilityId, 'extra_hours_log'));
       let loadedExtra: ExtraHoursEntry[] = [];
       if (storedExtra) {
         try {
@@ -536,7 +537,7 @@ export default function App() {
       }
 
       // Load Daily Tasks log
-      const storedDaily = localStorage.getItem(`facility_${selectedFacilityId}_daily_tasks`);
+      const storedDaily = localStorage.getItem(facilityKey(selectedFacilityId, 'daily_tasks'));
       let loadedDaily: DailyTask[] = [];
       if (storedDaily) {
         try {
@@ -552,7 +553,7 @@ export default function App() {
       }
 
       // Load Timesheets list
-      const storedTimesheets = localStorage.getItem(`facility_${selectedFacilityId}_timesheets_list`);
+      const storedTimesheets = localStorage.getItem(facilityKey(selectedFacilityId, 'timesheets_list'));
       let loadedTimesheets: Timesheet[] = [];
       if (storedTimesheets) {
         try {
@@ -564,7 +565,7 @@ export default function App() {
       }
 
       // Load Taxonomy
-      const storedTax = localStorage.getItem(`facility_${selectedFacilityId}_taxonomy`);
+      const storedTax = localStorage.getItem(facilityKey(selectedFacilityId, 'taxonomy'));
       let loadedTax = DEFAULT_TAXONOMY;
       if (storedTax) {
         try {
@@ -576,7 +577,7 @@ export default function App() {
       }
 
       if (!isSeededInitially) {
-        localStorage.setItem(`seeded_initially_${selectedFacilityId}`, 'true');
+        localStorage.setItem(seededFlagKey(selectedFacilityId), 'true');
       }
 
       // --- STEP B: Hydrate from Cloud authority if firebase user is signed in ---
@@ -615,13 +616,13 @@ export default function App() {
             const { upgraded, changed } = upgradeFacilitiesList(cloudFacs);
             cloudFacs = upgraded;
             if (active) setFacilities(cloudFacs);
-            localStorage.setItem('care_facilities_list', JSON.stringify(cloudFacs));
+            localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(cloudFacs));
           }
 
           // 2. Departments
           const cloudDepts = await dbGetCollection<Department>('departments');
           if (active) setDepartments(cloudDepts);
-          localStorage.setItem('care_departments', JSON.stringify(cloudDepts));
+          localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(cloudDepts));
 
           // 3. Staff List
           let cloudStaff = await readCol<StaffMember>('staff');
@@ -685,7 +686,7 @@ export default function App() {
             setStaffList(partitionedCloudStaff);
             lastStaffListRef.current = partitionedCloudStaff;
           }
-          localStorage.setItem(`facility_${selectedFacilityId}_staff_list`, JSON.stringify(partitionedCloudStaff));
+          localStorage.setItem(facilityKey(selectedFacilityId, 'staff_list'), JSON.stringify(partitionedCloudStaff));
           loadedStaff = partitionedCloudStaff;
 
           // 4. Active Cycle
@@ -701,10 +702,10 @@ export default function App() {
             setActiveCycle(cloudCycle || null);
           }
           if (cloudCycle) {
-            localStorage.setItem(`facility_${selectedFacilityId}_active_cycle`, JSON.stringify(cloudCycle));
+            localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(cloudCycle));
             loadedCycle = cloudCycle;
           } else {
-            localStorage.removeItem(`facility_${selectedFacilityId}_active_cycle`);
+            localStorage.removeItem(facilityKey(selectedFacilityId, 'active_cycle'));
             loadedCycle = null;
           }
 
@@ -721,7 +722,7 @@ export default function App() {
             setTaskMasterList(cloudTasks);
             lastTaskMasterListRef.current = cloudTasks;
           }
-          localStorage.setItem(`facility_${selectedFacilityId}_task_master`, JSON.stringify(cloudTasks));
+          localStorage.setItem(facilityKey(selectedFacilityId, 'task_master'), JSON.stringify(cloudTasks));
           loadedTasks = cloudTasks;
 
           // 6. Daily Tasks
@@ -740,7 +741,7 @@ export default function App() {
             setDailyTasks(partitionedCloudDaily);
             lastDailyTasksRef.current = partitionedCloudDaily;
           }
-          localStorage.setItem(`facility_${selectedFacilityId}_daily_tasks`, JSON.stringify(partitionedCloudDaily));
+          localStorage.setItem(facilityKey(selectedFacilityId, 'daily_tasks'), JSON.stringify(partitionedCloudDaily));
           loadedDaily = partitionedCloudDaily;
 
           // 7. Approvals
@@ -756,7 +757,7 @@ export default function App() {
             setApprovals(cloudApprovals);
             lastApprovalsRef.current = cloudApprovals;
           }
-          localStorage.setItem(`facility_${selectedFacilityId}_approvals`, JSON.stringify(cloudApprovals));
+          localStorage.setItem(facilityKey(selectedFacilityId, 'approvals'), JSON.stringify(cloudApprovals));
 
           // 8. Extra Hours Log
           let cloudExtra = await readCol<ExtraHoursEntry>('extraHours');
@@ -771,7 +772,7 @@ export default function App() {
             setExtraHoursLog(cloudExtra);
             lastExtraHoursLogRef.current = cloudExtra;
           }
-          localStorage.setItem(`facility_${selectedFacilityId}_extra_hours_log`, JSON.stringify(cloudExtra));
+          localStorage.setItem(facilityKey(selectedFacilityId, 'extra_hours_log'), JSON.stringify(cloudExtra));
 
           // 9. Timesheets
           const cloudTimesheets = await readCol<Timesheet>('timesheets');
@@ -788,7 +789,7 @@ export default function App() {
           if (active) {
             setTimesheets(partitionedCloudTimesheets);
           }
-          localStorage.setItem(`facility_${selectedFacilityId}_timesheets_list`, JSON.stringify(partitionedCloudTimesheets));
+          localStorage.setItem(facilityKey(selectedFacilityId, 'timesheets_list'), JSON.stringify(partitionedCloudTimesheets));
 
           if (!cloudIsAlreadySeeded) {
             await dbSetDoc('systemConfig', 'status', { id: 'status', seeded: true });
@@ -802,7 +803,7 @@ export default function App() {
 
       // --- STEP C: Post-Hydration State Alignment ---
       // Configure operator/member view credentials
-      const storedActiveId = localStorage.getItem(`facility_${selectedFacilityId}_active_staff_id`);
+      const storedActiveId = localStorage.getItem(facilityKey(selectedFacilityId, 'active_staff_id'));
       if (storedActiveId && loadedStaff.some(s => s.id === storedActiveId)) {
         if (active) setActiveStaffId(storedActiveId);
       } else {
@@ -810,7 +811,7 @@ export default function App() {
         const fallbackId = manager ? manager.id : '';
         if (active) {
           setActiveStaffId(fallbackId);
-          localStorage.setItem(`facility_${selectedFacilityId}_active_staff_id`, fallbackId);
+          localStorage.setItem(facilityKey(selectedFacilityId, 'active_staff_id'), fallbackId);
         }
       }
 
@@ -830,14 +831,14 @@ export default function App() {
   // Sync custom taxonomy changes to localStorage
   useEffect(() => {
     if (selectedFacilityId) {
-      localStorage.setItem(`facility_${selectedFacilityId}_taxonomy`, JSON.stringify(taxonomy));
+      localStorage.setItem(facilityKey(selectedFacilityId, 'taxonomy'), JSON.stringify(taxonomy));
     }
   }, [taxonomy, selectedFacilityId]);
 
   // Remember last active facility for next load
   useEffect(() => {
     if (selectedFacilityId) {
-      try { localStorage.setItem('care_last_facility', selectedFacilityId); } catch {}
+      try { localStorage.setItem(GLOBAL_KEYS.lastFacility, selectedFacilityId); } catch {}
     }
   }, [selectedFacilityId]);
 
@@ -852,7 +853,7 @@ export default function App() {
       regionPresetId,
     };
     try {
-      localStorage.setItem(`facility_${selectedFacilityId}_config`, JSON.stringify(cfg));
+      localStorage.setItem(facilityKey(selectedFacilityId, 'config'), JSON.stringify(cfg));
     } catch {}
     if (firebaseUser) {
       dbSetDoc('workspaceConfigs', selectedFacilityId, { id: selectedFacilityId, ...cfg }).catch(() => {});
@@ -863,7 +864,7 @@ export default function App() {
   useEffect(() => {
     if (!isHydrated || !selectedFacilityId) return;
     try {
-      localStorage.setItem(`facility_${selectedFacilityId}_holidays`, JSON.stringify(holidays));
+      localStorage.setItem(facilityKey(selectedFacilityId, 'holidays'), JSON.stringify(holidays));
     } catch {}
   }, [holidays, selectedFacilityId, isHydrated]);
 
@@ -893,7 +894,7 @@ export default function App() {
       }
       
       if (timesheetChanged) {
-        localStorage.setItem(`facility_${selectedFacilityId}_timesheets_list`, JSON.stringify(cleanedTimesheets));
+        localStorage.setItem(facilityKey(selectedFacilityId, 'timesheets_list'), JSON.stringify(cleanedTimesheets));
         if (firebaseUser) {
           const toWrite = cleanedTimesheets.filter(t => {
             const prev = currentTimesheets.find(p => p.id === t.id);
@@ -924,7 +925,7 @@ export default function App() {
   // Sync active user profile back with facility partition
   useEffect(() => {
     if (activeStaffId && selectedFacilityId) {
-      localStorage.setItem(`facility_${selectedFacilityId}_active_staff_id`, activeStaffId);
+      localStorage.setItem(facilityKey(selectedFacilityId, 'active_staff_id'), activeStaffId);
     }
   }, [activeStaffId, selectedFacilityId]);
 
@@ -944,7 +945,7 @@ export default function App() {
       if (staffList.length === 0) {
         if (activeStaffId !== '') {
           setActiveStaffId('');
-          localStorage.removeItem(`facility_${selectedFacilityId}_active_staff_id`);
+          localStorage.removeItem(facilityKey(selectedFacilityId, 'active_staff_id'));
         }
       } else if (!staffList.some(s => s.id === activeStaffId)) {
         const fallback = staffList.find(s => s.isManager) || staffList[0];
@@ -959,12 +960,12 @@ export default function App() {
 
   // Sync custom departments and shifts to localStorage
   useEffect(() => {
-    localStorage.setItem('care_departments', JSON.stringify(departments));
+    localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(departments));
   }, [departments]);
 
   useEffect(() => {
     if (selectedFacilityId) {
-      localStorage.setItem(`facility_${selectedFacilityId}_custom_shifts`, JSON.stringify(shifts));
+      localStorage.setItem(facilityKey(selectedFacilityId, 'custom_shifts'), JSON.stringify(shifts));
     }
   }, [shifts, selectedFacilityId]);
 
@@ -979,7 +980,7 @@ export default function App() {
   // Restore whether the setup checklist was hidden for the active workspace.
   useEffect(() => {
     try {
-      setSetupHidden(localStorage.getItem(`setup_hidden_${selectedFacilityId}`) === '1');
+      setSetupHidden(localStorage.getItem(setupHiddenKey(selectedFacilityId)) === '1');
     } catch {
       setSetupHidden(false);
     }
@@ -992,8 +993,8 @@ export default function App() {
     const setupComplete = staffList.length > 0 && rosterPlanned && taskMasterList.length > 0 && dailyTasks.length > 0;
     if (setupComplete) return;
     try {
-      if (localStorage.getItem(`welcomed_${selectedFacilityId}`) === '1') return;
-      localStorage.setItem(`welcomed_${selectedFacilityId}`, '1');
+      if (localStorage.getItem(welcomedKey(selectedFacilityId)) === '1') return;
+      localStorage.setItem(welcomedKey(selectedFacilityId), '1');
     } catch { return; }
     toast.success('Welcome! Follow the “Get started” steps on your dashboard to set up your workspace.');
   }, [isHydrated, isManagerView, selectedFacilityId, staffList.length, taskMasterList.length, dailyTasks.length, activeCycle]);
@@ -1023,7 +1024,7 @@ export default function App() {
   const handleCreateFacility = (newFac: Facility) => {
     const updated = [...facilities, newFac];
     setFacilities(updated);
-    localStorage.setItem('care_facilities_list', JSON.stringify(updated));
+    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updated));
     setSelectedFacilityId(newFac.id);
     
     if (firebaseUser) {
@@ -1043,7 +1044,7 @@ export default function App() {
     // Facility
     const updatedFacs = [...facilities, facility];
     setFacilities(updatedFacs);
-    localStorage.setItem('care_facilities_list', JSON.stringify(updatedFacs));
+    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updatedFacs));
 
     // Workspace config → individual states + persisted bundle
     setShifts(config.shifts);
@@ -1054,10 +1055,10 @@ export default function App() {
     setTimezoneLabel(config.timezoneLabel);
     setRegionPresetId(config.regionPresetId);
     setTaxonomy(config.taxonomy);
-    localStorage.setItem(`facility_${facility.id}_custom_shifts`, JSON.stringify(config.shifts));
-    localStorage.setItem(`facility_${facility.id}_taxonomy`, JSON.stringify(config.taxonomy));
-    localStorage.setItem(`facility_${facility.id}_holidays`, JSON.stringify(config.holidays));
-    localStorage.setItem(`facility_${facility.id}_config`, JSON.stringify({
+    localStorage.setItem(facilityKey(facility.id, 'custom_shifts'), JSON.stringify(config.shifts));
+    localStorage.setItem(facilityKey(facility.id, 'taxonomy'), JSON.stringify(config.taxonomy));
+    localStorage.setItem(facilityKey(facility.id, 'holidays'), JSON.stringify(config.holidays));
+    localStorage.setItem(facilityKey(facility.id, 'config'), JSON.stringify({
       ruleSet: config.ruleSet,
       taskCategories: config.taskCategories,
       facilityTypes: config.facilityTypes,
@@ -1069,13 +1070,13 @@ export default function App() {
     const scopedDepts = depts.map(d => ({ ...d, facilityId: facility.id }));
     if (scopedDepts.length) {
       setDepartments(scopedDepts);
-      localStorage.setItem('care_departments', JSON.stringify(scopedDepts));
+      localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(scopedDepts));
     }
 
     // Staff
     const scopedStaff = staff.map(s => ({ ...s, facilityId: facility.id }));
     setStaffList(scopedStaff);
-    localStorage.setItem(`facility_${facility.id}_staff_list`, JSON.stringify(scopedStaff));
+    localStorage.setItem(facilityKey(facility.id, 'staff_list'), JSON.stringify(scopedStaff));
 
     // Cloud writes (best effort)
     if (firebaseUser) {
@@ -1092,7 +1093,7 @@ export default function App() {
   const handleUpdateFacility = (updatedFac: Facility) => {
     const updated = facilities.map(f => f.id === updatedFac.id ? updatedFac : f);
     setFacilities(updated);
-    localStorage.setItem('care_facilities_list', JSON.stringify(updated));
+    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updated));
     
     if (firebaseUser) {
       dbSetDoc('facilities', updatedFac.id, updatedFac).catch(handleGenericError);
@@ -1102,7 +1103,7 @@ export default function App() {
   const handleDeleteFacility = async (facilityId: string) => {
     const updated = facilities.filter(f => f.id !== facilityId);
     setFacilities(updated);
-    localStorage.setItem('care_facilities_list', JSON.stringify(updated));
+    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updated));
     
     if (selectedFacilityId === facilityId) {
       if (updated.length > 0) {
@@ -1125,7 +1126,7 @@ export default function App() {
   const handleCreateDepartment = async (newDept: Department) => {
     const updated = [...departments, newDept];
     setDepartments(updated);
-    localStorage.setItem('care_departments', JSON.stringify(updated));
+    localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(updated));
     if (firebaseUser) {
       try {
         await dbSetDoc('departments', newDept.id, newDept);
@@ -1139,7 +1140,7 @@ export default function App() {
   const handleDeleteDepartment = async (deptId: string) => {
     const updated = departments.filter(d => d.id !== deptId);
     setDepartments(updated);
-    localStorage.setItem('care_departments', JSON.stringify(updated));
+    localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(updated));
     if (firebaseUser) {
       try {
         await dbDeleteDoc('departments', deptId);
@@ -1151,19 +1152,9 @@ export default function App() {
   };
 
   const persistState = (key: 'staff_list' | 'active_cycle' | 'task_master' | 'daily_tasks' | 'approvals' | 'extra_hours_log', data: any) => {
-    if (selectedFacilityId === 'kansanshi') {
-      const legacyMap: Record<string, string> = {
-        staff_list: 'kmh_staff_list',
-        active_cycle: 'kmh_active_cycle',
-        task_master: 'kmh_task_master',
-        daily_tasks: 'kmh_daily_tasks',
-        approvals: 'kmh_approvals',
-        extra_hours_log: 'kmh_extra_hours_log'
-      };
-      localStorage.setItem(legacyMap[key], JSON.stringify(data));
-    }
+    mirrorLegacyFacilityKey(selectedFacilityId, key, data);
     if (selectedFacilityId) {
-      localStorage.setItem(`facility_${selectedFacilityId}_${key}`, JSON.stringify(data));
+      localStorage.setItem(facilityKey(selectedFacilityId, key), JSON.stringify(data));
     }
 
     // --- SECURE REAL-TIME CLOUD PROPAGATION ---
@@ -1442,10 +1433,8 @@ export default function App() {
         // keep already stored finished ones
         const combined = [...generated.filter(g => !dailyTasks.some(d => d.id === g.id)), ...dailyTasks];
         setDailyTasks(combined);
-        localStorage.setItem(`facility_${selectedFacilityId}_daily_tasks`, JSON.stringify(combined));
-        if (selectedFacilityId === 'kansanshi') {
-          localStorage.setItem('kmh_daily_tasks', JSON.stringify(combined));
-        }
+        localStorage.setItem(facilityKey(selectedFacilityId, 'daily_tasks'), JSON.stringify(combined));
+        mirrorLegacyFacilityKey(selectedFacilityId, 'daily_tasks', combined);
       }
     }
   };
@@ -1461,10 +1450,7 @@ export default function App() {
     updatedCycle.shifts[staffId][dayIdx] = newShiftCode;
 
     setActiveCycle(updatedCycle);
-    localStorage.setItem(`facility_${selectedFacilityId}_active_cycle`, JSON.stringify(updatedCycle));
-    if (selectedFacilityId === 'kansanshi') {
-      localStorage.setItem('kmh_active_cycle', JSON.stringify(updatedCycle));
-    }
+    localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(updatedCycle));
     persistState('active_cycle', updatedCycle);
   };
 
@@ -1480,10 +1466,7 @@ export default function App() {
     });
 
     setActiveCycle(updatedCycle);
-    localStorage.setItem(`facility_${selectedFacilityId}_active_cycle`, JSON.stringify(updatedCycle));
-    if (selectedFacilityId === 'kansanshi') {
-      localStorage.setItem('kmh_active_cycle', JSON.stringify(updatedCycle));
-    }
+    localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(updatedCycle));
     persistState('active_cycle', updatedCycle);
   };
 
@@ -1491,11 +1474,8 @@ export default function App() {
     setActiveCycle(newCycle);
     const newDates = getDatesForCycle(newCycle.startDate);
     setCycleDates(newDates);
-    localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(newDates));
-    localStorage.setItem(`facility_${selectedFacilityId}_active_cycle`, JSON.stringify(newCycle));
-    if (selectedFacilityId === 'kansanshi') {
-      localStorage.setItem('kmh_active_cycle', JSON.stringify(newCycle));
-    }
+    localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(newDates));
+    localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(newCycle));
     persistState('active_cycle', newCycle);
   };
 
@@ -1519,11 +1499,8 @@ export default function App() {
     setCycleDates(newDates);
     
     // Persist to local storage & cloud
-    localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(newDates));
-    localStorage.setItem(`facility_${selectedFacilityId}_active_cycle`, JSON.stringify(updatedCycle));
-    if (selectedFacilityId === 'kansanshi') {
-      localStorage.setItem('kmh_active_cycle', JSON.stringify(updatedCycle));
-    }
+    localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(newDates));
+    localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(updatedCycle));
     persistState('active_cycle', updatedCycle);
   };
 
@@ -1533,27 +1510,27 @@ export default function App() {
 
       // 1. Purge LocalStorage keys
       const keysToClear = [
-        `facility_${selectedFacilityId}_staff_list`,
-        `facility_${selectedFacilityId}_active_cycle`,
-        `facility_${selectedFacilityId}_task_master`,
-        `facility_${selectedFacilityId}_daily_tasks`,
-        `facility_${selectedFacilityId}_approvals`,
-        `facility_${selectedFacilityId}_extra_hours_log`,
-        `facility_${selectedFacilityId}_timesheets_list`,
-        `facility_${selectedFacilityId}_cycle_dates`,
-        `facility_${selectedFacilityId}_taxonomy`,
-        `facility_${selectedFacilityId}_custom_shifts`,
+        facilityKey(selectedFacilityId, 'staff_list'),
+        facilityKey(selectedFacilityId, 'active_cycle'),
+        facilityKey(selectedFacilityId, 'task_master'),
+        facilityKey(selectedFacilityId, 'daily_tasks'),
+        facilityKey(selectedFacilityId, 'approvals'),
+        facilityKey(selectedFacilityId, 'extra_hours_log'),
+        facilityKey(selectedFacilityId, 'timesheets_list'),
+        facilityKey(selectedFacilityId, 'cycle_dates'),
+        facilityKey(selectedFacilityId, 'taxonomy'),
+        facilityKey(selectedFacilityId, 'custom_shifts'),
         'kmh_staff_list',
         'kmh_active_cycle',
         'kmh_task_master',
         'kmh_daily_tasks',
         'kmh_approvals',
         'kmh_extra_hours_log',
-        'care_facilities_list',
-        'care_departments'
+        GLOBAL_KEYS.facilitiesList,
+        GLOBAL_KEYS.departments
       ];
       keysToClear.forEach(key => localStorage.removeItem(key));
-      localStorage.setItem(`seeded_initially_${selectedFacilityId}`, 'true');
+      localStorage.setItem(seededFlagKey(selectedFacilityId), 'true');
 
       // 2. Clear Firestore Database if user context exists
       if (firebaseUser) {
@@ -1633,10 +1610,7 @@ export default function App() {
       
       if (updated) {
         setDailyTasks(combined);
-        localStorage.setItem(`facility_${selectedFacilityId}_daily_tasks`, JSON.stringify(combined));
-        if (selectedFacilityId === 'kansanshi') {
-          localStorage.setItem('kmh_daily_tasks', JSON.stringify(combined));
-        }
+        localStorage.setItem(facilityKey(selectedFacilityId, 'daily_tasks'), JSON.stringify(combined));
         persistState('daily_tasks', combined);
       }
     }
@@ -1682,10 +1656,7 @@ export default function App() {
     
     if (totalGeneratedCount > 0) {
       setDailyTasks(combined);
-      localStorage.setItem(`facility_${selectedFacilityId}_daily_tasks`, JSON.stringify(combined));
-      if (selectedFacilityId === 'kansanshi') {
-        localStorage.setItem('kmh_daily_tasks', JSON.stringify(combined));
-      }
+      localStorage.setItem(facilityKey(selectedFacilityId, 'daily_tasks'), JSON.stringify(combined));
       persistState('daily_tasks', combined);
       return {
         success: true,
@@ -1763,7 +1734,7 @@ export default function App() {
     // Set the date window when creating the first cycle, or when the wizard chose dates.
     if (dateRange || !cycleDates || cycleDates.length === 0) {
       setCycleDates(dates);
-      try { localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(dates)); } catch {}
+      try { localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(dates)); } catch {}
     }
     setActiveCycle(updatedCycle);
     persistState('active_cycle', updatedCycle);
@@ -1805,7 +1776,7 @@ export default function App() {
       .map((t, i) => ({ ...t, id: `dt-carry-${Date.now()}-${i}`, date: newStart, status: 'Carried Fwd' as DailyTask['status'] }));
 
     setCycleDates(newDates);
-    try { localStorage.setItem(`facility_${selectedFacilityId}_cycle_dates`, JSON.stringify(newDates)); } catch {}
+    try { localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(newDates)); } catch {}
     setActiveCycle(newCycle);
     persistState('active_cycle', newCycle);
 
@@ -2059,7 +2030,7 @@ export default function App() {
     const updatedList = timesheets.map(t => t.id === updated.id ? updated : t);
     setTimesheets(updatedList);
     if (selectedFacilityId) {
-      localStorage.setItem(`facility_${selectedFacilityId}_timesheets_list`, JSON.stringify(updatedList));
+      localStorage.setItem(facilityKey(selectedFacilityId, 'timesheets_list'), JSON.stringify(updatedList));
     }
     if (firebaseUser) {
       dbSetDoc('timesheets', updated.id, { ...updated, facilityId: (updated as any).facilityId || selectedFacilityId }).catch(handleGenericError);
@@ -2227,7 +2198,7 @@ export default function App() {
                     onPlanRoster={() => activeCycle ? handleNavigation('roster') : setIsWizardOpen(true)}
                     onSetupTasks={() => handleNavigation('register')}
                     onGoLive={() => handleNavigation('tasks')}
-                    onDismiss={() => { try { localStorage.setItem(`setup_hidden_${selectedFacilityId}`, '1'); } catch {} setSetupHidden(true); }}
+                    onDismiss={() => { try { localStorage.setItem(setupHiddenKey(selectedFacilityId), '1'); } catch {} setSetupHidden(true); }}
                     taxonomy={taxonomy}
                   />
                 );
