@@ -50,22 +50,28 @@ interface WorkspaceConfigBundle {
   setRegionPresetId: (id: string | undefined) => void;
 }
 
-interface EnterpriseAdminProps {
+// Facilities + departments domain — same shape as the App-level
+// useFacilities hook's return value, plus the handler renames
+// (handleCreateFacility -> onCreateFacility) already expected here.
+interface FacilitiesConfigBundle {
   facilities: Facility[];
   onCreateFacility: (newFac: Facility) => void;
   onUpdateFacility: (fac: Facility) => void;
   onDeleteFacility: (id: string) => void;
   selectedFacilityId: string;
   setSelectedFacilityId: (id: string) => void;
-  staffList: StaffMember[];
-  setStaffList: (list: StaffMember[]) => void;
-  taskMasterList: TaskMaster[];
-  setTaskMasterList: (list: TaskMaster[]) => void;
-  // Multi-tenant controls
   departments: Department[];
   setDepartments: (depts: Department[]) => void;
   onCreateDepartment?: (newDept: Department) => void;
   onDeleteDepartment?: (id: string) => void;
+}
+
+interface EnterpriseAdminProps {
+  facilitiesConfig: FacilitiesConfigBundle;
+  staffList: StaffMember[];
+  setStaffList: (list: StaffMember[]) => void;
+  taskMasterList: TaskMaster[];
+  setTaskMasterList: (list: TaskMaster[]) => void;
   currentDeptId: string;
   setCurrentDeptId: (id: string) => void;
   isSandboxStrictMode: boolean;
@@ -77,20 +83,11 @@ interface EnterpriseAdminProps {
 }
 
 export default function EnterpriseAdmin({
-  facilities,
-  onCreateFacility,
-  onUpdateFacility,
-  onDeleteFacility,
-  selectedFacilityId,
-  setSelectedFacilityId,
+  facilitiesConfig,
   staffList,
   setStaffList,
   taskMasterList,
   setTaskMasterList,
-  departments,
-  setDepartments,
-  onCreateDepartment,
-  onDeleteDepartment,
   currentDeptId,
   setCurrentDeptId,
   isSandboxStrictMode,
@@ -102,6 +99,19 @@ export default function EnterpriseAdmin({
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
+
+  const {
+    facilities,
+    onCreateFacility,
+    onUpdateFacility,
+    onDeleteFacility,
+    selectedFacilityId,
+    setSelectedFacilityId,
+    departments,
+    setDepartments,
+    onCreateDepartment,
+    onDeleteDepartment,
+  } = facilitiesConfig;
 
   const {
     shifts, setShifts,

@@ -2167,12 +2167,18 @@ export default function App() {
           {/* Enterprise Setup Portal */}
           {currentTab === 'admin' && (
             <EnterpriseAdmin
-              facilities={facilities}
-              onCreateFacility={handleCreateFacility}
-              onUpdateFacility={handleUpdateFacility}
-              onDeleteFacility={handleDeleteFacility}
-              selectedFacilityId={selectedFacilityId}
-              setSelectedFacilityId={setSelectedFacilityId}
+              facilitiesConfig={{
+                facilities,
+                onCreateFacility: handleCreateFacility,
+                onUpdateFacility: handleUpdateFacility,
+                onDeleteFacility: handleDeleteFacility,
+                selectedFacilityId,
+                setSelectedFacilityId,
+                departments,
+                setDepartments,
+                onCreateDepartment: handleCreateDepartment,
+                onDeleteDepartment: handleDeleteDepartment,
+              }}
               staffList={staffList}
               setStaffList={setStaffList}
               taskMasterList={taskMasterList}
@@ -2180,10 +2186,6 @@ export default function App() {
                 setTaskMasterList(list);
                 persistState('task_master', list);
               }}
-              departments={departments}
-              setDepartments={setDepartments}
-              onCreateDepartment={handleCreateDepartment}
-              onDeleteDepartment={handleDeleteDepartment}
               currentDeptId={currentDeptId}
               setCurrentDeptId={setCurrentDeptId}
               isSandboxStrictMode={isSandboxStrictMode}
