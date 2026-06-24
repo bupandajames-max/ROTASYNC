@@ -56,8 +56,7 @@ import {
 } from './firebase';
 import { isSuperuserEmail } from './config/access';
 import { useAuthGate } from './hooks/useAuthGate';
-
-const DEFAULT_DEPARTMENTS: Department[] = [];
+import { useFacilities } from './hooks/useFacilities';
 
 // --- Assignment engine helpers (Increment 1: availability + fairness) ---
 // Codes that mean a staff member is NOT available for task assignment that day.
@@ -96,12 +95,6 @@ export default function App() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [setupHidden, setSetupHidden] = useState(false);
 
-  // Core Database States
-  const [facilities, setFacilities] = useState<Facility[]>(DEFAULT_FACILITIES);
-  const [selectedFacilityId, setSelectedFacilityId] = useState<string>(() => {
-    try { return localStorage.getItem(GLOBAL_KEYS.lastFacility) || ''; } catch { return ''; }
-  });
-
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
 
   // Identity, sign-in, RBAC access tier, and "are they let in" gating — see useAuthGate.
@@ -132,7 +125,6 @@ export default function App() {
 
   // Connecteam Custom Configurations & Multi-tenant States
   const [shifts, setShifts] = useState<{ [code: string]: ShiftDef }>(SHIFTS);
-  const [departments, setDepartments] = useState<Department[]>(DEFAULT_DEPARTMENTS);
   const [currentDeptId, setCurrentDeptId] = useState<string>('');
   const [isSandboxStrictMode, setIsSandboxStrictMode] = useState<boolean>(false);
   const [taxonomy, setTaxonomy] = useState(DEFAULT_TAXONOMY);
@@ -167,6 +159,21 @@ export default function App() {
       });
     }
   };
+
+  // Facilities + departments domain — see useFacilities.
+  const {
+    facilities,
+    setFacilities,
+    selectedFacilityId,
+    setSelectedFacilityId,
+    departments,
+    setDepartments,
+    handleCreateFacility,
+    handleUpdateFacility,
+    handleDeleteFacility,
+    handleCreateDepartment,
+    handleDeleteDepartment,
+  } = useFacilities(firebaseUser, handleGenericError);
 
   // Self onboarding profile handler
   const handleSelfOnboard = async (newStaff: StaffMember) => {
@@ -761,13 +768,6 @@ export default function App() {
     }
   }, [taxonomy, selectedFacilityId]);
 
-  // Remember last active facility for next load
-  useEffect(() => {
-    if (selectedFacilityId) {
-      try { localStorage.setItem(GLOBAL_KEYS.lastFacility, selectedFacilityId); } catch {}
-    }
-  }, [selectedFacilityId]);
-
   // Persist workspace configuration bundle (ruleset, categories, facility types, regional)
   useEffect(() => {
     if (!isHydrated || !selectedFacilityId) return;
@@ -884,11 +884,6 @@ export default function App() {
     }
   }, [staffList, isHydrated, activeStaffId, selectedFacilityId]);
 
-  // Sync custom departments and shifts to localStorage
-  useEffect(() => {
-    localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(departments));
-  }, [departments]);
-
   useEffect(() => {
     if (selectedFacilityId) {
       localStorage.setItem(facilityKey(selectedFacilityId, 'custom_shifts'), JSON.stringify(shifts));
@@ -946,18 +941,6 @@ export default function App() {
     ? timesheets.filter(t => displayedStaffList.some(s => s.id === t.staffId))
     : timesheets;
 
-  // Dynamically Provision New Clinical Workspace
-  const handleCreateFacility = (newFac: Facility) => {
-    const updated = [...facilities, newFac];
-    setFacilities(updated);
-    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updated));
-    setSelectedFacilityId(newFac.id);
-    
-    if (firebaseUser) {
-      dbSetDoc('facilities', newFac.id, newFac).catch(handleGenericError);
-    }
-  };
-
   // First-run setup wizard completion: provision the first facility + workspace config.
   const handleCompleteSetup = (data: {
     facility: Facility;
@@ -1014,67 +997,6 @@ export default function App() {
 
     // Activate the new workspace (triggers hydration with the seeded data present)
     setSelectedFacilityId(facility.id);
-  };
-
-  const handleUpdateFacility = (updatedFac: Facility) => {
-    const updated = facilities.map(f => f.id === updatedFac.id ? updatedFac : f);
-    setFacilities(updated);
-    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updated));
-    
-    if (firebaseUser) {
-      dbSetDoc('facilities', updatedFac.id, updatedFac).catch(handleGenericError);
-    }
-  };
-
-  const handleDeleteFacility = async (facilityId: string) => {
-    const updated = facilities.filter(f => f.id !== facilityId);
-    setFacilities(updated);
-    localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(updated));
-    
-    if (selectedFacilityId === facilityId) {
-      if (updated.length > 0) {
-        setSelectedFacilityId(updated[0].id);
-      } else {
-        setSelectedFacilityId('');
-      }
-    }
-    
-    if (firebaseUser) {
-      try {
-        await dbDeleteDoc('facilities', facilityId);
-      } catch (e) {
-        console.error('Failed to delete facility from Firestore', e);
-        handleGenericError(e);
-      }
-    }
-  };
-
-  const handleCreateDepartment = async (newDept: Department) => {
-    const updated = [...departments, newDept];
-    setDepartments(updated);
-    localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(updated));
-    if (firebaseUser) {
-      try {
-        await dbSetDoc('departments', newDept.id, newDept);
-      } catch (e) {
-        console.error('Failed to write department to Firestore', e);
-        handleGenericError(e);
-      }
-    }
-  };
-
-  const handleDeleteDepartment = async (deptId: string) => {
-    const updated = departments.filter(d => d.id !== deptId);
-    setDepartments(updated);
-    localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(updated));
-    if (firebaseUser) {
-      try {
-        await dbDeleteDoc('departments', deptId);
-      } catch (e) {
-        console.error('Failed to delete department from Firestore', e);
-        handleGenericError(e);
-      }
-    }
   };
 
   const persistState = (key: 'staff_list' | 'active_cycle' | 'task_master' | 'daily_tasks' | 'approvals' | 'extra_hours_log', data: any) => {
