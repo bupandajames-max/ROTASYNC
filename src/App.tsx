@@ -57,6 +57,7 @@ import {
 import { isSuperuserEmail } from './config/access';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useFacilities } from './hooks/useFacilities';
+import { useWorkspaceConfig, DEFAULT_TAXONOMY } from './hooks/useWorkspaceConfig';
 
 // --- Assignment engine helpers (Increment 1: availability + fairness) ---
 // Codes that mean a staff member is NOT available for task assignment that day.
@@ -69,18 +70,6 @@ const buildLoadTally = (tasks: DailyTask[]): Record<string, number> => {
   const tally: Record<string, number> = {};
   tasks.forEach(t => { tally[t.staffName] = (tally[t.staffName] || 0) + 1; });
   return tally;
-};
-
-const DEFAULT_TAXONOMY = {
-  appName: 'RotaSync',
-  workspaceSingular: 'Facility',
-  workspacePlural: 'Facilities',
-  memberSingular: 'Staff Member',
-  memberPlural: 'Staff Members',
-  groupSingular: 'Department',
-  groupPlural: 'Departments',
-  taskSingular: 'Task',
-  taskPlural: 'Tasks',
 };
 
 export default function App() {
@@ -116,7 +105,6 @@ export default function App() {
   const [activeStaffId, setActiveStaffId] = useState('');
   const [activeCycle, setActiveCycle] = useState<RosterCycle | null>(null);
   const [cycleDates, setCycleDates] = useState<string[]>([]);
-  const [holidays, setHolidays] = useState<PublicHoliday[]>([]);
   const [taskMasterList, setTaskMasterList] = useState<TaskMaster[]>([]);
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
@@ -124,17 +112,8 @@ export default function App() {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
 
   // Connecteam Custom Configurations & Multi-tenant States
-  const [shifts, setShifts] = useState<{ [code: string]: ShiftDef }>(SHIFTS);
   const [currentDeptId, setCurrentDeptId] = useState<string>('');
   const [isSandboxStrictMode, setIsSandboxStrictMode] = useState<boolean>(false);
-  const [taxonomy, setTaxonomy] = useState(DEFAULT_TAXONOMY);
-
-  // Configuration-driven workspace settings (per-facility, runtime-defined)
-  const [ruleSet, setRuleSet] = useState<RosterRuleSet>(buildDefaultRuleSet());
-  const [taskCategories, setTaskCategories] = useState<string[]>(() => buildDefaultWorkspaceConfig().taskCategories);
-  const [facilityTypes, setFacilityTypes] = useState<string[]>(() => buildDefaultWorkspaceConfig().facilityTypes);
-  const [timezoneLabel, setTimezoneLabel] = useState<string>('');
-  const [regionPresetId, setRegionPresetId] = useState<string | undefined>(undefined);
 
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
   const staffListRef = useRef<StaffMember[] | null>(null);
@@ -174,6 +153,18 @@ export default function App() {
     handleCreateDepartment,
     handleDeleteDepartment,
   } = useFacilities(firebaseUser, handleGenericError);
+
+  // Per-facility workspace configuration (shifts, taxonomy, rules, regional) — see useWorkspaceConfig.
+  const {
+    shifts, setShifts,
+    taxonomy, setTaxonomy,
+    ruleSet, setRuleSet,
+    taskCategories, setTaskCategories,
+    facilityTypes, setFacilityTypes,
+    timezoneLabel, setTimezoneLabel,
+    regionPresetId, setRegionPresetId,
+    holidays, setHolidays,
+  } = useWorkspaceConfig(selectedFacilityId, isHydrated, firebaseUser);
 
   // Self onboarding profile handler
   const handleSelfOnboard = async (newStaff: StaffMember) => {
@@ -761,39 +752,6 @@ export default function App() {
     };
   }, [selectedFacilityId, firebaseUser]);
 
-  // Sync custom taxonomy changes to localStorage
-  useEffect(() => {
-    if (selectedFacilityId) {
-      localStorage.setItem(facilityKey(selectedFacilityId, 'taxonomy'), JSON.stringify(taxonomy));
-    }
-  }, [taxonomy, selectedFacilityId]);
-
-  // Persist workspace configuration bundle (ruleset, categories, facility types, regional)
-  useEffect(() => {
-    if (!isHydrated || !selectedFacilityId) return;
-    const cfg = {
-      ruleSet,
-      taskCategories,
-      facilityTypes,
-      timezoneLabel,
-      regionPresetId,
-    };
-    try {
-      localStorage.setItem(facilityKey(selectedFacilityId, 'config'), JSON.stringify(cfg));
-    } catch {}
-    if (firebaseUser) {
-      dbSetDoc('workspaceConfigs', selectedFacilityId, { id: selectedFacilityId, ...cfg }).catch(() => {});
-    }
-  }, [ruleSet, taskCategories, facilityTypes, timezoneLabel, regionPresetId, selectedFacilityId, isHydrated, firebaseUser]);
-
-  // Keep holidays persisted per-facility (Regional settings)
-  useEffect(() => {
-    if (!isHydrated || !selectedFacilityId) return;
-    try {
-      localStorage.setItem(facilityKey(selectedFacilityId, 'holidays'), JSON.stringify(holidays));
-    } catch {}
-  }, [holidays, selectedFacilityId, isHydrated]);
-
   // Synchronously seed and reconcile timesheets whenever staffList or activeCycle changes (Only post-hydration)
   useEffect(() => {
     if (!isHydrated || !selectedFacilityId || !activeCycle || staffList.length === 0) return;
@@ -883,12 +841,6 @@ export default function App() {
       }
     }
   }, [staffList, isHydrated, activeStaffId, selectedFacilityId]);
-
-  useEffect(() => {
-    if (selectedFacilityId) {
-      localStorage.setItem(facilityKey(selectedFacilityId, 'custom_shifts'), JSON.stringify(shifts));
-    }
-  }, [shifts, selectedFacilityId]);
 
   // Privileges follow the resolved access tier (from the authenticated email),
   // not a manual toggle. Staff get the staff view; anyone above gets manager tools.
