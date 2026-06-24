@@ -22,6 +22,7 @@ import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedF
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
 import SetupWizard from './components/SetupWizard';
 import ConfirmIdentity from './components/ConfirmIdentity';
+import LoadingScreen from './components/LoadingScreen';
 import SetupChecklist from './components/SetupChecklist';
 import EmptyState from './components/EmptyState';
 import { useToast } from './components/ui/ToastProvider';
@@ -2087,12 +2088,20 @@ export default function App() {
   // First-run: an authorized user with no workspace yet provisions one via the setup wizard.
   const showSetupWizard = isAuthorized && isHydrated && facilities.length === 0;
 
+  // While cloud hydration is still in flight, hold here rather than letting
+  // stale (pre-hydration) staffList/facilities briefly render the wrong gate
+  // (e.g. a "you need to register" flash for an already-registered user).
+  if (isAuthorized && !isHydrated) {
+    return <LoadingScreen />;
+  }
+
   if (showSetupWizard && firebaseUser && !confirmedIdentity) {
     return (
       <ConfirmIdentity
         email={firebaseUser.email || ''}
         suggestedName={firebaseUser.displayName || ''}
         onConfirm={(name, role) => setConfirmedIdentity({ name, role })}
+        onSignOut={handleSignOut}
       />
     );
   }
@@ -2104,6 +2113,7 @@ export default function App() {
         suggestedManagerName={confirmedIdentity?.name ?? (firebaseUser?.displayName || '')}
         suggestedManagerEmail={firebaseUser?.email || ''}
         suggestedManagerRole={confirmedIdentity?.role ?? 'Manager'}
+        onSignOut={handleSignOut}
       />
     );
   }

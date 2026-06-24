@@ -5,9 +5,10 @@ interface ConfirmIdentityProps {
   email: string;
   suggestedName: string;
   onConfirm: (name: string, role: string) => void;
+  onSignOut: () => void;
 }
 
-export default function ConfirmIdentity({ email, suggestedName, onConfirm }: ConfirmIdentityProps) {
+export default function ConfirmIdentity({ email, suggestedName, onConfirm, onSignOut }: ConfirmIdentityProps) {
   const [name, setName] = useState(suggestedName);
   const [role, setRole] = useState('Manager');
 
@@ -20,10 +21,16 @@ export default function ConfirmIdentity({ email, suggestedName, onConfirm }: Con
           <div className="bg-[#009EE2] w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
             <UserCircle2 className="w-6 h-6 text-sky-100" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-black tracking-wide">Confirm it's you</h1>
             <p className="text-xs text-indigo-200/80 mt-0.5">Signed in as {email}</p>
           </div>
+          <button
+            onClick={onSignOut}
+            className="text-[10px] font-bold text-indigo-200/80 hover:text-white border border-indigo-300/30 rounded-lg px-2.5 py-1.5 shrink-0"
+          >
+            Sign out
+          </button>
         </div>
 
         <div className="p-6 space-y-4">

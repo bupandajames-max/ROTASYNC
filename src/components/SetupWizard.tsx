@@ -29,6 +29,7 @@ interface SetupWizardProps {
   suggestedManagerName?: string;
   suggestedManagerEmail?: string;
   suggestedManagerRole?: string;
+  onSignOut?: () => void;
 }
 
 const STEPS = [
@@ -41,7 +42,7 @@ const STEPS = [
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
-export default function SetupWizard({ onComplete, suggestedManagerName = '', suggestedManagerEmail = '', suggestedManagerRole = 'Manager' }: SetupWizardProps) {
+export default function SetupWizard({ onComplete, suggestedManagerName = '', suggestedManagerEmail = '', suggestedManagerRole = 'Manager', onSignOut }: SetupWizardProps) {
   const [stepIdx, setStepIdx] = useState(0);
 
   // Step: Organization
@@ -182,10 +183,18 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
           <div className="bg-[#009EE2] w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">
             <Network className="w-6 h-6 text-sky-100" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-black tracking-wide">Welcome — let's set up your workspace</h1>
             <p className="text-xs text-indigo-200/80 mt-0.5">No data yet. A few quick steps and you're ready to roster.</p>
           </div>
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="text-[10px] font-bold text-indigo-200/80 hover:text-white border border-indigo-300/30 rounded-lg px-2.5 py-1.5 shrink-0"
+            >
+              Sign out
+            </button>
+          )}
         </div>
 
         {/* Stepper */}
