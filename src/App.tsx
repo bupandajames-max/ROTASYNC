@@ -46,10 +46,6 @@ import EnterpriseAdmin from './components/EnterpriseAdmin';
 import PortalGateway from './components/PortalGateway';
 import { Sparkles, Calendar, ClipboardCheck, Clock } from 'lucide-react';
 import {
-  auth,
-  testConnection,
-  signInWithGoogle,
-  logoutUser,
   dbGetCollection,
   dbSetDoc,
   dbSaveListAtomic,
@@ -58,7 +54,8 @@ import {
   dbGetCollectionByFacility,
   seedCollectionFromLocalIfEmpty
 } from './firebase';
-import { resolveAccess, ResolvedAccess, isSuperuserEmail } from './config/access';
+import { isSuperuserEmail } from './config/access';
+import { useAuthGate } from './hooks/useAuthGate';
 
 const DEFAULT_DEPARTMENTS: Department[] = [];
 
@@ -91,17 +88,7 @@ export default function App() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  const [firebaseUser, setFirebaseUser] = useState<any>(null);
-  const [isFirebaseSyncEnabled, setIsFirebaseSyncEnabled] = useState<boolean>(false);
-  // Resolved access tier + scope for the signed-in user (Phase A foundation).
-  const [access, setAccess] = useState<ResolvedAccess>({ accessLevel: 'staff', email: '' });
   const [isSyncingFirebase, setIsSyncingFirebase] = useState<boolean>(false);
-
-  // RBAC Sandbox Bypass monitoring
-  const [isSandboxBypassActive, setIsSandboxBypassActive] = useState<boolean>(false);
-
-  // First-run identity confirmation, shown once before the workspace setup wizard.
-  const [confirmedIdentity, setConfirmedIdentity] = useState<{ name: string; role: string } | null>(null);
 
   const [currentTab, setCurrentTab] = useState('home');
   const [isManagerView, setIsManagerView] = useState(false);
@@ -116,6 +103,23 @@ export default function App() {
   });
 
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
+
+  // Identity, sign-in, RBAC access tier, and "are they let in" gating — see useAuthGate.
+  const {
+    firebaseUser,
+    isFirebaseSyncEnabled,
+    access,
+    isSandboxBypassActive,
+    setIsSandboxBypassActive,
+    confirmedIdentity,
+    setConfirmedIdentity,
+    handleGoogleSignIn,
+    handleSignOut,
+    isAuthorized,
+    isRegisteredStaff,
+    needsOnboarding,
+  } = useAuthGate(staffList);
+
   const [activeStaffId, setActiveStaffId] = useState('');
   const [activeCycle, setActiveCycle] = useState<RosterCycle | null>(null);
   const [cycleDates, setCycleDates] = useState<string[]>([]);
@@ -161,55 +165,6 @@ export default function App() {
         message: "Firestore Quota Exceeded (Read-Only Mode): The daily free-tier write units per project limit has been reached. Your changes are saved locally to your device and will sync when the quota resets tomorrow.",
         link: `https://console.firebase.google.com/project/${projId}/firestore/databases/${dbId}/data?openUpgradeDialog=true`
       });
-    }
-  };
-
-  // --- FIREBASE AUTHENTICATION INITIALIZER WITH COEXISTING CLOUD TOGGLE ---
-  useEffect(() => {
-    testConnection();
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setFirebaseUser(user);
-      setIsFirebaseSyncEnabled(!!user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Resolve the signed-in user's access tier from their email (super-user allowlist
-  // → matching staff record), and mirror it into a rules-friendly users/{uid} doc.
-  // Phase A: additive only — this does not yet change what the UI shows.
-  useEffect(() => {
-    if (!firebaseUser) {
-      setAccess({ accessLevel: 'staff', email: '' });
-      return;
-    }
-    const resolved = resolveAccess(firebaseUser.email, staffList);
-    setAccess(resolved);
-    dbSetDoc('users', firebaseUser.uid, {
-      id: firebaseUser.uid,
-      email: resolved.email,
-      accessLevel: resolved.accessLevel,
-      facilityId: resolved.facilityId || '',
-      departmentId: resolved.departmentId || '',
-    }).catch(() => {});
-  }, [firebaseUser, staffList]);
-
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (err) {
-      console.error('Sign-in error:', err);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await logoutUser();
-      setFirebaseUser(null);
-      setIsFirebaseSyncEnabled(false);
-      setIsSandboxBypassActive(false);
-      window.location.reload();
-    } catch (err) {
-      console.error('Logout error:', err);
     }
   };
 
@@ -2021,11 +1976,6 @@ export default function App() {
       });
       myExtraHoursLogCount[s.name] = tot;
     });
-
-  // Gating route enforcement (RBAC)
-  const isAuthorized = firebaseUser !== null || isSandboxBypassActive;
-  const isRegisteredStaff = staffList.some(s => s.email?.toLowerCase().trim() === firebaseUser?.email?.toLowerCase().trim());
-  const needsOnboarding = !!(firebaseUser && !isRegisteredStaff);
 
   // First-run: an authorized user with no workspace yet provisions one via the setup wizard.
   const showSetupWizard = isAuthorized && isHydrated && facilities.length === 0;
