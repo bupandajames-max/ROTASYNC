@@ -50,7 +50,6 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
   const [facName, setFacName] = useState('');
   const [facLocation, setFacLocation] = useState('');
   const [facType, setFacType] = useState('Branch');
-  const [leadManager, setLeadManager] = useState(suggestedManagerName);
 
   // Step: Terminology (taxonomy)
   const [workspaceSingular, setWorkspaceSingular] = useState('Facility');
@@ -83,7 +82,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
     return t + 's';
   };
 
-  const orgValid = facName.trim().length > 1 && facLocation.trim().length > 0 && leadManager.trim().length > 1;
+  const orgValid = facName.trim().length > 1 && facLocation.trim().length > 0;
   const teamValid = team.some(t => t.fullName.trim().length > 1) ;
 
   const canAdvance = () => {
@@ -95,16 +94,6 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
 
   const handleFinish = () => {
     const facId = slug(facName) || `workspace-${Date.now()}`;
-    const facility: Facility = {
-      id: facId,
-      name: facName.trim(),
-      location: facLocation.trim(),
-      leadManager: leadManager.trim(),
-      fridgeTargetTemp: '',
-      dailyKpiWordCheck: '',
-      ipDevice: '',
-      facilitiesType: facType.trim() || 'Branch',
-    };
 
     const taxonomy: Taxonomy = {
       appName: appName.trim() || 'RotaSync',
@@ -169,6 +158,21 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
 
     // Guarantee at least one manager exists.
     if (staff.length && !staff.some(s => s.isManager)) staff[0].isManager = true;
+
+    // Lead manager is derived from the team, not a separately-typed name, so
+    // the facility record can never drift from who's actually registered.
+    const leadManagerName = (staff.find(s => s.isManager) || staff[0])?.fullName || '';
+
+    const facility: Facility = {
+      id: facId,
+      name: facName.trim(),
+      location: facLocation.trim(),
+      leadManager: leadManagerName,
+      fridgeTargetTemp: '',
+      dailyKpiWordCheck: '',
+      ipDevice: '',
+      facilitiesType: facType.trim() || 'Branch',
+    };
 
     onComplete({ facility, config, departments: depts, staff });
   };
@@ -238,10 +242,8 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
                 <Field label="Workspace type">
                   <input value={facType} onChange={e => setFacType(e.target.value)} className={inputCls} placeholder="e.g. Branch, Warehouse, Clinic" />
                 </Field>
-                <Field label="Lead manager *">
-                  <input value={leadManager} onChange={e => setLeadManager(e.target.value)} className={inputCls} placeholder="e.g. Davies Tembo" />
-                </Field>
               </div>
+              <p className="text-[11px] text-slate-400">The lead manager shown on this workspace is whoever you mark as manager in the Team step.</p>
             </div>
           )}
 
@@ -299,17 +301,26 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
                   <button onClick={() => setTeam([...team, { fullName: '', role: 'Member', email: '', gender: '', isManager: false }])} className="text-[11px] font-bold text-indigo-600 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
                 </div>
                 <div className="space-y-2">
-                  {team.map((t, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-2 items-center bg-slate-50 border border-slate-100 rounded-xl p-2">
-                      <input value={t.fullName} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, fullName: e.target.value } : x))} className={inputCls + ' col-span-4'} placeholder="Full name" />
-                      <input value={t.role} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, role: e.target.value } : x))} className={inputCls + ' col-span-3'} placeholder="Role" />
-                      <input value={t.email} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, email: e.target.value } : x))} className={inputCls + ' col-span-3'} placeholder="email" />
-                      <label className="col-span-2 flex items-center gap-1 text-[10px] font-bold text-slate-600 justify-center">
-                        <input type="checkbox" checked={t.isManager} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, isManager: e.target.checked } : x))} className="w-4 h-4 accent-indigo-600" />
-                        Mgr
-                      </label>
-                    </div>
-                  ))}
+                  {team.map((t, i) => {
+                    const isYou = !!suggestedManagerEmail && t.email === suggestedManagerEmail;
+                    return (
+                      <div key={i} className="grid grid-cols-12 gap-2 items-center bg-slate-50 border border-slate-100 rounded-xl p-2">
+                        <input value={t.fullName} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, fullName: e.target.value } : x))} className={inputCls + ' col-span-4'} placeholder="Full name" />
+                        <input value={t.role} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, role: e.target.value } : x))} className={inputCls + ' col-span-3'} placeholder="Role" />
+                        {isYou ? (
+                          <div className={inputCls + ' col-span-3 bg-slate-100 text-slate-400 truncate'} title="This is the account you signed in with — it can't be changed here.">
+                            {t.email}
+                          </div>
+                        ) : (
+                          <input value={t.email} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, email: e.target.value } : x))} className={inputCls + ' col-span-3'} placeholder="email" />
+                        )}
+                        <label className="col-span-2 flex items-center gap-1 text-[10px] font-bold text-slate-600 justify-center">
+                          <input type="checkbox" checked={t.isManager} onChange={e => setTeam(team.map((x, xi) => xi === i ? { ...x, isManager: e.target.checked } : x))} className="w-4 h-4 accent-indigo-600" />
+                          Mgr
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
