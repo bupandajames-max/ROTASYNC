@@ -399,9 +399,9 @@ export default function TaskRegister({
             <button
               onClick={handleTriggerPreGeneration}
               disabled={!onPreGenerate7DaysTasks}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#1f3864] to-blue-900 border border-blue-500 hover:opacity-95 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#1f3864]/30 hover:bg-[#1f3864]/5 text-[#1f3864] rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
             >
-              <Play className="w-3.5 h-3.5 fill-white text-[#00aeff]" /> Pre-Generate Next 7 Days Tasks
+              <Play className="w-3.5 h-3.5 text-[#00aeff]" /> Pre-Generate Next 7 Days Tasks
             </button>
             <div className="text-[11px] text-gray-400 font-bold font-mono">
               Status: <span className="text-emerald-600 font-extrabold">Active (Autonomous)</span>
