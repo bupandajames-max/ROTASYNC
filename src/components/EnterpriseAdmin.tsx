@@ -213,6 +213,10 @@ export default function EnterpriseAdmin({
   const [newShiftBg, setNewShiftBg] = useState('#E0F7FA');
   const [newShiftFg, setNewShiftFg] = useState('#006064');
 
+  // Pending rename text per ad hoc shift code, while a manager is promoting
+  // it to a reusable template (see promoteShift below).
+  const [adHocRenameDrafts, setAdHocRenameDrafts] = useState<{ [code: string]: string }>({});
+
   // New Staff Form State
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffFullName, setNewStaffFullName] = useState('');
@@ -675,6 +679,19 @@ export default function EnterpriseAdmin({
       delete updated[code];
       setShifts(updated);
     }
+  };
+
+  // Promote a one-off shift (created via the roster grid's custom time entry)
+  // into a regular reusable shift. The code stays the same, so any cell
+  // already assigned to it keeps working — only the isAdHoc flag is cleared,
+  // optionally alongside a friendlier name the manager gives it.
+  const promoteShift = (code: string, newName: string) => {
+    const def = shifts[code];
+    if (!def) return;
+    const updated = { ...shifts, [code]: { ...def, name: newName.trim() || def.name, isAdHoc: false } };
+    setShifts(updated);
+    setAdHocRenameDrafts(prev => { const next = { ...prev }; delete next[code]; return next; });
+    toast.success(`"${newName.trim() || def.name}" is now a reusable shift template.`);
   };
 
   const deleteStaff = async (id: string) => {
@@ -1251,9 +1268,9 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'shifts' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-            <h3 className="text-xs font-black text-slate-850 mb-2">Design Shift Block</h3>
+            <h3 className="text-xs font-black text-slate-850 mb-2">Add a shift</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
-              Establish clock ranges, identifiers, and customized visual presets for the roster map.
+              Set the code, name, time, and color shown on the roster.
             </p>
 
             <form onSubmit={handleCreateShift} className="space-y-3">
@@ -1413,6 +1430,56 @@ export default function EnterpriseAdmin({
                 </div>
               </div>
             ))}
+
+            {Object.entries(shifts).filter(([, d]) => d.isAdHoc).length > 0 && (
+              <div>
+                <h3 className="text-xs font-black text-slate-600">One-off shifts this cycle</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5 mb-2">
+                  Created from the roster grid's custom time entry. Promote one to keep reusing it, or remove it once you're done.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Object.entries(shifts).filter(([, d]) => d.isAdHoc).map(([code, sDef]) => (
+                    <div
+                      key={code}
+                      className="p-3.5 rounded-2xl border border-amber-150 bg-amber-50/30 flex flex-col gap-2.5"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <span
+                            className="px-1.5 py-0.5 rounded font-black text-[9.5px]"
+                            style={{ backgroundColor: sDef.bg, color: sDef.fg }}
+                          >
+                            {code}
+                          </span>
+                          <p className="text-[9px] text-slate-500 font-mono mt-1">{sDef.time} · {sDef.hours} Net Hrs</p>
+                        </div>
+                        <button
+                          onClick={() => deleteShift(code)}
+                          className="text-slate-400 hover:text-rose-600 p-0.5 rounded-md hover:bg-white shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={adHocRenameDrafts[code] ?? sDef.name}
+                          onChange={(e) => setAdHocRenameDrafts(prev => ({ ...prev, [code]: e.target.value }))}
+                          className="flex-1 text-[11px] font-bold bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#009EE2]"
+                        />
+                        <button
+                          onClick={() => promoteShift(code, adHocRenameDrafts[code] ?? sDef.name)}
+                          className="px-2.5 py-1.5 bg-indigo-950 hover:bg-slate-900 text-white font-bold text-[10.5px] rounded-lg cursor-pointer whitespace-nowrap"
+                        >
+                          Promote
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
