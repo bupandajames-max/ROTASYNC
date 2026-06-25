@@ -558,7 +558,7 @@ export default function RosterGrid({
 
           {/* Real Bulk actions only when unlocked */}
           {!isGridLocked && isManagerView && bulkUpdateShifts && activeTab === 'grid' && (
-            <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-205 mr-1.5">
+            <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 mr-1.5">
               <button
                 onClick={handleGlobalFillOFF}
                 className="flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg font-bold text-[11px] shadow-xs cursor-pointer transition-all"
@@ -678,7 +678,7 @@ export default function RosterGrid({
 
               <form onSubmit={handleApplyCustomDates} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-5 rounded-2xl border border-slate-100/80">
                 <div className="flex flex-col gap-1.5 md:col-span-2">
-                  <label className="text-[10px] font-bold text-slate-405">Select Roster Cycle Template</label>
+                  <label className="text-[10px] font-bold text-slate-400">Select Roster Cycle Template</label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -717,7 +717,7 @@ export default function RosterGrid({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-455">Start Date</label>
+                  <label className="text-[10px] font-bold text-slate-450">Start Date</label>
                   <input
                     type="date"
                     value={customStart}
@@ -734,7 +734,7 @@ export default function RosterGrid({
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-455">End Date</label>
+                  <label className="text-[10px] font-bold text-slate-450">End Date</label>
                   <input
                     type="date"
                     value={customEnd}
@@ -871,7 +871,7 @@ export default function RosterGrid({
                     return (
                       <tr
                         key={staff.id}
-                        className={`border-b border-gray-100 hover:bg-slate-55/40 transition-colors ${
+                        className={`border-b border-gray-100 hover:bg-slate-50/40 transition-colors ${
                           isEven ? 'bg-slate-50/20' : 'bg-white'
                         }`}
                       >
@@ -1117,7 +1117,7 @@ export default function RosterGrid({
                             <th
                               key={dIdx}
                               className={`w-12 min-w-12 text-center py-1 text-[10px] font-bold border-r border-gray-100 ${
-                                isWk ? 'bg-slate-100 text-slate-600' : 'bg-slate-55 text-slate-500'
+                                isWk ? 'bg-slate-100 text-slate-600' : 'bg-slate-50 text-slate-500'
                               }`}
                             >
                               {parseLocalDate(dKey).getDate()}
@@ -1131,7 +1131,7 @@ export default function RosterGrid({
                       {['A', 'A+', 'B', 'C', 'D', 'E', 'SC', 'N'].map((code) => {
                         const def = shiftDefs[code];
                         return (
-                          <tr key={code} className="border-b border-gray-100 transition-colors hover:bg-slate-55/40">
+                          <tr key={code} className="border-b border-gray-100 transition-colors hover:bg-slate-50/40">
                             <td className="sticky left-0 bg-white z-10 px-4 py-1.5 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] font-bold text-xs uppercase flex flex-col justify-center min-h-[44px]">
                               <span className="text-[#1f3864]" style={{ color: def?.fg }}>
                                 {code} — {def?.name}
@@ -1314,7 +1314,7 @@ export default function RosterGrid({
 
               {/* List of Previous Cycles */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
-                <div className="flex justify-between items-center border-b border-gray-105 pb-3">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                   <h3 className="text-slate-900 font-black text-sm flex items-center gap-2">
                     <CalendarRange className="w-4 h-4 text-indigo-500 animate-pulse" /> Archived & Previous Cycles
                   </h3>
@@ -1415,7 +1415,7 @@ export default function RosterGrid({
 
             {/* Col 3: Comparison Summary Stats */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4">
-              <h3 className="text-slate-900 font-black text-sm pb-2 border-b border-gray-105 flex items-center gap-2">
+              <h3 className="text-slate-900 font-black text-sm pb-2 border-b border-gray-100 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-emerald-500 animate-pulse" /> Live Analysis Hub
               </h3>
 
@@ -1533,7 +1533,7 @@ export default function RosterGrid({
                         Personnel
                       </th>
                       {cycleDates.map((dKey, dIdx) => (
-                        <th key={dKey} className="w-12 min-w-12 text-center py-2.5 border-r border-gray-105 font-mono font-bold text-slate-400 bg-slate-100/50">
+                        <th key={dKey} className="w-12 min-w-12 text-center py-2.5 border-r border-gray-100 font-mono font-bold text-slate-400 bg-slate-100/50">
                           {parseLocalDate(dKey).getDate()}
                         </th>
                       ))}

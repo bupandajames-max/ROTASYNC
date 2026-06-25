@@ -504,7 +504,7 @@ export default function StaffPortal({
                             <div className="flex flex-col">
                               <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1">
                                 {colleague.name}
-                                {isSelected && <span className="text-[#00aeff] font-bold text-[11px] bg-sky-55 px-1 rounded-sm">Selected</span>}
+                                {isSelected && <span className="text-[#00aeff] font-bold text-[11px] bg-sky-50 px-1 rounded-sm">Selected</span>}
                               </span>
                               <span className="text-[10px] text-slate-400 font-semibold font-mono">
                                 {colleague.role}

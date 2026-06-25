@@ -23,6 +23,38 @@
   --color-indigo-900: #152747;
   --color-indigo-950: #101d35; /* Deep Clinical Slate/Navy overlay context */
   --color-indigo-955: #0b1425;
+
+  /*
+   * Half-step shades for the standard palettes, interpolated between
+   * Tailwind's default stops. The app was built assuming these existed
+   * (slate-150 alone is used 40+ times) but they were never added to the
+   * theme, so every one of them was silently rendering unstyled.
+   */
+  --color-slate-150: #eaeff5;
+  --color-slate-350: #b0bccd;
+  --color-slate-450: #7c8ca2;
+  --color-slate-550: #56657a;
+  --color-slate-650: #3d4b5f;
+  --color-slate-750: #293548;
+  --color-slate-850: #172033;
+
+  --color-gray-150: #eceef1;
+  --color-gray-250: #dbdee3;
+  --color-gray-450: #848b98;
+  --color-gray-850: #18212f;
+
+  --color-rose-150: #ffd9dd;
+  --color-rose-250: #feb9c1;
+  --color-rose-650: #d01842;
+  --color-rose-850: #941338;
+
+  --color-amber-250: #fddd6c;
+  --color-amber-650: #c76508;
+
+  --color-emerald-150: #bcf7db;
+  --color-emerald-250: #8bedc4;
+
+  --color-sky-450: #23b1f1;
 }
 
 /* Print formatting for official timesheets */

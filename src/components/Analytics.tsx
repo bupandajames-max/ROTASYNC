@@ -106,7 +106,7 @@ export default function Analytics({
               🎉 {completionRate}% compliance Rate
             </span>
           </div>
-          <div className="p-3 bg-amber-50 text-amber-605 rounded-xl self-start">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl self-start">
             <CheckCircle className="w-5 h-5" />
           </div>
         </div>

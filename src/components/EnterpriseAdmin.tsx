@@ -789,7 +789,7 @@ export default function EnterpriseAdmin({
         <button
           onClick={() => setActiveSubTab('purge')}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'purge' ? 'bg-rose-955 bg-rose-900 text-white shadow-xs' : 'text-rose-600 hover:bg-rose-50'
+            activeSubTab === 'purge' ? 'bg-rose-950 bg-rose-900 text-white shadow-xs' : 'text-rose-600 hover:bg-rose-50'
           }`}
         >
           <Trash2 className="w-4 h-4 text-rose-500" /> Factory Reset
@@ -1014,7 +1014,7 @@ export default function EnterpriseAdmin({
           <div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-3xl border border-slate-100 text-left">
-                <h3 className="text-xs font-black text-slate-805 mb-2">Add custom {taxonomy.groupSingular}</h3>
+                <h3 className="text-xs font-black text-slate-800 mb-2">Add custom {taxonomy.groupSingular}</h3>
                 <p className="text-[11px] text-slate-500 mb-4">
                   Partition the <strong className="text-slate-750">{activeFacility.name}</strong> workspace into dynamic sub-teams for discrete roster scheduling.
                 </p>
@@ -1230,7 +1230,7 @@ export default function EnterpriseAdmin({
                               }}
                               className={`px-2.5 py-1 rounded-md font-bold transition-all uppercase flex items-center gap-1 cursor-pointer ${
                                 isDeptCurrent 
-                                  ? 'bg-emerald-105 bg-emerald-100 text-emerald-800' 
+                                  ? 'bg-emerald-100 bg-emerald-100 text-emerald-800' 
                                   : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-850'
                               }`}
                             >
@@ -1867,7 +1867,7 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'tasks' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100 text-left">
-            <h3 className="text-xs font-black text-slate-805 mb-2">Bespoke {taxonomy.taskSingular} Rules</h3>
+            <h3 className="text-xs font-black text-slate-800 mb-2">Bespoke {taxonomy.taskSingular} Rules</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
               Establish core procedural audits and verify rule bindings.
             </p>
@@ -2014,7 +2014,7 @@ export default function EnterpriseAdmin({
                   value={newTaskNotes}
                   onChange={(e) => setNewTaskNotes(e.target.value)}
                   rows={2}
-                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-655"
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                 />
               </div>
 
@@ -2051,7 +2051,7 @@ export default function EnterpriseAdmin({
                     <p className="text-[10.5px] text-slate-500 leading-relaxed font-sans">{task.notes}</p>
                     
                     <div className="flex items-center gap-4 mt-2.5 text-[9.5px] font-mono font-bold text-slate-400">
-                      <span>Frequency: <strong className="text-slate-605">{task.frequency}</strong></span>
+                      <span>Frequency: <strong className="text-slate-600">{task.frequency}</strong></span>
                       <span>·</span>
                       <span>Workflow: <strong className="text-indigo-950 uppercase">{patternLabel(task.pattern)}</strong></span>
                       {task.trackerTarget && <span>· Target: <strong className="text-emerald-600">{task.trackerTarget} units</strong></span>}
@@ -2346,7 +2346,7 @@ export default function EnterpriseAdmin({
                   placeholder="Plural (e.g. Tasks)"
                   value={taxonomy.taskPlural || ''}
                   onChange={(e) => setTaxonomy({ ...taxonomy, taskPlural: e.target.value })}
-                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-605"
+                  className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600"
                 />
               </div>
               <p className="text-[10px] text-slate-400 mt-1 font-semibold">Terms representing actions, compliance logs, or operational routines.</p>
@@ -2374,7 +2374,7 @@ export default function EnterpriseAdmin({
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-rose-105 shadow-xs space-y-4 max-w-xl">
+          <div className="bg-white p-6 rounded-2xl border border-rose-100 shadow-xs space-y-4 max-w-xl">
             <div className="bg-rose-50/80 p-4 rounded-xl border border-rose-100 flex items-start gap-3">
               <span className="text-rose-600 font-black text-sm shrink-0">⚠️ CRITICAL:</span>
               <div className="text-[11.5px] text-rose-950 font-semibold space-y-1">
@@ -2525,7 +2525,7 @@ export default function EnterpriseAdmin({
                 <button
                   type="button"
                   onClick={() => setEditingFacility(null)}
-                  className="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-755 rounded-xl cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-750 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>

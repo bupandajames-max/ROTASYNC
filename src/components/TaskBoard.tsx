@@ -669,7 +669,7 @@ export default function TaskBoard({
                         ) : (
                           <button
                             onClick={() => toggleTrackerForm(task.id)}
-                            className="py-2 px-3.5 bg-slate-55 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-black rounded-xl border border-indigo-150 transition-colors cursor-pointer text-xs"
+                            className="py-2 px-3.5 bg-slate-50 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-black rounded-xl border border-indigo-150 transition-colors cursor-pointer text-xs"
                           >
                             + Increment Logs
                           </button>
@@ -977,7 +977,7 @@ export default function TaskBoard({
       {/* Task Drawer details */}
       {historyDrawerTask && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-end z-50 animate-[fadeIn_0.15s_ease-out]">
-          <div className="bg-white h-full max-w-md w-full p-6 shadow-2xl flex flex-col justify-between border-l border-slate-105 animate-[slideLeft_0.2s_ease-out]">
+          <div className="bg-white h-full max-w-md w-full p-6 shadow-2xl flex flex-col justify-between border-l border-slate-100 animate-[slideLeft_0.2s_ease-out]">
             
             <div>
               <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-4">

@@ -577,7 +577,7 @@ export default function PortalGateway({
                   onClick={() => setIsManager(false)}
                   className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
                     !isManager 
-                      ? 'bg-indigo-505/10 border-indigo-500 text-indigo-400' 
+                      ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
                       : 'border-slate-800 text-slate-400 hover:bg-slate-800/40'
                   }`}
                 >

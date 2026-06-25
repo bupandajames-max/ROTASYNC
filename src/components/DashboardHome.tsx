@@ -243,7 +243,7 @@ export default function DashboardHome({
       <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-7 rounded-3xl shadow-xl border border-indigo-500/10 flex justify-between items-center flex-wrap gap-6 relative overflow-hidden">
         
         <div className="relative z-10 flex-1 min-w-[280px]">
-          <span className="text-[11px] bg-indigo-505/20 text-indigo-200 border border-indigo-500/30 px-3 py-1 rounded-full font-semibold inline-block mb-3 select-none">
+          <span className="text-[11px] bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 px-3 py-1 rounded-full font-semibold inline-block mb-3 select-none">
             {taxonomy.appName} · {activeFacility?.name}
           </span>
           <h2 className="text-3xl font-extrabold flex items-center gap-2 font-sans tracking-tight leading-tight">
@@ -552,9 +552,9 @@ export default function DashboardHome({
         </div>
 
         {/* Compact quick actions */}
-        <div className="lg:col-span-4 bg-indigo-505/10 p-6 rounded-3xl border border-indigo-500/10 flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-indigo-500/10 p-6 rounded-3xl border border-indigo-500/10 flex flex-col justify-between">
           <div>
-            <h3 className="font-sans font-extrabold text-indigo-950 text-xs border-b border-indigo-250/20 pb-2.5 mb-3 flex items-center gap-1.5">
+            <h3 className="font-sans font-extrabold text-indigo-950 text-xs border-b border-indigo-200/20 pb-2.5 mb-3 flex items-center gap-1.5">
               Quick actions
             </h3>
             <p className="text-[11px] text-slate-600 leading-relaxed mb-4">

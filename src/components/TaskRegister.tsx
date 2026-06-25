@@ -435,7 +435,7 @@ export default function TaskRegister({
                     </span>
                   ) : (
                     <span className="flex flex-col items-center">
-                      <span className="w-3.5 h-3.5 rounded-full border border-amber-305 border-dashed bg-amber-100/30 block" />
+                      <span className="w-3.5 h-3.5 rounded-full border border-amber-300 border-dashed bg-amber-100/30 block" />
                       <span className="text-[8px] text-amber-600 font-black font-mono mt-0.5">0</span>
                     </span>
                   )}
