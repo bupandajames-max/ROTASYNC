@@ -182,29 +182,31 @@ service cloud.firestore {
 
     // --- OPERATIONAL DATA ---
     // Any signed-in user may write: staff complete tasks, submit timesheets,
-    // and raise requests. (Per-record ownership scoping is a future hardening.)
+    // and raise requests. No role-tier gate (unlike staff/cycles/taskMasters)
+    // — but every write must stay within the caller's own facility, same as
+    // every other collection's per-tenant isolation.
     match /dailyTasks/{taskId} {
       allow read: if isSuper() || resource.data.facilityId == callerFacility();
-      allow create, update: if isSignedIn() && isValidId(taskId);
-      allow delete: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(taskId) && inMyFacility(incoming().facilityId);
+      allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
 
     match /timesheets/{timesheetId} {
       allow read: if isSuper() || resource.data.facilityId == callerFacility();
-      allow create, update: if isSignedIn() && isValidId(timesheetId);
-      allow delete: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(timesheetId) && inMyFacility(incoming().facilityId);
+      allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
 
     match /approvals/{approvalId} {
       allow read: if isSuper() || resource.data.facilityId == callerFacility();
-      allow create, update: if isSignedIn() && isValidId(approvalId);
-      allow delete: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(approvalId) && inMyFacility(incoming().facilityId);
+      allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
 
     match /extraHours/{extraHoursId} {
       allow read: if isSuper() || resource.data.facilityId == callerFacility();
-      allow create, update: if isSignedIn() && isValidId(extraHoursId);
-      allow delete: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(extraHoursId) && inMyFacility(incoming().facilityId);
+      allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
   }
 }
