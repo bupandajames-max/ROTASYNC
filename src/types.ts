@@ -6,6 +6,7 @@ export interface ShiftDef {
   bg: string;
   fg: string;
   active: boolean;
+  isLeave?: boolean; // true for absence/leave types (AL, SL, CO, MD, ...) — not a worked shift
 }
 
 // Access tier (distinct from job `role`). Scope comes from facilityId + departmentId.

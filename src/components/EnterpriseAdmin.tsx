@@ -1342,51 +1342,57 @@ export default function EnterpriseAdmin({
             </form>
           </div>
 
-          <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-xs font-black text-slate-600">Active Shift Patterns</h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.entries(shifts).map(([code, sDef]) => {
-                const isSystem = protectedShiftCodes.has(code);
-                return (
-                  <div 
-                    key={code} 
-                    className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/40 hover:bg-slate-50 transition-colors flex flex-col justify-between h-32"
-                  >
-                    <div className="flex justify-between items-start">
-                      <span 
-                        className="px-1.5 py-0.5 rounded font-black text-[9.5px]"
-                        style={{ backgroundColor: sDef.bg, color: sDef.fg }}
+          <div className="lg:col-span-2 space-y-5">
+            {[
+              { label: 'Work shifts', entries: Object.entries(shifts).filter(([, d]) => !d.isLeave) },
+              { label: 'Leave & absence', entries: Object.entries(shifts).filter(([, d]) => d.isLeave) },
+            ].map(group => group.entries.length > 0 && (
+              <div key={group.label}>
+                <h3 className="text-xs font-black text-slate-600">{group.label}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                  {group.entries.map(([code, sDef]) => {
+                    const isSystem = protectedShiftCodes.has(code);
+                    return (
+                      <div
+                        key={code}
+                        className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/40 hover:bg-slate-50 transition-colors flex flex-col justify-between h-32"
                       >
-                        {code}
-                      </span>
-                      {!isSystem && (
-                        <button
-                          onClick={() => deleteShift(code)}
-                          className="text-slate-400 hover:text-rose-600 p-0.5 rounded-md hover:bg-white"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                        <div className="flex justify-between items-start">
+                          <span
+                            className="px-1.5 py-0.5 rounded font-black text-[9.5px]"
+                            style={{ backgroundColor: sDef.bg, color: sDef.fg }}
+                          >
+                            {code}
+                          </span>
+                          {!isSystem && (
+                            <button
+                              onClick={() => deleteShift(code)}
+                              className="text-slate-400 hover:text-rose-600 p-0.5 rounded-md hover:bg-white"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
 
-                    <div className="mt-2 text-left">
-                      <h4 className="text-[11px] font-extrabold text-slate-800 tracking-tight truncate">{sDef.name}</h4>
-                      <p className="text-[9px] text-slate-500 font-mono mt-0.5">{sDef.time}</p>
-                    </div>
+                        <div className="mt-2 text-left">
+                          <h4 className="text-[11px] font-extrabold text-slate-800 tracking-tight truncate">{sDef.name}</h4>
+                          <p className="text-[9px] text-slate-500 font-mono mt-0.5">{sDef.time}</p>
+                        </div>
 
-                    <div className="border-t border-slate-100/70 mt-2.5 pt-2 flex justify-between items-center text-[9px] text-slate-400">
-                      <span>{sDef.hours} Net Hrs</span>
-                      {isSystem ? (
-                        <span className="text-[8px] bg-slate-100 text-slate-400 px-1 py-0.5 rounded font-mono">Standard</span>
-                      ) : (
-                        <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1 py-0.5 rounded font-mono font-bold">Custom</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        <div className="border-t border-slate-100/70 mt-2.5 pt-2 flex justify-between items-center text-[9px] text-slate-400">
+                          <span>{sDef.hours} Net Hrs</span>
+                          {isSystem ? (
+                            <span className="text-[8px] bg-slate-100 text-slate-400 px-1 py-0.5 rounded font-mono">Standard</span>
+                          ) : (
+                            <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1 py-0.5 rounded font-mono font-bold">Custom</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

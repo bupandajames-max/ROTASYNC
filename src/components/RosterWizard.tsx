@@ -77,6 +77,8 @@ export default function RosterWizard({
   // Step 5
   const [built, setBuilt] = useState(false);
 
+  const [shiftsExpanded, setShiftsExpanded] = useState(false);
+
   React.useEffect(() => {
     if (staffList.length > 0 && !absStaff) setAbsStaff(staffList[0].name);
   }, [staffList, absStaff]);
@@ -84,6 +86,8 @@ export default function RosterWizard({
   if (!isOpen) return null;
 
   const activeShifts = Object.entries(shifts).filter(([code, d]) => d.active !== false && code !== 'OFF');
+  const activeWorkShifts = activeShifts.filter(([, d]) => !d.isLeave);
+  const activeLeaveTypes = activeShifts.filter(([, d]) => d.isLeave);
 
   const handleAddStaff = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,15 +210,44 @@ export default function RosterWizard({
           {step === 2 && (
             <div className="space-y-4">
               <div>
-                <h4 className="text-[10px] font-bold text-slate-400 mb-2">Your shifts</h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {activeShifts.map(([code, d]) => (
-                    <span key={code} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 px-2 py-1 rounded-lg border border-slate-150 bg-slate-50">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.bg || d.fg }} /><strong className="text-slate-800">{code}</strong> {d.name}{d.time ? ` · ${d.time}` : ''}
-                    </span>
-                  ))}
-                  {activeShifts.length === 0 && <span className="text-xs text-slate-400 italic">No shifts yet — add one below.</span>}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShiftsExpanded(!shiftsExpanded)}
+                  className="text-[11px] font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1 cursor-pointer"
+                >
+                  {activeShifts.length === 0
+                    ? 'No shifts yet — add one below.'
+                    : `${activeWorkShifts.length} work shift${activeWorkShifts.length === 1 ? '' : 's'}, ${activeLeaveTypes.length} leave & absence type${activeLeaveTypes.length === 1 ? '' : 's'} defined`}
+                  {activeShifts.length > 0 && (shiftsExpanded ? ' — hide' : ' — show all')}
+                </button>
+                {shiftsExpanded && (
+                  <div className="mt-2 space-y-2.5">
+                    {activeWorkShifts.length > 0 && (
+                      <div>
+                        <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Work shifts</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeWorkShifts.map(([code, d]) => (
+                            <span key={code} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 px-2 py-1 rounded-lg border border-slate-150 bg-slate-50">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.bg || d.fg }} /><strong className="text-slate-800">{code}</strong> {d.name}{d.time ? ` · ${d.time}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {activeLeaveTypes.length > 0 && (
+                      <div>
+                        <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Leave & absence</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeLeaveTypes.map(([code, d]) => (
+                            <span key={code} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 px-2 py-1 rounded-lg border border-slate-150 bg-slate-50">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: d.bg || d.fg }} /><strong className="text-slate-800">{code}</strong> {d.name}{d.time ? ` · ${d.time}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <form onSubmit={handleAddShift} className="bg-white border border-slate-200 p-4 rounded-2xl space-y-3">
                 <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#7A1230]" /> Add / define a shift</h3>

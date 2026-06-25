@@ -15,21 +15,23 @@ import {
 // preset* (offered in the setup wizard), not org-specific data. Admins can
 // edit, extend, or replace any of these per workspace.
 export const SHIFT_PRESET_STANDARD: { [code: string]: ShiftDef } = {
-  'A':   { code: 'A', name: 'Morning',             time: '08:00 – 17:00 (8 hrs net)', hours: 8,  bg: '#FEF9C3', fg: '#713F12', active: true  },
-  'A+':  { code: 'A+', name: 'Morning Extended',    time: '08:00 – 18:00 (9 hrs net)', hours: 9,  bg: '#FFEDD5', fg: '#7C2D12', active: true  },
-  'B':   { code: 'B', name: 'Mid-Day',             time: '10:00 – 19:00',             hours: 8,  bg: '#DCFCE7', fg: '#14532D', active: true  },
-  'C':   { code: 'C', name: 'Afternoon',           time: '12:00 – 21:00',             hours: 8,  bg: '#DBEAFE', fg: '#1E3A8A', active: true  },
-  'D':   { code: 'D', name: 'On-Call Shift',       time: '16:00 – close (standby)',   hours: 8,  bg: '#F3E8FF', fg: '#581C87', active: true  },
-  'E':   { code: 'E', name: 'Extended Weekend/PH', time: '11 hrs (rotating)',         hours: 11, bg: '#FEE2E2', fg: '#991B1B', active: true  },
-  'SC':  { code: 'SC', name: 'Audit & Physical Count', time: '18:00 – 08:00 next day',  hours: 14, bg: '#FAE8FF', fg: '#701A75', active: true  },
-  'N':   { code: 'N', name: 'Night Shift ★',       time: '20:00 – 08:00',             hours: 12, bg: '#E0E7FF', fg: '#312E81', active: true },
-  'MD':  { code: 'MD', name: 'Personal Day Off',    time: 'Paid Day Off',             hours: 8,  bg: '#FCE7F3', fg: '#831843', active: true  },
-  'AL':  { code: 'AL', name: 'Annual Leave',        time: 'Paid Leave (8h)',           hours: 8,  bg: '#D1FAE5', fg: '#064E3B', active: true  },
-  'SL':  { code: 'SL', name: 'Sick/Study Leave',    time: 'Paid Leave (8h)',           hours: 8,  bg: '#E0F2FE', fg: '#0C4A6E', active: true  },
-  'CO':  { code: 'CO', name: 'Compassionate Leave', time: 'Paid Leave (8h)',           hours: 8,  bg: '#FEF3C7', fg: '#78350F', active: true  },
-  'TRN': { code: 'TRN', name: 'Training/Workshop',   time: '09:00 – 17:00 (Paid)',      hours: 8,  bg: '#CCFBF1', fg: '#115E59', active: true  },
-  'OS':  { code: 'OS', name: 'Off-Site Workspace',  time: '09:00 – 17:00 (Paid)',      hours: 8,  bg: '#ECFCCB', fg: '#365314', active: true  },
-  'OFF': { code: 'OFF', name: 'Rest Day Off',        time: 'Rest',                      hours: 0,  bg: '#F1F5F9', fg: '#475569', active: true  },
+  // Work shifts
+  'A':   { code: 'A', name: 'Morning',             time: '08:00 – 17:00', hours: 8,  bg: '#FEF9C3', fg: '#713F12', active: true },
+  'A+':  { code: 'A+', name: 'Morning Extended',   time: '08:00 – 18:00', hours: 9,  bg: '#FFEDD5', fg: '#7C2D12', active: true },
+  'B':   { code: 'B', name: 'Mid-Day',             time: '10:00 – 19:00', hours: 8,  bg: '#DCFCE7', fg: '#14532D', active: true },
+  'C':   { code: 'C', name: 'Afternoon',           time: '12:00 – 21:00', hours: 8,  bg: '#DBEAFE', fg: '#1E3A8A', active: true },
+  'D':   { code: 'D', name: 'On-Call',             time: 'From 16:00 (standby)', hours: 8,  bg: '#F3E8FF', fg: '#581C87', active: true },
+  'E':   { code: 'E', name: 'Extended Weekend/PH', time: '~11 hrs (rotating)',   hours: 11, bg: '#FEE2E2', fg: '#991B1B', active: true },
+  'SC':  { code: 'SC', name: 'Audit & Physical Count', time: '18:00 – 08:00 (overnight)', hours: 14, bg: '#FAE8FF', fg: '#701A75', active: true },
+  'N':   { code: 'N', name: 'Night Shift',         time: '20:00 – 08:00 (overnight)', hours: 12, bg: '#E0E7FF', fg: '#312E81', active: true },
+  // Leave & absence
+  'MD':  { code: 'MD', name: 'Personal Day Off',    time: 'Paid day off',  hours: 8,  bg: '#FCE7F3', fg: '#831843', active: true, isLeave: true },
+  'AL':  { code: 'AL', name: 'Annual Leave',        time: 'Paid leave',    hours: 8,  bg: '#D1FAE5', fg: '#064E3B', active: true, isLeave: true },
+  'SL':  { code: 'SL', name: 'Sick/Study Leave',    time: 'Paid leave',    hours: 8,  bg: '#E0F2FE', fg: '#0C4A6E', active: true, isLeave: true },
+  'CO':  { code: 'CO', name: 'Compassionate Leave', time: 'Paid leave',    hours: 8,  bg: '#FEF3C7', fg: '#78350F', active: true, isLeave: true },
+  'TRN': { code: 'TRN', name: 'Training/Workshop',  time: '09:00 – 17:00 (paid)', hours: 8,  bg: '#CCFBF1', fg: '#115E59', active: true, isLeave: true },
+  'OS':  { code: 'OS', name: 'Off-Site Workspace',  time: '09:00 – 17:00 (paid)', hours: 8,  bg: '#ECFCCB', fg: '#365314', active: true, isLeave: true },
+  'OFF': { code: 'OFF', name: 'Rest Day Off',        time: 'Rest',          hours: 0,  bg: '#F1F5F9', fg: '#475569', active: true, isLeave: true },
 };
 
 // Backwards-compatible alias. Components that look up a shift definition import
