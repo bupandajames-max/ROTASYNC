@@ -677,6 +677,40 @@ export default function EnterpriseAdmin({
     }
   };
 
+  // Settings sub-tabs grouped into hubs (Connecteam-style) instead of one
+  // flat row of 9 equal-weight tabs — same pattern as the main Navigation.
+  const settingsGroups: { label: string; tabs: { id: typeof activeSubTab; label: string; icon: typeof Building2; iconClassName?: string; danger?: boolean }[] }[] = [
+    {
+      label: 'Workspace',
+      tabs: [
+        { id: 'silos', label: `${taxonomy.workspacePlural} & ${taxonomy.groupPlural}`, icon: Building2 },
+        { id: 'regional', label: 'Regional', icon: Globe },
+      ],
+    },
+    {
+      label: 'Roster setup',
+      tabs: [
+        { id: 'shifts', label: 'Shift Planner', icon: Clock },
+        { id: 'rules', label: 'Roster Rules', icon: Layers },
+        { id: 'tasks', label: `Customized ${taxonomy.taskPlural}`, icon: Database },
+      ],
+    },
+    {
+      label: 'People',
+      tabs: [
+        { id: 'staff', label: `${taxonomy.memberPlural} directory`, icon: Users },
+        { id: 'sandbox', label: 'Department View', icon: ShieldCheck, iconClassName: 'text-emerald-500' },
+      ],
+    },
+    {
+      label: 'Advanced',
+      tabs: [
+        { id: 'taxonomy', label: 'Terminology & Labels', icon: Sliders, iconClassName: 'text-sky-500' },
+        { id: 'purge', label: 'Factory Reset', icon: Trash2, iconClassName: 'text-rose-500', danger: true },
+      ],
+    },
+  ];
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col gap-6" id="enterprise-setup-root">
       
@@ -720,80 +754,32 @@ export default function EnterpriseAdmin({
         </div>
       </div>
 
-      {/* Sub Navigation Tabs */}
-      <div className="flex flex-wrap gap-1.5 border-b border-gray-100 pb-2">
-        <button
-          onClick={() => setActiveSubTab('silos')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'silos' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Building2 className="w-4 h-4" /> {taxonomy.workspacePlural} & {taxonomy.groupPlural}
-        </button>
-        <button
-          onClick={() => setActiveSubTab('shifts')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'shifts' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Clock className="w-4 h-4" /> Shift Planner
-        </button>
-        <button
-          onClick={() => setActiveSubTab('rules')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'rules' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Layers className="w-4 h-4" /> Roster Rules
-        </button>
-        <button
-          onClick={() => setActiveSubTab('regional')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'regional' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Globe className="w-4 h-4" /> Regional
-        </button>
-        <button
-          onClick={() => setActiveSubTab('staff')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'staff' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Users className="w-4 h-4" /> {taxonomy.memberPlural} directory
-        </button>
-        <button
-          onClick={() => setActiveSubTab('tasks')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'tasks' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Database className="w-4 h-4" /> Customized {taxonomy.taskPlural}
-        </button>
-        <button
-          onClick={() => setActiveSubTab('sandbox')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'sandbox' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4 text-emerald-500" /> Department View
-        </button>
-        <button
-          onClick={() => setActiveSubTab('taxonomy')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'taxonomy' ? 'bg-indigo-950 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <Sliders className="w-4 h-4 text-sky-500" /> Terminology & Labels
-        </button>
-        <button
-          onClick={() => setActiveSubTab('purge')}
-          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
-            activeSubTab === 'purge' ? 'bg-rose-950 bg-rose-900 text-white shadow-xs' : 'text-rose-600 hover:bg-rose-50'
-          }`}
-        >
-          <Trash2 className="w-4 h-4 text-rose-500" /> Factory Reset
-        </button>
+      {/* Sub Navigation Tabs, grouped into hubs */}
+      <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-gray-100 pb-2">
+        {settingsGroups.map((group) => (
+          <div key={group.label} className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mr-0.5">
+              {group.label}
+            </span>
+            {group.tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeSubTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveSubTab(tab.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    isActive
+                      ? tab.danger ? 'bg-rose-950 text-white shadow-xs' : 'bg-indigo-950 text-white shadow-xs'
+                      : tab.danger ? 'text-rose-600 hover:bg-rose-50' : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${tab.iconClassName || ''}`} /> {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* SUB-TAB 1: Clinics & Departments */}
