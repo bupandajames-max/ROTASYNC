@@ -3,6 +3,27 @@ import { SHIFT_PRESET_STANDARD, buildDefaultRuleSet } from '../data/initialData'
 
 type ShiftMap = { [code: string]: ShiftDef };
 
+/**
+ * Computes a shift's duration in hours from "HH:MM" start/end times,
+ * handling overnight wraparound (end <= start means it crosses midnight).
+ * Matches how Deputy, 7shifts, and UKG all model shift time: duration is
+ * derived from the time range, never a separately-typed number a human
+ * can get wrong.
+ */
+export function computeShiftDuration(start: string, end: string): number {
+  const toMinutes = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+  const startMin = toMinutes(start);
+  const endMin = toMinutes(end);
+  if (startMin === null || endMin === null) return 0;
+  let diff = endMin - startMin;
+  if (diff <= 0) diff += 24 * 60; // overnight wraparound
+  return Math.round((diff / 60) * 100) / 100; // round to 2dp for fractional shifts
+}
+
 // Generate days between start (e.g. 2026-06-15) and end (e.g. 2026-07-14) inclusive
 export function getDatesForCycle(startStr: string, endStr?: string): string[] {
   const start = new Date(startStr);

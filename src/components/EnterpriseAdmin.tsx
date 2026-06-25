@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel } from '../types';
 import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
+import { computeShiftDuration } from '../utils/rosterUtils';
 import { useToast } from './ui/ToastProvider';
 import { useConfirm } from './ui/ConfirmProvider';
 import {
@@ -198,7 +199,8 @@ export default function EnterpriseAdmin({
   // New Shift Form State
   const [newShiftCode, setNewShiftCode] = useState('');
   const [newShiftName, setNewShiftName] = useState('');
-  const [newShiftTime, setNewShiftTime] = useState('08:00 – 17:00');
+  const [newShiftStart, setNewShiftStart] = useState('08:00');
+  const [newShiftEnd, setNewShiftEnd] = useState('17:00');
   const [newShiftHours, setNewShiftHours] = useState(9);
   const [newShiftBg, setNewShiftBg] = useState('#E0F7FA');
   const [newShiftFg, setNewShiftFg] = useState('#006064');
@@ -549,10 +551,11 @@ export default function EnterpriseAdmin({
       return;
     }
 
+    const isOvernight = newShiftEnd <= newShiftStart;
     const newShift: ShiftDef = {
       code: codeUpper,
       name: newShiftName,
-      time: newShiftTime,
+      time: `${newShiftStart} – ${newShiftEnd}${isOvernight ? ' (overnight)' : ''}`,
       hours: Number(newShiftHours),
       bg: newShiftBg,
       fg: newShiftFg,
@@ -565,7 +568,8 @@ export default function EnterpriseAdmin({
     // Reset Form
     setNewShiftCode('');
     setNewShiftName('');
-    setNewShiftTime('08:00 – 17:00');
+    setNewShiftStart('08:00');
+    setNewShiftEnd('17:00');
     setNewShiftHours(9);
   };
 
@@ -1271,19 +1275,27 @@ export default function EnterpriseAdmin({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 font-mono">Time hours range</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Start</label>
                   <input
-                    type="text"
-                    placeholder="07:00 – 16:00"
-                    value={newShiftTime}
-                    onChange={(e) => setNewShiftTime(e.target.value)}
+                    type="time"
+                    value={newShiftStart}
+                    onChange={(e) => { setNewShiftStart(e.target.value); setNewShiftHours(computeShiftDuration(e.target.value, newShiftEnd)); }}
                     className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                   />
                 </div>
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 font-mono">Paid hours count</label>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">End</label>
+                  <input
+                    type="time"
+                    value={newShiftEnd}
+                    onChange={(e) => { setNewShiftEnd(e.target.value); setNewShiftHours(computeShiftDuration(newShiftStart, e.target.value)); }}
+                    className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Hours (computed)</label>
                   <input
                     type="number"
                     min={0}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StaffMember, ShiftDef, Department, AbsenceLog, RosterCycle } from '../types';
 import { useToast } from './ui/ToastProvider';
+import { computeShiftDuration } from '../utils/rosterUtils';
 import {
   X, Check, ChevronLeft, ChevronRight, Users, Clock, Calendar,
   CalendarOff, Sparkles, UserPlus, Plus, Trash2, ArrowRight, ListChecks,
@@ -118,9 +119,10 @@ export default function RosterWizard({
     if (!code || !shName.trim()) { toast.error('Enter a code and a name.'); return; }
     if (shifts[code]) { toast.error(`Shift "${code}" already exists.`); return; }
     const c = COLOR_PRESETS[shColor];
+    const isOvernight = shEnd <= shStart;
     setShifts({
       ...shifts,
-      [code]: { code, name: shName.trim(), time: `${shStart} – ${shEnd}`, hours: Number(shHours), bg: c.bg, fg: c.fg, active: true },
+      [code]: { code, name: shName.trim(), time: `${shStart} – ${shEnd}${isOvernight ? ' (overnight)' : ''}`, hours: Number(shHours), bg: c.bg, fg: c.fg, active: true },
     });
     setShCode(''); setShName('');
     toast.success(`Added shift ${code}.`);
@@ -254,9 +256,9 @@ export default function RosterWizard({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div><label className={labelCls}>Code</label><input value={shCode} onChange={e => setShCode(e.target.value)} placeholder="A" maxLength={3} className={inputCls} /></div>
                   <div className="col-span-1 md:col-span-3"><label className={labelCls}>Name</label><input value={shName} onChange={e => setShName(e.target.value)} placeholder="Morning" className={inputCls} /></div>
-                  <div><label className={labelCls}>Start</label><input type="time" value={shStart} onChange={e => setShStart(e.target.value)} className={inputCls} /></div>
-                  <div><label className={labelCls}>End</label><input type="time" value={shEnd} onChange={e => setShEnd(e.target.value)} className={inputCls} /></div>
-                  <div><label className={labelCls}>Hours</label><input type="number" value={shHours} onChange={e => setShHours(Number(e.target.value))} className={inputCls} /></div>
+                  <div><label className={labelCls}>Start</label><input type="time" value={shStart} onChange={e => { setShStart(e.target.value); setShHours(computeShiftDuration(e.target.value, shEnd)); }} className={inputCls} /></div>
+                  <div><label className={labelCls}>End</label><input type="time" value={shEnd} onChange={e => { setShEnd(e.target.value); setShHours(computeShiftDuration(shStart, e.target.value)); }} className={inputCls} /></div>
+                  <div><label className={labelCls}>Hours <span className="text-slate-300 font-normal">(computed)</span></label><input type="number" value={shHours} onChange={e => setShHours(Number(e.target.value))} className={inputCls} /></div>
                   <div><label className={labelCls}>Colour</label>
                     <div className="flex gap-1.5 mt-1.5">
                       {COLOR_PRESETS.map((c, i) => (
