@@ -24,6 +24,11 @@ import {
   X
 } from 'lucide-react';
 
+// Shared "section card" treatment — was three identical literal strings
+// before this; one source of truth keeps every dashboard panel visually
+// consistent (Connecteam-style modular cards) without copy/paste drift.
+const SECTION_CARD = 'bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.015)]';
+
 interface DashboardHomeProps {
   activeStaffId: string;
   staffList: StaffMember[];
@@ -277,7 +282,7 @@ export default function DashboardHome({
       </div>
 
       {/* Dispatch station map */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
+      <div className={SECTION_CARD}>
         <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-4 flex-wrap gap-2">
           <div>
             <h3 className="font-sans font-extrabold text-[#003764] text-sm flex items-center gap-2">
@@ -327,7 +332,7 @@ export default function DashboardHome({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Tasks needing attention (real, from dailyTasks) */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.015)] flex flex-col">
+        <div className={`lg:col-span-7 ${SECTION_CARD} flex flex-col`}>
           <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-4">
             <div>
               <h3 className="font-sans font-extrabold text-slate-800 text-base flex items-center gap-2">
@@ -451,7 +456,7 @@ export default function DashboardHome({
       {/* Target progress trackers */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <div className="lg:col-span-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
+        <div className={`lg:col-span-8 ${SECTION_CARD}`}>
           <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-4 flex-wrap gap-2">
             <div>
               <h3 className="font-sans font-extrabold text-[#003764] text-xs flex items-center gap-1.5">
