@@ -2052,6 +2052,7 @@ export default function App() {
               openOnboarding={() => setIsOnboardingOpen(true)}
               isManagerView={isManagerView}
               shifts={shifts}
+              setShifts={setShifts}
               onEditShifts={() => handleNavigation('admin')}
               onRolloverCycle={handleRolloverCycle}
             />

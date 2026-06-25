@@ -7,6 +7,7 @@ export interface ShiftDef {
   fg: string;
   active: boolean;
   isLeave?: boolean; // true for absence/leave types (AL, SL, CO, MD, ...) — not a worked shift
+  isAdHoc?: boolean; // true for one-off custom times created inline on the grid — hidden from the main shift browser/templates
 }
 
 // Access tier (distinct from job `role`). Scope comes from facilityId + departmentId.

@@ -86,7 +86,7 @@ export default function RosterWizard({
 
   if (!isOpen) return null;
 
-  const activeShifts = Object.entries(shifts).filter(([code, d]) => d.active !== false && code !== 'OFF');
+  const activeShifts = Object.entries(shifts).filter(([code, d]) => d.active !== false && code !== 'OFF' && !d.isAdHoc);
   const activeWorkShifts = activeShifts.filter(([, d]) => !d.isLeave);
   const activeLeaveTypes = activeShifts.filter(([, d]) => d.isLeave);
 

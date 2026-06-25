@@ -1356,8 +1356,8 @@ export default function EnterpriseAdmin({
 
           <div className="lg:col-span-2 space-y-5">
             {[
-              { label: 'Work shifts', entries: Object.entries(shifts).filter(([, d]) => !d.isLeave) },
-              { label: 'Leave & absence', entries: Object.entries(shifts).filter(([, d]) => d.isLeave) },
+              { label: 'Work shifts', entries: Object.entries(shifts).filter(([, d]) => !d.isLeave && !d.isAdHoc) },
+              { label: 'Leave & absence', entries: Object.entries(shifts).filter(([, d]) => d.isLeave && !d.isAdHoc) },
             ].map(group => group.entries.length > 0 && (
               <div key={group.label}>
                 <h3 className="text-xs font-black text-slate-600">{group.label}</h3>

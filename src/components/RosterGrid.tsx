@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RosterCycle, StaffMember, PublicHoliday, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
-import { isWeekend, isPublicHoliday } from '../utils/rosterUtils';
+import { isWeekend, isPublicHoliday, computeShiftDuration } from '../utils/rosterUtils';
 import { dbGetCollection, dbSetDoc, dbDeleteDoc } from '../firebase';
 import { useConfirm } from './ui/ConfirmProvider';
 import { 
@@ -19,7 +19,9 @@ import {
   Layers,
   HelpCircle,
   GripVertical,
-  UserPlus
+  UserPlus,
+  Clock,
+  Plus
 } from 'lucide-react';
 
 export const parseLocalDate = (dateStr: string | Date | undefined): Date => {
@@ -51,6 +53,7 @@ interface RosterGridProps {
   openOnboarding?: () => void;
   isManagerView?: boolean;
   shifts?: { [code: string]: ShiftDef };
+  setShifts?: (shifts: { [code: string]: ShiftDef }) => void;
   onEditShifts?: () => void;
   onRolloverCycle?: () => void;
 }
@@ -69,6 +72,7 @@ export default function RosterGrid({
   openOnboarding,
   isManagerView = true,
   shifts,
+  setShifts,
   onEditShifts,
   onRolloverCycle,
 }: RosterGridProps) {
@@ -161,6 +165,38 @@ export default function RosterGrid({
   const [draggedCell, setDraggedCell] = useState<{ staffId: string; dayIdx: number; shiftCode: string } | null>(null);
   const [draggedOverCell, setDraggedOverCell] = useState<{ staffId: string; dayIdx: number } | null>(null);
   const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number; x: number; y: number } | null>(null);
+  const [customTimeMode, setCustomTimeMode] = useState(false);
+  const [customTimeStart, setCustomTimeStart] = useState('08:00');
+  const [customTimeEnd, setCustomTimeEnd] = useState('17:00');
+
+  // Ad hoc, one-off shift time — assigns a custom start/end directly to a
+  // single cell without first having to define a permanent named shift in
+  // Settings. Generates a small hidden ShiftDef behind the scenes (flagged
+  // isAdHoc so it stays out of the main shift browser/templates) and assigns
+  // it immediately. Matches how Deputy/7shifts/UKG treat time as a raw
+  // start/end primitive rather than gating it behind a template.
+  const handleApplyCustomTime = () => {
+    if (!editingCell || !setShifts) return;
+    const code = `AH${Date.now().toString(36).slice(-5).toUpperCase()}`;
+    const hours = computeShiftDuration(customTimeStart, customTimeEnd);
+    const isOvernight = customTimeEnd <= customTimeStart;
+    const newDef: ShiftDef = {
+      code,
+      name: `Custom ${customTimeStart}–${customTimeEnd}`,
+      time: `${customTimeStart} – ${customTimeEnd}${isOvernight ? ' (overnight)' : ''}`,
+      hours,
+      bg: '#F1F5F9',
+      fg: '#475569',
+      active: true,
+      isAdHoc: true,
+    };
+    setShifts({ ...(shifts || {}), [code]: newDef });
+    updateShift(editingCell.staffId, editingCell.dayIdx, code);
+    setEditingCell(null);
+    setCustomTimeMode(false);
+    setCustomTimeStart('08:00');
+    setCustomTimeEnd('17:00');
+  };
 
   const handleDragStart = (e: React.DragEvent, staffId: string, dayIdx: number, shiftCode: string) => {
     if (isGridLocked) return;
@@ -1066,27 +1102,61 @@ export default function RosterGrid({
           {/* Shift picker popover — colour swatch + name, fixed so the grid scroll can't clip it */}
           {editingCell && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setEditingCell(null)} />
+              <div className="fixed inset-0 z-40" onClick={() => { setEditingCell(null); setCustomTimeMode(false); }} />
               <div
-                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-56 max-h-72 overflow-y-auto"
+                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-56 max-h-80 overflow-y-auto"
                 style={{ left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 232)), top: editingCell.y }}
               >
-                {['OFF', ...Object.keys(shiftDefs).filter(c => c !== 'OFF' && shiftDefs[c].active !== false)].map(code => {
-                  const d = shiftDefs[code];
-                  const current = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
-                  return (
-                    <button
-                      key={code}
-                      onClick={() => { updateShift(editingCell.staffId, editingCell.dayIdx, code); setEditingCell(null); }}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors ${code === current ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
-                    >
-                      <span className="w-3 h-3 rounded-full shrink-0 border border-black/10" style={{ background: d?.bg || (code === 'OFF' ? '#cbd5e1' : '#94a3b8') }} />
-                      <span className="text-xs font-black text-slate-800 w-9 shrink-0">{code}</span>
-                      <span className="text-xs text-slate-600 flex-1 truncate">{code === 'OFF' ? 'Off / Rest' : (d?.name || code)}</span>
-                      <span className="text-[10px] text-slate-400 font-mono shrink-0">{d?.time || (d?.hours ? `${d.hours}h` : '')}</span>
-                    </button>
-                  );
-                })}
+                {customTimeMode ? (
+                  <div className="p-2 space-y-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-700">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" /> Custom time
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Start</label>
+                        <input type="time" value={customTimeStart} onChange={e => setCustomTimeStart(e.target.value)} className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-1.5 mt-0.5 outline-none focus:border-indigo-600" />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">End</label>
+                        <input type="time" value={customTimeEnd} onChange={e => setCustomTimeEnd(e.target.value)} className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-1.5 mt-0.5 outline-none focus:border-indigo-600" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-mono">{computeShiftDuration(customTimeStart, customTimeEnd)} hrs{customTimeEnd <= customTimeStart ? ' (overnight)' : ''}</p>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => setCustomTimeMode(false)} className="flex-1 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer">Cancel</button>
+                      <button onClick={handleApplyCustomTime} className="flex-1 py-1.5 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer">Assign</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {['OFF', ...Object.keys(shiftDefs).filter(c => c !== 'OFF' && shiftDefs[c].active !== false && !shiftDefs[c].isAdHoc)].map(code => {
+                      const d = shiftDefs[code];
+                      const current = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
+                      return (
+                        <button
+                          key={code}
+                          onClick={() => { updateShift(editingCell.staffId, editingCell.dayIdx, code); setEditingCell(null); }}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors ${code === current ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
+                        >
+                          <span className="w-3 h-3 rounded-full shrink-0 border border-black/10" style={{ background: d?.bg || (code === 'OFF' ? '#cbd5e1' : '#94a3b8') }} />
+                          <span className="text-xs font-black text-slate-800 w-9 shrink-0">{code}</span>
+                          <span className="text-xs text-slate-600 flex-1 truncate">{code === 'OFF' ? 'Off / Rest' : (d?.name || code)}</span>
+                          <span className="text-[10px] text-slate-400 font-mono shrink-0">{d?.time || (d?.hours ? `${d.hours}h` : '')}</span>
+                        </button>
+                      );
+                    })}
+                    {setShifts && (
+                      <button
+                        onClick={() => setCustomTimeMode(true)}
+                        className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors hover:bg-slate-50 border-t border-slate-100 mt-1"
+                      >
+                        <Plus className="w-3 h-3 text-indigo-500 shrink-0" />
+                        <span className="text-xs font-bold text-indigo-600">Custom time…</span>
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </>
           )}
