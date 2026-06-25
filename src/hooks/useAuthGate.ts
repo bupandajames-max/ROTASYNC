@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { auth, testConnection, signInWithGoogle, logoutUser, dbSetDoc } from '../firebase';
-import { resolveAccess, ResolvedAccess } from '../config/access';
-import type { StaffMember } from '../types';
+import { auth, testConnection, signInWithGoogle, logoutUser } from '../firebase';
+import { ResolvedAccess } from '../config/access';
 
 export interface ConfirmedIdentity {
   name: string;
@@ -9,16 +8,23 @@ export interface ConfirmedIdentity {
 }
 
 /**
- * Owns sign-in/sign-out, the resolved RBAC access tier, sandbox-bypass mode,
- * and the derived "is this person allowed in, and do they need onboarding"
- * booleans. Pulled out of App.tsx as its own domain: every piece of state
- * and every effect here exists only to answer "who is this, and are they
- * let in" — nothing about facilities, rosters, or tasks leaks into it.
+ * Owns sign-in/sign-out and sandbox-bypass mode. Pulled out of App.tsx as
+ * its own domain.
+ *
+ * Deliberately does NOT take staffList or compute isRegisteredStaff/
+ * needsOnboarding/the access-tier resolution here, even though those
+ * conceptually belong to "auth" — staffList comes from useHydration, which
+ * itself needs firebaseUser (this hook's output) to decide whether to sync
+ * from the cloud. Hooks can't depend on each other's outputs as inputs in
+ * a cycle, so the staffList-dependent pieces live in App.tsx instead, after
+ * both hooks have run. This hook only returns the access state + setter so
+ * App.tsx's effect can populate it.
  */
-export function useAuthGate(staffList: StaffMember[]) {
+export function useAuthGate() {
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [isFirebaseSyncEnabled, setIsFirebaseSyncEnabled] = useState<boolean>(false);
   // Resolved access tier + scope for the signed-in user (Phase A foundation).
+  // Resolved in App.tsx (needs staffList) — this hook just owns the state.
   const [access, setAccess] = useState<ResolvedAccess>({ accessLevel: 'staff', email: '' });
 
   // RBAC Sandbox Bypass monitoring
@@ -36,25 +42,6 @@ export function useAuthGate(staffList: StaffMember[]) {
     });
     return () => unsubscribe();
   }, []);
-
-  // Resolve the signed-in user's access tier from their email (super-user allowlist
-  // → matching staff record), and mirror it into a rules-friendly users/{uid} doc.
-  // Phase A: additive only — this does not yet change what the UI shows.
-  useEffect(() => {
-    if (!firebaseUser) {
-      setAccess({ accessLevel: 'staff', email: '' });
-      return;
-    }
-    const resolved = resolveAccess(firebaseUser.email, staffList);
-    setAccess(resolved);
-    dbSetDoc('users', firebaseUser.uid, {
-      id: firebaseUser.uid,
-      email: resolved.email,
-      accessLevel: resolved.accessLevel,
-      facilityId: resolved.facilityId || '',
-      departmentId: resolved.departmentId || '',
-    }).catch(() => {});
-  }, [firebaseUser, staffList]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -76,15 +63,14 @@ export function useAuthGate(staffList: StaffMember[]) {
     }
   };
 
-  // Gating route enforcement (RBAC)
+  // Gating route enforcement (RBAC) — only the part that doesn't need staffList.
   const isAuthorized = firebaseUser !== null || isSandboxBypassActive;
-  const isRegisteredStaff = staffList.some(s => s.email?.toLowerCase().trim() === firebaseUser?.email?.toLowerCase().trim());
-  const needsOnboarding = !!(firebaseUser && !isRegisteredStaff);
 
   return {
     firebaseUser,
     isFirebaseSyncEnabled,
     access,
+    setAccess,
     isSandboxBypassActive,
     setIsSandboxBypassActive,
     confirmedIdentity,
@@ -92,7 +78,5 @@ export function useAuthGate(staffList: StaffMember[]) {
     handleGoogleSignIn,
     handleSignOut,
     isAuthorized,
-    isRegisteredStaff,
-    needsOnboarding,
   };
 }

@@ -67,12 +67,21 @@ interface FacilitiesConfigBundle {
   onDeleteDepartment?: (id: string) => void;
 }
 
-interface EnterpriseAdminProps {
-  facilitiesConfig: FacilitiesConfigBundle;
+// Staff + task-master lists — the two pieces of the (much larger)
+// useHydration domain that EnterpriseAdmin actually needs. Bundled for
+// consistency with facilitiesConfig/workspaceConfig; the rest of
+// useHydration's data (roster cycle, daily tasks, approvals, etc.) doesn't
+// belong here.
+interface RosterDataBundle {
   staffList: StaffMember[];
   setStaffList: (list: StaffMember[]) => void;
   taskMasterList: TaskMaster[];
   setTaskMasterList: (list: TaskMaster[]) => void;
+}
+
+interface EnterpriseAdminProps {
+  facilitiesConfig: FacilitiesConfigBundle;
+  rosterDataConfig: RosterDataBundle;
   currentDeptId: string;
   setCurrentDeptId: (id: string) => void;
   isSandboxStrictMode: boolean;
@@ -85,10 +94,7 @@ interface EnterpriseAdminProps {
 
 export default function EnterpriseAdmin({
   facilitiesConfig,
-  staffList,
-  setStaffList,
-  taskMasterList,
-  setTaskMasterList,
+  rosterDataConfig,
   currentDeptId,
   setCurrentDeptId,
   isSandboxStrictMode,
@@ -100,6 +106,8 @@ export default function EnterpriseAdmin({
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
+
+  const { staffList, setStaffList, taskMasterList, setTaskMasterList } = rosterDataConfig;
 
   const {
     facilities,

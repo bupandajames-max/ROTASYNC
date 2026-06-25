@@ -54,10 +54,11 @@ import {
   dbGetCollectionByFacility,
   seedCollectionFromLocalIfEmpty
 } from './firebase';
-import { isSuperuserEmail } from './config/access';
+import { isSuperuserEmail, resolveAccess } from './config/access';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useFacilities } from './hooks/useFacilities';
 import { useWorkspaceConfig, DEFAULT_TAXONOMY } from './hooks/useWorkspaceConfig';
+import { useHydration } from './hooks/useHydration';
 
 // --- Assignment engine helpers (Increment 1: availability + fairness) ---
 // Codes that mean a staff member is NOT available for task assignment that day.
@@ -76,7 +77,10 @@ export default function App() {
   const toast = useToast();
   const confirm = useConfirm();
 
-  const [isSyncingFirebase, setIsSyncingFirebase] = useState<boolean>(false);
+  // Write-only busy flag used around the Factory Reset purge — never
+  // rendered anywhere, kept only so handleDeepAtomicPurge's existing
+  // setIsSyncingFirebase calls keep compiling unchanged.
+  const [, setIsSyncingFirebase] = useState<boolean>(false);
 
   const [currentTab, setCurrentTab] = useState('home');
   const [isManagerView, setIsManagerView] = useState(false);
@@ -84,13 +88,13 @@ export default function App() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [setupHidden, setSetupHidden] = useState(false);
 
-  const [staffList, setStaffList] = useState<StaffMember[]>([]);
-
   // Identity, sign-in, RBAC access tier, and "are they let in" gating — see useAuthGate.
+  // (isRegisteredStaff/needsOnboarding/access-resolution need staffList, which
+  // comes from useHydration below — computed further down once both are available.)
   const {
     firebaseUser,
     isFirebaseSyncEnabled,
-    access,
+    access, setAccess,
     isSandboxBypassActive,
     setIsSandboxBypassActive,
     confirmedIdentity,
@@ -98,31 +102,13 @@ export default function App() {
     handleGoogleSignIn,
     handleSignOut,
     isAuthorized,
-    isRegisteredStaff,
-    needsOnboarding,
-  } = useAuthGate(staffList);
-
-  const [activeStaffId, setActiveStaffId] = useState('');
-  const [activeCycle, setActiveCycle] = useState<RosterCycle | null>(null);
-  const [cycleDates, setCycleDates] = useState<string[]>([]);
-  const [taskMasterList, setTaskMasterList] = useState<TaskMaster[]>([]);
-  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
-  const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
-  const [extraHoursLog, setExtraHoursLog] = useState<ExtraHoursEntry[]>([]);
-  const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  } = useAuthGate();
 
   // Connecteam Custom Configurations & Multi-tenant States
   const [currentDeptId, setCurrentDeptId] = useState<string>('');
   const [isSandboxStrictMode, setIsSandboxStrictMode] = useState<boolean>(false);
 
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
-  const staffListRef = useRef<StaffMember[] | null>(null);
-  
-  const lastStaffListRef = useRef<StaffMember[]>([]);
-  const lastTaskMasterListRef = useRef<TaskMaster[]>([]);
-  const lastDailyTasksRef = useRef<DailyTask[]>([]);
-  const lastApprovalsRef = useRef<ApprovalRequest[]>([]);
-  const lastExtraHoursLogRef = useRef<ExtraHoursEntry[]>([]);
 
   const [firebaseErrorBanner, setFirebaseErrorBanner] = useState<{message: string, link?: string} | null>(null);
 
@@ -165,6 +151,225 @@ export default function App() {
     regionPresetId, setRegionPresetId,
     holidays, setHolidays,
   } = useWorkspaceConfig(selectedFacilityId, isHydrated, firebaseUser);
+
+  // Generates a day's worth of assigned tasks from staff/cycle/task-master
+  // data. Used by several handlers below (with live cycleDates/holidays via
+  // closure) and by useHydration (which passes its own freshly-loaded
+  // dates/holidays explicitly instead — see the override params). Must be
+  // defined before the useHydration() call below, since it's passed in as
+  // an argument there.
+  const generateDayTasks = (
+    dateStr: string,
+    uStaff: StaffMember[],
+    uCycle: RosterCycle,
+    uTasks: TaskMaster[],
+    loadTally?: Record<string, number>, // optional: when provided, balances assignment by load and is mutated in place
+    datesOverride?: string[],
+    holidaysOverride?: PublicHoliday[]
+  ): DailyTask[] => {
+    const uDates = datesOverride ?? cycleDates;
+    const uHolidays = holidaysOverride ?? holidays;
+    const list: DailyTask[] = [];
+    const dow = new Date(dateStr + 'T00:00:00').getDay();
+    const dayIdx = uDates.length > 0 ? uDates.indexOf(dateStr) : -1;
+    if (dayIdx === -1) return [];
+
+    // Map shifts for easy lookup
+    const shiftStaffMap: { [shift: string]: string[] } = {};
+    const staffShiftMap: { [name: string]: string } = {};
+    const staffByName: { [name: string]: StaffMember } = {};
+
+    uStaff.forEach(s => {
+      const code = uCycle.shifts[s.id]?.[dayIdx] || 'OFF';
+      staffShiftMap[s.name] = code;
+      staffByName[s.name] = s;
+      // Only treat genuinely-working codes as available — exclude OFF and leave/absence.
+      if (isWorkingCode(code)) {
+        if (!shiftStaffMap[code]) shiftStaffMap[code] = [];
+        shiftStaffMap[code].push(s.name);
+      }
+    });
+
+    // Skills-based eligibility: a staffer qualifies if they hold every required skill.
+    const hasRequiredSkills = (name: string, required: string[]): boolean => {
+      if (!required || required.length === 0) return true;
+      const owned = (staffByName[name]?.skills || []).map(x => x.toLowerCase().trim());
+      return required.every(r => owned.includes(r.toLowerCase().trim()));
+    };
+    // Lowest-load picker (fairness) over a candidate list; deterministic when no tally.
+    const pickFairest = (names: StaffMember[]): StaffMember | null => {
+      if (names.length === 0) return null;
+      return loadTally
+        ? names.reduce((best, s) => ((loadTally[s.name] || 0) < (loadTally[best.name] || 0) ? s : best), names[0])
+        : names[0];
+    };
+
+    const isWknd = dow === 0 || dow === 6;
+    const isPH = isPublicHoliday(dateStr, uHolidays);
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const isLastDOM = dateObj.getDate() === new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0).getDate();
+
+    uTasks.forEach(task => {
+      if (!task.active) return;
+
+      // Filter daily vs weekly vs monthly
+      let isDue = false;
+      if (task.frequency === 'Daily') isDue = true;
+      else if (task.frequency.includes('Sunday') && dow === 0) isDue = true;
+      else if (task.frequency.includes('Last day') && isLastDOM) isDue = true;
+      else if (task.frequency.includes('Monthly') && (isLastDOM || dow === 4)) isDue = true; // simplify mock simulation
+
+      if (!isDue) return;
+
+      // Determine who to assign
+      let assignees: { name: string; shift: string }[] = [];
+      const required = task.requiredSkills || [];
+
+      if (task.pattern === 'Auto') {
+        // Smart auto-assign: one staffer = on shift ∩ has required skills ∩ (optional role) → fairest.
+        const roleFilter = (task.assignedValue || '').trim();
+        const candidates = uStaff.filter(s =>
+          isWorkingCode(staffShiftMap[s.name])
+          && (!roleFilter || s.role === roleFilter)
+          && hasRequiredSkills(s.name, required)
+        ).sort((a, b) => a.name.localeCompare(b.name));
+        const assignee = pickFairest(candidates);
+        if (assignee) assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
+      } else if (task.pattern === 'Dispensing-rotate') {
+        // Round-robin among available working staff who hold the required skills.
+        const workingStaffForDay = uStaff.filter(s => isWorkingCode(staffShiftMap[s.name]) && hasRequiredSkills(s.name, required))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (workingStaffForDay.length > 0) {
+          const slot = parseInt(task.assignedValue) || 0;
+          const dayOffset = Math.max(0, Math.round((new Date(dateStr + 'T00:00:00').getTime() - new Date(uCycle.startDate + 'T00:00:00').getTime()) / 864e5));
+          const rotStart = (dayOffset + slot) % workingStaffForDay.length;
+          // Rotate the candidate order so ties break deterministically and spread over time,
+          // then pick the least-loaded (fairness) — falls back to pure rotation with no tally.
+          const ordered = [...workingStaffForDay.slice(rotStart), ...workingStaffForDay.slice(0, rotStart)];
+          const assignee = pickFairest(ordered)!;
+          assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
+        }
+      } else if (task.pattern === 'Shift-based') {
+        const tgtShift = task.assignedValue; // e.g. "Shift C", "Shift B" or raw code "C"
+        const cleanS = tgtShift.replace('Shift ', '').trim();
+        const names = shiftStaffMap[cleanS] || [];
+        names.forEach(n => assignees.push({ name: n, shift: cleanS }));
+      } else if (task.pattern === 'Linked') {
+        // Dynamically find the linked master task assignee on that day
+        const targetTask = uTasks.find(t => t.id === task.assignedValue || t.name === task.assignedValue);
+        if (targetTask) {
+          if (targetTask.pattern === 'Manager-assign' || targetTask.pattern === 'Collab') {
+            const names = (targetTask.managerAssignedName || '').split(',').map(n => n.trim());
+            names.forEach(n => {
+              if (n && isWorkingCode(staffShiftMap[n])) {
+                assignees.push({ name: n, shift: staffShiftMap[n] });
+              }
+            });
+          } else if (targetTask.pattern === 'Person-specific') {
+            const specName = targetTask.assignedValue;
+            if (specName && isWorkingCode(staffShiftMap[specName])) {
+              assignees.push({ name: specName, shift: staffShiftMap[specName] });
+            }
+          }
+        }
+      } else if (task.pattern === 'Collab') {
+        const names = (task.managerAssignedName || '').split(',').map(n => n.trim());
+        names.forEach(n => {
+          if (n && isWorkingCode(staffShiftMap[n])) {
+            assignees.push({ name: n, shift: staffShiftMap[n] });
+          }
+        });
+      } else if (task.pattern === 'Manager-assign') {
+        const names = (task.managerAssignedName || '').split(',').map(n => n.trim());
+        names.forEach(n => {
+          if (n && isWorkingCode(staffShiftMap[n])) {
+            assignees.push({ name: n, shift: staffShiftMap[n] });
+          }
+        });
+      } else if (task.pattern === 'Person-specific') {
+        const specName = task.assignedValue;
+        if (specName && isWorkingCode(staffShiftMap[specName])) {
+          assignees.push({ name: specName, shift: staffShiftMap[specName] });
+        }
+      } else if (task.pattern === 'Role-group') {
+        const targetRole = task.assignedValue;
+        uStaff.forEach(s => {
+          if (s.role === targetRole && isWorkingCode(staffShiftMap[s.name]) && hasRequiredSkills(s.name, required)) {
+            assignees.push({ name: s.name, shift: staffShiftMap[s.name] });
+          }
+        });
+      }
+
+      assignees.forEach(a => {
+        list.push({
+          id: `dt-${task.id}-${a.name}-${dateStr}`,
+          date: dateStr,
+          staffName: a.name,
+          taskName: task.name,
+          category: task.category,
+          shiftCode: a.shift,
+          priority: task.priority,
+          status: 'Pending',
+          compliance: task.compliance,
+          isTracker: task.frequency.includes('Continuous'),
+          trackerTarget: task.trackerTarget,
+          trackerValue: task.trackerValue,
+          customFields: task.customFields,
+          customFieldsData: {}
+        });
+        // Fairness bookkeeping: count every assignment so rotation balances total load.
+        if (loadTally) loadTally[a.name] = (loadTally[a.name] || 0) + 1;
+      });
+    });
+
+    return list;
+  };
+
+  // Operational data domain (staff, roster cycle, tasks, daily tasks,
+  // approvals, extra hours, timesheets) + the one big hydration effect that
+  // loads it all — see useHydration. The riskiest piece of the original god
+  // component, deliberately tackled last.
+  const {
+    staffList, setStaffList,
+    activeStaffId, setActiveStaffId,
+    activeCycle, setActiveCycle,
+    cycleDates, setCycleDates,
+    taskMasterList, setTaskMasterList,
+    dailyTasks, setDailyTasks,
+    approvals, setApprovals,
+    extraHoursLog, setExtraHoursLog,
+    timesheets, setTimesheets,
+    staffListRef, lastStaffListRef, lastTaskMasterListRef, lastDailyTasksRef, lastApprovalsRef, lastExtraHoursLogRef,
+  } = useHydration({
+    selectedFacilityId, setSelectedFacilityId, firebaseUser, setIsHydrated,
+    setFacilities, setDepartments, setHolidays, setShifts,
+    setRuleSet, setTaskCategories, setFacilityTypes, setTimezoneLabel, setRegionPresetId,
+    setTaxonomy, handleGenericError, generateDayTasksFn: generateDayTasks,
+  });
+
+  // isRegisteredStaff/needsOnboarding/access-tier resolution need staffList
+  // (from useHydration, above) and firebaseUser (from useAuthGate) — computed
+  // here rather than inside either hook, since each hook's inputs can't
+  // depend on the other's outputs.
+  const isRegisteredStaff = staffList.some(s => s.email?.toLowerCase().trim() === firebaseUser?.email?.toLowerCase().trim());
+  const needsOnboarding = !!(firebaseUser && !isRegisteredStaff);
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setAccess({ accessLevel: 'staff', email: '' });
+      return;
+    }
+    const resolved = resolveAccess(firebaseUser.email, staffList);
+    setAccess(resolved);
+    dbSetDoc('users', firebaseUser.uid, {
+      id: firebaseUser.uid,
+      email: resolved.email,
+      accessLevel: resolved.accessLevel,
+      facilityId: resolved.facilityId || '',
+      departmentId: resolved.departmentId || '',
+    }).catch(() => {});
+  }, [firebaseUser, staffList]);
 
   // Self onboarding profile handler
   const handleSelfOnboard = async (newStaff: StaffMember) => {
@@ -239,518 +444,6 @@ export default function App() {
       setActiveStaffId(manager.id);
     }
   };
-
-  // 1. Unified Coordinated Hydration Engine state loader
-  useEffect(() => {
-    // NOTE: we intentionally do NOT early-return when there is no selected
-    // facility — the hydrate() routine handles the first-run/blank-slate case
-    // (loading any stored facilities, auto-selecting one, or marking hydration
-    // complete so the setup wizard can appear).
-    setIsHydrated(false);
-
-    let active = true;
-
-    async function hydrate() {
-      setIsSyncingFirebase(true);
-
-      // --- STEP A: Load Local Cache first so UI is immediately responsive ---
-      // Load Facilities
-      const storedFacilities = localStorage.getItem(GLOBAL_KEYS.facilitiesList);
-      let loadedFacs = DEFAULT_FACILITIES;
-      if (storedFacilities) {
-        try {
-          const parsed = JSON.parse(storedFacilities);
-          const { upgraded, changed } = upgradeFacilitiesList(parsed);
-          loadedFacs = upgraded;
-          if (changed) {
-            localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(upgraded));
-          }
-        } catch (e) {
-          loadedFacs = DEFAULT_FACILITIES;
-        }
-      }
-      if (active) {
-        setFacilities(loadedFacs);
-      }
-
-      // First-run / no active selection: nothing to hydrate yet. Auto-select the
-      // first facility if one exists, otherwise fall through to the setup wizard.
-      if (!selectedFacilityId) {
-        if (loadedFacs.length > 0 && active) {
-          setSelectedFacilityId(loadedFacs[0].id); // effect re-runs with the new id
-        } else if (active) {
-          setIsSyncingFirebase(false);
-          setIsHydrated(true);
-        }
-        return;
-      }
-
-      const isSeededInitially = localStorage.getItem(seededFlagKey(selectedFacilityId)) === 'true';
-
-      // Load Departments
-      const storedDepts = localStorage.getItem(GLOBAL_KEYS.departments);
-      let loadedDepts: Department[] = [];
-      if (storedDepts) {
-        try {
-          loadedDepts = JSON.parse(storedDepts);
-        } catch (e) {
-          loadedDepts = [];
-        }
-      }
-      if (active) {
-        setDepartments(loadedDepts);
-      }
-
-      // Load Holidays (no region baked in; sourced from workspace config / region preset)
-      let loadedHolidays: PublicHoliday[] = [];
-      const storedHolidays = localStorage.getItem(facilityKey(selectedFacilityId, 'holidays')) || localStorage.getItem('kmh_holidays');
-      if (storedHolidays) {
-        try {
-          loadedHolidays = JSON.parse(storedHolidays);
-        } catch (e) {}
-      }
-      if (active) {
-        setHolidays(loadedHolidays);
-      }
-
-      // Load custom shifts
-      const storedShifts = localStorage.getItem(facilityKey(selectedFacilityId, 'custom_shifts'));
-      let loadedShifts = SHIFTS;
-      if (storedShifts) {
-        try {
-          loadedShifts = JSON.parse(storedShifts);
-        } catch (e) {}
-      }
-      if (active) {
-        setShifts(loadedShifts);
-      }
-
-      // Load workspace configuration (ruleset, categories, facility types, regional).
-      // Migration: if no bundled config exists yet, wrap the loose settings already
-      // loaded above into a default config so existing installs keep working.
-      const storedConfig = localStorage.getItem(facilityKey(selectedFacilityId, 'config'));
-      let loadedRuleSet = buildDefaultRuleSet();
-      let loadedCategories = buildDefaultWorkspaceConfig().taskCategories;
-      let loadedFacTypes = buildDefaultWorkspaceConfig().facilityTypes;
-      let loadedTimezone = '';
-      let loadedRegionId: string | undefined = undefined;
-      if (storedConfig) {
-        try {
-          const cfg = JSON.parse(storedConfig) as Partial<WorkspaceConfig>;
-          if (cfg.ruleSet) loadedRuleSet = cfg.ruleSet;
-          if (Array.isArray(cfg.taskCategories) && cfg.taskCategories.length) loadedCategories = cfg.taskCategories;
-          if (Array.isArray(cfg.facilityTypes) && cfg.facilityTypes.length) loadedFacTypes = cfg.facilityTypes;
-          if (typeof cfg.timezoneLabel === 'string') loadedTimezone = cfg.timezoneLabel;
-          if (typeof cfg.regionPresetId === 'string') loadedRegionId = cfg.regionPresetId;
-        } catch (e) {}
-      }
-      if (active) {
-        setRuleSet(loadedRuleSet);
-        setTaskCategories(loadedCategories);
-        setFacilityTypes(loadedFacTypes);
-        setTimezoneLabel(loadedTimezone);
-        setRegionPresetId(loadedRegionId);
-      }
-
-      // Load Staff
-      let loadedStaff: StaffMember[] = [];
-      const storedStaff = localStorage.getItem(facilityKey(selectedFacilityId, 'staff_list'));
-      if (storedStaff) {
-        try {
-          loadedStaff = JSON.parse(storedStaff);
-        } catch (e) {
-          loadedStaff = isSeededInitially ? [] : getStaffSeedForFacility(selectedFacilityId);
-        }
-      } else {
-        loadedStaff = isSeededInitially ? [] : getStaffSeedForFacility(selectedFacilityId);
-      }
-      loadedStaff = (loadedStaff || [])
-        .filter((s): s is StaffMember => s !== null && typeof s === 'object' && typeof s.name === 'string')
-        .map(s => ({
-        id: s.id || `staff-${Math.random().toString(36).substring(2, 11)}`,
-        name: s.name || 'Unnamed',
-        email: s.email || `${(s.name || 'staff').toLowerCase().replace(/\s+/g, '')}@example.com`,
-        role: s.role || 'Staff Member',
-        facilityId: s.facilityId || selectedFacilityId,
-        phone: s.phone || '+260 970 000 000',
-        contractedHours: Number(s.contractedHours) || 168,
-        gender: s.gender || '',
-        fullName: s.fullName || s.name || 'Unnamed Staff Member',
-        employeeNo: s.employeeNo || `EMP-${Math.floor(Math.random() * 1000)}`,
-        isManager: !!s.isManager,
-        departmentId: s.departmentId || undefined
-      }));
-
-      // Apply self-healing deduplication to check if the firebaseUser had a previous placeholder staff member
-      if (firebaseUser?.email) {
-        const userEmail = firebaseUser.email.toLowerCase().trim();
-        const onboardedUser = loadedStaff.find(s => s.email?.toLowerCase().trim() === userEmail);
-        if (onboardedUser) {
-          const shortOnboardName = (onboardedUser.name || '').toLowerCase().trim();
-          const legacyUser = loadedStaff.find(s => 
-            s.id !== onboardedUser.id && 
-            (s.name || '').toLowerCase().trim() === shortOnboardName && 
-            (!s.email || s.email.includes('@example.com') || s.email.includes('demo') || s.email === 'james@example.com' || s.email === 'getrude@example.com' || s.email === 'staff@example.com')
-          );
-          if (legacyUser) {
-            const merged: StaffMember = {
-              ...legacyUser,
-              email: onboardedUser.email,
-              fullName: onboardedUser.fullName || legacyUser.fullName,
-              phone: onboardedUser.phone || legacyUser.phone,
-              gender: onboardedUser.gender || legacyUser.gender,
-              isManager: legacyUser.isManager || onboardedUser.isManager || true,
-              departmentId: legacyUser.departmentId || onboardedUser.departmentId
-            };
-            loadedStaff = loadedStaff.filter(s => s.id !== onboardedUser.id);
-            loadedStaff = loadedStaff.map(s => s.id === legacyUser.id ? merged : s);
-          }
-        }
-      }
-
-      if (active) {
-        setStaffList(loadedStaff);
-        lastStaffListRef.current = loadedStaff;
-      }
-
-      // Load cycle dates
-      const storedDates = localStorage.getItem(facilityKey(selectedFacilityId, 'cycle_dates'));
-      let loadedDates = getDatesForCycle('2026-06-15');
-      if (storedDates) {
-        try {
-          loadedDates = JSON.parse(storedDates);
-        } catch (e) {}
-      }
-      if (active) {
-        setCycleDates(loadedDates);
-      }
-
-      // Load Active Cycle
-      const storedCycle = localStorage.getItem(facilityKey(selectedFacilityId, 'active_cycle'));
-      let loadedCycle: RosterCycle | null = null;
-      if (storedCycle) {
-        try {
-          loadedCycle = JSON.parse(storedCycle);
-        } catch (e) {}
-      }
-      if (!loadedCycle) {
-        const initialShifts = generateSeedShifts(loadedStaff, loadedDates, loadedHolidays, loadedRuleSet);
-        loadedCycle = {
-          id: `cycle-${selectedFacilityId}-2026-06-15`,
-          startDate: '2026-06-15',
-          endDate: '2026-07-14',
-          shifts: initialShifts,
-          isLocked: false
-        };
-      }
-      if (active) {
-        setActiveCycle(loadedCycle);
-      }
-
-      // Load Task Master
-      const storedTaskMaster = localStorage.getItem(facilityKey(selectedFacilityId, 'task_master'));
-      let loadedTasks: TaskMaster[] = [];
-      if (storedTaskMaster) {
-        try {
-          loadedTasks = JSON.parse(storedTaskMaster);
-        } catch (e) {
-          loadedTasks = isSeededInitially ? [] : getTasksSeedForFacility(selectedFacilityId);
-        }
-      } else {
-        loadedTasks = isSeededInitially ? [] : getTasksSeedForFacility(selectedFacilityId);
-      }
-      if (active) {
-        setTaskMasterList(loadedTasks);
-        lastTaskMasterListRef.current = loadedTasks;
-      }
-
-      // Load Approvals
-      const storedApprovals = localStorage.getItem(facilityKey(selectedFacilityId, 'approvals'));
-      let loadedApprovals: ApprovalRequest[] = [];
-      if (storedApprovals) {
-        try {
-          loadedApprovals = JSON.parse(storedApprovals);
-        } catch (e) {}
-      }
-      if (active) {
-        setApprovals(loadedApprovals);
-        lastApprovalsRef.current = loadedApprovals;
-      }
-
-      // Load Overtime logs
-      const storedExtra = localStorage.getItem(facilityKey(selectedFacilityId, 'extra_hours_log'));
-      let loadedExtra: ExtraHoursEntry[] = [];
-      if (storedExtra) {
-        try {
-          loadedExtra = JSON.parse(storedExtra);
-        } catch (e) {}
-      }
-      if (active) {
-        setExtraHoursLog(loadedExtra);
-        lastExtraHoursLogRef.current = loadedExtra;
-      }
-
-      // Load Daily Tasks log
-      const storedDaily = localStorage.getItem(facilityKey(selectedFacilityId, 'daily_tasks'));
-      let loadedDaily: DailyTask[] = [];
-      if (storedDaily) {
-        try {
-          loadedDaily = JSON.parse(storedDaily);
-        } catch (e) {}
-      }
-      if (loadedDaily.length === 0 && loadedCycle) {
-        loadedDaily = generateDayTasks('2026-06-18', loadedStaff, loadedCycle, loadedTasks);
-      }
-      if (active) {
-        setDailyTasks(loadedDaily);
-        lastDailyTasksRef.current = loadedDaily;
-      }
-
-      // Load Timesheets list
-      const storedTimesheets = localStorage.getItem(facilityKey(selectedFacilityId, 'timesheets_list'));
-      let loadedTimesheets: Timesheet[] = [];
-      if (storedTimesheets) {
-        try {
-          loadedTimesheets = JSON.parse(storedTimesheets);
-        } catch (e) {}
-      }
-      if (active) {
-        setTimesheets(loadedTimesheets);
-      }
-
-      // Load Taxonomy
-      const storedTax = localStorage.getItem(facilityKey(selectedFacilityId, 'taxonomy'));
-      let loadedTax = DEFAULT_TAXONOMY;
-      if (storedTax) {
-        try {
-          loadedTax = JSON.parse(storedTax);
-        } catch (e) {}
-      }
-      if (active) {
-        setTaxonomy(loadedTax);
-      }
-
-      if (!isSeededInitially) {
-        localStorage.setItem(seededFlagKey(selectedFacilityId), 'true');
-      }
-
-      // --- STEP B: Hydrate from Cloud authority if firebase user is signed in ---
-      if (firebaseUser) {
-        try {
-          // Per-tenant read isolation: super users read everything (and filter
-          // client-side); everyone else reads only their facility's docs. Super is
-          // determined from the email allowlist so it's reliable before access resolves.
-          const scopeReads = !isSuperuserEmail(firebaseUser.email);
-          const readCol = <T,>(p: string): Promise<T[]> =>
-            scopeReads ? dbGetCollectionByFacility<T>(p, selectedFacilityId) : dbGetCollection<T>(p);
-
-          // One-time backfill: tag any pre-isolation docs (missing facilityId) with
-          // the current facility so non-super reads (which now require the field)
-          // can see them. Only the super's unscoped read can find these.
-          const backfillFacility = (path: string, items: { id: string; facilityId?: string }[]) => {
-            if (scopeReads) return;
-            const missing = items.filter(i => !i.facilityId);
-            missing.forEach(i => {
-              dbSetDoc(path, i.id, { ...i, facilityId: selectedFacilityId } as any).catch(() => {});
-            });
-          };
-
-          const configDoc = await dbGetDoc<{ id: string; seeded: boolean }>('systemConfig', 'status');
-          const cloudIsAlreadySeeded = configDoc !== null;
-
-          // 1. Facilities
-          let cloudFacs = await dbGetCollection<Facility>('facilities');
-          cloudFacs = await seedCollectionFromLocalIfEmpty('facilities', cloudFacs, cloudIsAlreadySeeded, loadedFacs);
-          if (cloudFacs.length > 0) {
-            const { upgraded, changed } = upgradeFacilitiesList(cloudFacs);
-            cloudFacs = upgraded;
-            if (active) setFacilities(cloudFacs);
-            localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(cloudFacs));
-          }
-
-          // 2. Departments
-          const cloudDepts = await dbGetCollection<Department>('departments');
-          if (active) setDepartments(cloudDepts);
-          localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(cloudDepts));
-
-          // 3. Staff List
-          let cloudStaff = await readCol<StaffMember>('staff');
-          backfillFacility('staff', cloudStaff);
-          cloudStaff = cloudStaff.map(s => ({
-            id: s.id || `staff-${Math.random().toString(36).substring(2, 11)}`,
-            name: s.name || 'Unnamed',
-            email: s.email || `${(s.name || 'staff').toLowerCase().replace(/\s+/g, '')}@example.com`,
-            role: s.role || 'Staff Member',
-            facilityId: s.facilityId || selectedFacilityId,
-            phone: s.phone || '+260 970 000 000',
-            contractedHours: Number(s.contractedHours) || 168,
-            gender: s.gender || '',
-            fullName: s.fullName || s.name || 'Unnamed Staff Member',
-            employeeNo: s.employeeNo || `EMP-${Math.floor(Math.random() * 1000)}`,
-            isManager: !!s.isManager,
-            departmentId: s.departmentId || undefined
-          }));
-          let partitionedCloudStaff = cloudStaff.filter(s => s.facilityId === selectedFacilityId);
-          if (partitionedCloudStaff.length === 0 && !cloudIsAlreadySeeded && loadedStaff.length > 0) {
-            for (const s of loadedStaff) {
-              await dbSetDoc('staff', s.id, { ...s, facilityId: selectedFacilityId });
-            }
-            partitionedCloudStaff = loadedStaff;
-          }
-
-          // Self-healing merge of duplicate user profiles (e.g. James real email vs placeholder demo email)
-          if (firebaseUser?.email) {
-            const userEmail = firebaseUser.email.toLowerCase().trim();
-            const onboardedUser = partitionedCloudStaff.find(s => s.email?.toLowerCase().trim() === userEmail);
-            if (onboardedUser) {
-              const shortOnboardName = (onboardedUser.name || '').toLowerCase().trim();
-              const legacyUser = partitionedCloudStaff.find(s => 
-                s.id !== onboardedUser.id && 
-                (s.name || '').toLowerCase().trim() === shortOnboardName && 
-                (!s.email || s.email.includes('@example.com') || s.email.includes('demo') || s.email === 'james@example.com' || s.email === 'getrude@example.com' || s.email === 'staff@example.com')
-              );
-              
-              if (legacyUser) {
-                const merged: StaffMember = {
-                  ...legacyUser,
-                  email: onboardedUser.email,
-                  fullName: onboardedUser.fullName || legacyUser.fullName,
-                  phone: onboardedUser.phone || legacyUser.phone,
-                  gender: onboardedUser.gender || legacyUser.gender,
-                  isManager: legacyUser.isManager || onboardedUser.isManager || true,
-                  departmentId: legacyUser.departmentId || onboardedUser.departmentId
-                };
-                
-                // Firestore writes to link real email with original ID and clear temporary onboarding profiles
-                await dbDeleteDoc('staff', onboardedUser.id).catch(() => {});
-                await dbSetDoc('staff', legacyUser.id, merged);
-                
-                partitionedCloudStaff = partitionedCloudStaff.filter(s => s.id !== onboardedUser.id);
-                partitionedCloudStaff = partitionedCloudStaff.map(s => s.id === legacyUser.id ? merged : s);
-              }
-            }
-          }
-
-          if (active) {
-            setStaffList(partitionedCloudStaff);
-            lastStaffListRef.current = partitionedCloudStaff;
-          }
-          localStorage.setItem(facilityKey(selectedFacilityId, 'staff_list'), JSON.stringify(partitionedCloudStaff));
-          loadedStaff = partitionedCloudStaff;
-
-          // 4. Active Cycle
-          const cloudCycles = await readCol<RosterCycle>('cycles');
-          backfillFacility('cycles', cloudCycles);
-          const targetCycleId = `cycle-${selectedFacilityId}-2026-06-15`;
-          let cloudCycle = cloudCycles.find(c => c.id === targetCycleId);
-          if (!cloudCycle && !cloudIsAlreadySeeded && loadedCycle) {
-            await dbSetDoc('cycles', loadedCycle.id, loadedCycle);
-            cloudCycle = loadedCycle;
-          }
-          if (active) {
-            setActiveCycle(cloudCycle || null);
-          }
-          if (cloudCycle) {
-            localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(cloudCycle));
-            loadedCycle = cloudCycle;
-          } else {
-            localStorage.removeItem(facilityKey(selectedFacilityId, 'active_cycle'));
-            loadedCycle = null;
-          }
-
-          // 5. Tasks Master
-          let cloudTasks = await readCol<TaskMaster>('taskMasters');
-          backfillFacility('taskMasters', cloudTasks);
-          cloudTasks = await seedCollectionFromLocalIfEmpty('taskMasters', cloudTasks, cloudIsAlreadySeeded, loadedTasks);
-          if (active) {
-            setTaskMasterList(cloudTasks);
-            lastTaskMasterListRef.current = cloudTasks;
-          }
-          localStorage.setItem(facilityKey(selectedFacilityId, 'task_master'), JSON.stringify(cloudTasks));
-          loadedTasks = cloudTasks;
-
-          // 6. Daily Tasks
-          let cloudDailyTasks = await readCol<DailyTask>('dailyTasks');
-          backfillFacility('dailyTasks', cloudDailyTasks);
-          let partitionedCloudDaily = cloudDailyTasks.filter(t =>
-            loadedStaff.some(s => s.name === t.staffName)
-          );
-          partitionedCloudDaily = await seedCollectionFromLocalIfEmpty('dailyTasks', partitionedCloudDaily, cloudIsAlreadySeeded, loadedDaily);
-          if (active) {
-            setDailyTasks(partitionedCloudDaily);
-            lastDailyTasksRef.current = partitionedCloudDaily;
-          }
-          localStorage.setItem(facilityKey(selectedFacilityId, 'daily_tasks'), JSON.stringify(partitionedCloudDaily));
-          loadedDaily = partitionedCloudDaily;
-
-          // 7. Approvals
-          let cloudApprovals = await readCol<ApprovalRequest>('approvals');
-          backfillFacility('approvals', cloudApprovals);
-          cloudApprovals = await seedCollectionFromLocalIfEmpty('approvals', cloudApprovals, cloudIsAlreadySeeded, loadedApprovals);
-          if (active) {
-            setApprovals(cloudApprovals);
-            lastApprovalsRef.current = cloudApprovals;
-          }
-          localStorage.setItem(facilityKey(selectedFacilityId, 'approvals'), JSON.stringify(cloudApprovals));
-
-          // 8. Extra Hours Log
-          let cloudExtra = await readCol<ExtraHoursEntry>('extraHours');
-          backfillFacility('extraHours', cloudExtra);
-          cloudExtra = await seedCollectionFromLocalIfEmpty('extraHours', cloudExtra, cloudIsAlreadySeeded, loadedExtra);
-          if (active) {
-            setExtraHoursLog(cloudExtra);
-            lastExtraHoursLogRef.current = cloudExtra;
-          }
-          localStorage.setItem(facilityKey(selectedFacilityId, 'extra_hours_log'), JSON.stringify(cloudExtra));
-
-          // 9. Timesheets
-          const cloudTimesheets = await readCol<Timesheet>('timesheets');
-          backfillFacility('timesheets', cloudTimesheets);
-          let partitionedCloudTimesheets = cloudTimesheets.filter(t =>
-            loadedStaff.some(s => s.id === t.staffId)
-          );
-          partitionedCloudTimesheets = await seedCollectionFromLocalIfEmpty('timesheets', partitionedCloudTimesheets, cloudIsAlreadySeeded, loadedTimesheets);
-          if (active) {
-            setTimesheets(partitionedCloudTimesheets);
-          }
-          localStorage.setItem(facilityKey(selectedFacilityId, 'timesheets_list'), JSON.stringify(partitionedCloudTimesheets));
-
-          if (!cloudIsAlreadySeeded) {
-            await dbSetDoc('systemConfig', 'status', { id: 'status', seeded: true });
-          }
-
-        } catch (err) {
-          console.error("Coordinated cloud recovery sync failed:", err);
-          handleGenericError(err);
-        }
-      }
-
-      // --- STEP C: Post-Hydration State Alignment ---
-      // Configure operator/member view credentials
-      const storedActiveId = localStorage.getItem(facilityKey(selectedFacilityId, 'active_staff_id'));
-      if (storedActiveId && loadedStaff.some(s => s.id === storedActiveId)) {
-        if (active) setActiveStaffId(storedActiveId);
-      } else {
-        const manager = loadedStaff.find(s => s.isManager) || loadedStaff[0];
-        const fallbackId = manager ? manager.id : '';
-        if (active) {
-          setActiveStaffId(fallbackId);
-          localStorage.setItem(facilityKey(selectedFacilityId, 'active_staff_id'), fallbackId);
-        }
-      }
-
-      if (active) {
-        setIsSyncingFirebase(false);
-        setIsHydrated(true);
-      }
-    }
-
-    hydrate();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedFacilityId, firebaseUser]);
 
   // Synchronously seed and reconcile timesheets whenever staffList or activeCycle changes (Only post-hydration)
   useEffect(() => {
@@ -1056,170 +749,6 @@ export default function App() {
   };
 
   // Generate Daily chores for a specific selected date
-  const generateDayTasks = (
-    dateStr: string,
-    uStaff: StaffMember[],
-    uCycle: RosterCycle,
-    uTasks: TaskMaster[],
-    loadTally?: Record<string, number> // optional: when provided, balances assignment by load and is mutated in place
-  ): DailyTask[] => {
-    const list: DailyTask[] = [];
-    const dow = new Date(dateStr + 'T00:00:00').getDay();
-    const dayIdx = cycleDates.length > 0 ? cycleDates.indexOf(dateStr) : -1;
-    if (dayIdx === -1) return [];
-
-    // Map shifts for easy lookup
-    const shiftStaffMap: { [shift: string]: string[] } = {};
-    const staffShiftMap: { [name: string]: string } = {};
-    const staffByName: { [name: string]: StaffMember } = {};
-
-    uStaff.forEach(s => {
-      const code = uCycle.shifts[s.id]?.[dayIdx] || 'OFF';
-      staffShiftMap[s.name] = code;
-      staffByName[s.name] = s;
-      // Only treat genuinely-working codes as available — exclude OFF and leave/absence.
-      if (isWorkingCode(code)) {
-        if (!shiftStaffMap[code]) shiftStaffMap[code] = [];
-        shiftStaffMap[code].push(s.name);
-      }
-    });
-
-    // Skills-based eligibility: a staffer qualifies if they hold every required skill.
-    const hasRequiredSkills = (name: string, required: string[]): boolean => {
-      if (!required || required.length === 0) return true;
-      const owned = (staffByName[name]?.skills || []).map(x => x.toLowerCase().trim());
-      return required.every(r => owned.includes(r.toLowerCase().trim()));
-    };
-    // Lowest-load picker (fairness) over a candidate list; deterministic when no tally.
-    const pickFairest = (names: StaffMember[]): StaffMember | null => {
-      if (names.length === 0) return null;
-      return loadTally
-        ? names.reduce((best, s) => ((loadTally[s.name] || 0) < (loadTally[best.name] || 0) ? s : best), names[0])
-        : names[0];
-    };
-
-    const isWknd = dow === 0 || dow === 6;
-    const isPH = isPublicHoliday(dateStr, holidays);
-    const dateObj = new Date(dateStr + 'T00:00:00');
-    const isLastDOM = dateObj.getDate() === new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0).getDate();
-
-    uTasks.forEach(task => {
-      if (!task.active) return;
-
-      // Filter daily vs weekly vs monthly
-      let isDue = false;
-      if (task.frequency === 'Daily') isDue = true;
-      else if (task.frequency.includes('Sunday') && dow === 0) isDue = true;
-      else if (task.frequency.includes('Last day') && isLastDOM) isDue = true;
-      else if (task.frequency.includes('Monthly') && (isLastDOM || dow === 4)) isDue = true; // simplify mock simulation
-
-      if (!isDue) return;
-
-      // Determine who to assign
-      let assignees: { name: string; shift: string }[] = [];
-      const required = task.requiredSkills || [];
-
-      if (task.pattern === 'Auto') {
-        // Smart auto-assign: one staffer = on shift ∩ has required skills ∩ (optional role) → fairest.
-        const roleFilter = (task.assignedValue || '').trim();
-        const candidates = uStaff.filter(s =>
-          isWorkingCode(staffShiftMap[s.name])
-          && (!roleFilter || s.role === roleFilter)
-          && hasRequiredSkills(s.name, required)
-        ).sort((a, b) => a.name.localeCompare(b.name));
-        const assignee = pickFairest(candidates);
-        if (assignee) assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
-      } else if (task.pattern === 'Dispensing-rotate') {
-        // Round-robin among available working staff who hold the required skills.
-        const workingStaffForDay = uStaff.filter(s => isWorkingCode(staffShiftMap[s.name]) && hasRequiredSkills(s.name, required))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        if (workingStaffForDay.length > 0) {
-          const slot = parseInt(task.assignedValue) || 0;
-          const dayOffset = Math.max(0, Math.round((new Date(dateStr + 'T00:00:00').getTime() - new Date(uCycle.startDate + 'T00:00:00').getTime()) / 864e5));
-          const rotStart = (dayOffset + slot) % workingStaffForDay.length;
-          // Rotate the candidate order so ties break deterministically and spread over time,
-          // then pick the least-loaded (fairness) — falls back to pure rotation with no tally.
-          const ordered = [...workingStaffForDay.slice(rotStart), ...workingStaffForDay.slice(0, rotStart)];
-          const assignee = pickFairest(ordered)!;
-          assignees.push({ name: assignee.name, shift: staffShiftMap[assignee.name] || 'A' });
-        }
-      } else if (task.pattern === 'Shift-based') {
-        const tgtShift = task.assignedValue; // e.g. "Shift C", "Shift B" or raw code "C"
-        const cleanS = tgtShift.replace('Shift ', '').trim();
-        const names = shiftStaffMap[cleanS] || [];
-        names.forEach(n => assignees.push({ name: n, shift: cleanS }));
-      } else if (task.pattern === 'Linked') {
-        // Dynamically find the linked master task assignee on that day
-        const targetTask = uTasks.find(t => t.id === task.assignedValue || t.name === task.assignedValue);
-        if (targetTask) {
-          if (targetTask.pattern === 'Manager-assign' || targetTask.pattern === 'Collab') {
-            const names = (targetTask.managerAssignedName || '').split(',').map(n => n.trim());
-            names.forEach(n => {
-              if (n && isWorkingCode(staffShiftMap[n])) {
-                assignees.push({ name: n, shift: staffShiftMap[n] });
-              }
-            });
-          } else if (targetTask.pattern === 'Person-specific') {
-            const specName = targetTask.assignedValue;
-            if (specName && isWorkingCode(staffShiftMap[specName])) {
-              assignees.push({ name: specName, shift: staffShiftMap[specName] });
-            }
-          }
-        }
-      } else if (task.pattern === 'Collab') {
-        const names = (task.managerAssignedName || '').split(',').map(n => n.trim());
-        names.forEach(n => {
-          if (n && isWorkingCode(staffShiftMap[n])) {
-            assignees.push({ name: n, shift: staffShiftMap[n] });
-          }
-        });
-      } else if (task.pattern === 'Manager-assign') {
-        const names = (task.managerAssignedName || '').split(',').map(n => n.trim());
-        names.forEach(n => {
-          if (n && isWorkingCode(staffShiftMap[n])) {
-            assignees.push({ name: n, shift: staffShiftMap[n] });
-          }
-        });
-      } else if (task.pattern === 'Person-specific') {
-        const specName = task.assignedValue;
-        if (specName && isWorkingCode(staffShiftMap[specName])) {
-          assignees.push({ name: specName, shift: staffShiftMap[specName] });
-        }
-      } else if (task.pattern === 'Role-group') {
-        const targetRole = task.assignedValue;
-        uStaff.forEach(s => {
-          if (s.role === targetRole && isWorkingCode(staffShiftMap[s.name]) && hasRequiredSkills(s.name, required)) {
-            assignees.push({ name: s.name, shift: staffShiftMap[s.name] });
-          }
-        });
-      }
-
-      assignees.forEach(a => {
-        list.push({
-          id: `dt-${task.id}-${a.name}-${dateStr}`,
-          date: dateStr,
-          staffName: a.name,
-          taskName: task.name,
-          category: task.category,
-          shiftCode: a.shift,
-          priority: task.priority,
-          status: 'Pending',
-          compliance: task.compliance,
-          isTracker: task.frequency.includes('Continuous'),
-          trackerTarget: task.trackerTarget,
-          trackerValue: task.trackerValue,
-          customFields: task.customFields,
-          customFieldsData: {}
-        });
-        // Fairness bookkeeping: count every assignment so rotation balances total load.
-        if (loadTally) loadTally[a.name] = (loadTally[a.name] || 0) + 1;
-      });
-    });
-
-    return list;
-  };
-
   // Switch tabs cleanly and auto-populate today's board if needed
   const handleNavigation = (tabId: string) => {
     setCurrentTab(tabId);
@@ -2180,12 +1709,14 @@ export default function App() {
                 onCreateDepartment: handleCreateDepartment,
                 onDeleteDepartment: handleDeleteDepartment,
               }}
-              staffList={staffList}
-              setStaffList={setStaffList}
-              taskMasterList={taskMasterList}
-              setTaskMasterList={(list) => {
-                setTaskMasterList(list);
-                persistState('task_master', list);
+              rosterDataConfig={{
+                staffList,
+                setStaffList,
+                taskMasterList,
+                setTaskMasterList: (list) => {
+                  setTaskMasterList(list);
+                  persistState('task_master', list);
+                },
               }}
               currentDeptId={currentDeptId}
               setCurrentDeptId={setCurrentDeptId}
