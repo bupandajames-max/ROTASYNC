@@ -70,7 +70,7 @@ export default function RosterWizard({
   // Step 4 — leave & needs
   const [absences, setAbsences] = useState<AbsenceLog[]>([]);
   const [absStaff, setAbsStaff] = useState('');
-  const [absType, setAbsType] = useState<'AL' | 'SL' | 'CO' | 'TRN' | 'OS'>('AL');
+  const [absType, setAbsType] = useState<string>('AL');
   const [absStart, setAbsStart] = useState('2026-06-15');
   const [absEnd, setAbsEnd] = useState('2026-06-18');
   const [perShift, setPerShift] = useState(3);
@@ -297,11 +297,9 @@ export default function RosterWizard({
                 </div>
                 <div><label className={labelCls}>Type</label>
                   <select value={absType} onChange={e => setAbsType(e.target.value as any)} className={inputCls}>
-                    <option value="AL">Annual Leave</option>
-                    <option value="SL">Sick Leave</option>
-                    <option value="CO">Compassionate</option>
-                    <option value="TRN">Training</option>
-                    <option value="OS">Off-site</option>
+                    {activeLeaveTypes.length > 0
+                      ? activeLeaveTypes.map(([code, d]) => <option key={code} value={code}>{d.name}</option>)
+                      : <option value="AL">Annual Leave</option>}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-2">

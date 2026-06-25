@@ -385,14 +385,17 @@ export default function RosterGrid({
       const isPH = phSet.has(dKey);
       const dLabel = `${parseLocalDate(dKey).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} (${parseLocalDate(dKey).toLocaleDateString('en-GB', { weekday: 'short' })})`;
 
-      // Only care about weekends or holidays for E coverage
-      if (isWknd || isPH) {
+      // 'E' (Extended Weekend/PH) coverage is a specific operational pattern,
+      // not a universal one — only check it for workspaces that actually have
+      // that shift defined, so brand-new workspaces without it don't get a
+      // permanent false-positive warning about a shift they don't use.
+      if ((isWknd || isPH) && shiftDefs['E']) {
         let eCount = 0;
         let regularCount = 0;
         staffList.forEach(s => {
           const shift = activeCycle.shifts[s.id]?.[dIdx] || 'OFF';
           if (shift === 'E') eCount++;
-          if (['A', 'B', 'C', 'D'].includes(shift)) regularCount++;
+          if (shift !== 'OFF' && shift !== 'E' && !shiftDefs[shift]?.isLeave) regularCount++;
         });
 
         if (eCount === 0) {
@@ -426,7 +429,10 @@ export default function RosterGrid({
     let count = 0;
     staffList.forEach(s => {
       const code = activeCycle.shifts[s.id]?.[dayIdx] || 'OFF';
-      if (['A', 'A+', 'B', 'C', 'D', 'E', 'SC', 'N', 'TRN', 'OS'].includes(code)) {
+      // "On shift" = assigned to a working code, not a leave/absence type and
+      // not OFF. Derived from the actual shift definitions instead of a fixed
+      // code list, so it works for any custom or ad hoc shift too.
+      if (code !== 'OFF' && !shiftDefs[code]?.isLeave) {
         count++;
       }
     });
@@ -1197,8 +1203,10 @@ export default function RosterGrid({
                       </tr>
                     </thead>
                     <tbody>
-                      {/* Render Heatmap rows for standard station layers */}
-                      {['A', 'A+', 'B', 'C', 'D', 'E', 'SC', 'N'].map((code) => {
+                      {/* Render Heatmap rows for whatever work shifts this workspace actually
+                          has defined — derived, not a hardcoded list, so it can't end up
+                          rendering rows for shifts that don't exist in a trimmed/custom set. */}
+                      {Object.keys(shiftDefs).filter(c => c !== 'OFF' && !shiftDefs[c]?.isLeave && !shiftDefs[c]?.isAdHoc && shiftDefs[c]?.active !== false).map((code) => {
                         const def = shiftDefs[code];
                         return (
                           <tr key={code} className="border-b border-gray-100 transition-colors hover:bg-slate-50/40">
@@ -1207,7 +1215,7 @@ export default function RosterGrid({
                                 {code} — {def?.name}
                               </span>
                               <span className="text-[10px] text-gray-450 font-semibold font-mono">
-                                {def?.time.split(' ')[0]}
+                                {def?.time?.split(' ')[0]}
                               </span>
                             </td>
                             {cycleDates.map((dKey, dIdx) => {
