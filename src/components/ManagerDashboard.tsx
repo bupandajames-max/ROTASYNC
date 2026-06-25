@@ -105,7 +105,7 @@ export default function ManagerDashboard({
         status: 'Approved',
         approvedAt: new Date().toISOString().substring(0, 16).replace('T', ' '),
         approvedBy: approverName,
-        managerComment: managerCommentText || 'Approved pursuant to schedule audit.'
+        managerComment: managerCommentText || 'Approved.'
       };
       onUpdateTimesheet(updated);
       setManagerCommentText('');
@@ -142,14 +142,14 @@ export default function ManagerDashboard({
         
         {/* Floor plan widget */}
         <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-4">
-          <div className="text-xs font-black text-[#005c93] border-b border-gray-100 pb-3 flex justify-between items-center uppercase">
-            <span className="flex items-center gap-1.5"><Sliders className="w-5 h-5 text-[#009EE2]" /> Live Floor Plan</span>
-            <span className="text-[10px] text-gray-400 font-mono font-bold tracking-wider">{todayStr}</span>
+          <div className="text-xs font-black text-[#005c93] border-b border-gray-100 pb-3 flex justify-between items-center">
+            <span className="flex items-center gap-1.5"><Sliders className="w-5 h-5 text-[#009EE2]" /> Who's on today</span>
+            <span className="text-[10px] text-gray-400 font-bold tracking-wider">{todayStr}</span>
           </div>
 
           <div className="flex flex-col gap-3">
             <div className="max-h-44 overflow-y-auto flex flex-col gap-2 pr-1">
-              <span className="text-[10px] text-gray-400 font-bold font-mono">Duty Staff on Workspace deck:</span>
+              <span className="text-[10px] text-gray-400 font-bold">On shift today:</span>
               {activeFloorPlan.onShift.map((s, idx) => (
                 <div key={idx} className="flex justify-between items-center text-xs font-bold bg-slate-50 border border-slate-100 p-2.5 rounded-xl">
                   <span>{s.name}</span>
@@ -168,10 +168,10 @@ export default function ManagerDashboard({
 
             {activeFloorPlan.onLeave.length > 0 && (
               <div className="pt-3 border-t border-dashed border-gray-150">
-                <span className="text-[10px] text-gray-400 font-bold block mb-1.5 font-mono">Authorized Absences Today:</span>
+                <span className="text-[10px] text-gray-400 font-bold block mb-1.5">On leave today:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {activeFloorPlan.onLeave.map((s, idx) => (
-                    <span key={idx} className="bg-indigo-50 text-indigo-700 text-[9.5px] px-2.5 py-1 rounded-lg border border-indigo-100 font-bold uppercase tracking-wide">
+                    <span key={idx} className="bg-indigo-50 text-indigo-700 text-[9.5px] px-2.5 py-1 rounded-lg border border-indigo-100 font-bold">
                       {s.name} ({s.shift})
                     </span>
                   ))}
@@ -183,11 +183,11 @@ export default function ManagerDashboard({
 
         {/* Incomplete compliance logs from yesterday */}
         <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-4">
-          <div className="text-xs font-black text-[#005c93] border-b border-gray-200 pb-3 flex justify-between items-center uppercase">
+          <div className="text-xs font-black text-[#005c93] border-b border-gray-200 pb-3 flex justify-between items-center">
             <span className="flex items-center gap-2 font-black text-[#005c93]">
-              <AlertOctagon className="w-5 h-5 text-sky-600 animate-pulse" /> Yesterday's Exceptions
+              <AlertOctagon className="w-5 h-5 text-sky-600 animate-pulse" /> Missed yesterday
             </span>
-            <span className="text-[10px] text-gray-400 font-mono font-bold">{yesterdayStr}</span>
+            <span className="text-[10px] text-gray-400 font-bold">{yesterdayStr}</span>
           </div>
 
           <div className="max-h-56 overflow-y-auto flex flex-col gap-3 pr-1">
@@ -195,14 +195,14 @@ export default function ManagerDashboard({
               <div key={idx} className="text-xs bg-sky-50/20 border border-[#009EE2]/20 p-3 rounded-xl border-l-4 border-l-[#009EE2]">
                 <div className="font-extrabold text-slate-800 flex justify-between text-[11px]">
                   <span>{t.taskName}</span>
-                  <span className="text-[8.5px] uppercase font-mono text-[#005c93]">{t.shiftCode} shift</span>
+                  <span className="text-[8.5px] text-[#005c93]">{t.shiftCode} shift</span>
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Responsible: <strong className="font-semibold text-slate-800 uppercase">{t.staffName}</strong> · Category: {t.category}
+                  Assigned to: <strong className="font-semibold text-slate-800">{t.staffName}</strong> · Category: {t.category}
                 </p>
                 <div className="mt-2 text-right">
-                  <span className="bg-sky-100 text-[#005c93] text-[8.5px] px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                    Pending Verification
+                  <span className="bg-sky-100 text-[#005c93] text-[8.5px] px-2 py-0.5 rounded font-black">
+                    Needs review
                   </span>
                 </div>
               </div>
@@ -211,8 +211,8 @@ export default function ManagerDashboard({
             {missedTasks.length === 0 && (
               <div className="text-center py-8">
                 <Award className="w-10 h-10 text-emerald-600 mx-auto" />
-                <h5 className="text-xs text-emerald-800 font-extrabold mt-2 uppercase">Compliant Operations!</h5>
-                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">All statutory logs from yesterday were certified completely on time.</p>
+                <h5 className="text-xs text-emerald-800 font-extrabold mt-2">All caught up</h5>
+                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Everything from yesterday was completed on time.</p>
               </div>
             )}
           </div>
@@ -220,20 +220,20 @@ export default function ManagerDashboard({
 
         {/* Peer Swaps & Extra hours Requests box */}
         <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-4">
-          <div className="text-xs font-black text-[#005c93] border-b border-gray-200 pb-3 flex justify-between items-center uppercase">
-            <span className="flex items-center gap-1.5"><Sliders className="w-5 h-5 text-[#009EE2]" /> Duty Requests Queue</span>
+          <div className="text-xs font-black text-[#005c93] border-b border-gray-200 pb-3 flex justify-between items-center">
+            <span className="flex items-center gap-1.5"><Sliders className="w-5 h-5 text-[#009EE2]" /> Pending requests</span>
             <span className="text-[10px] text-[#005c93] font-mono font-black bg-sky-50 px-2 py-0.5 rounded-full border border-[#009EE2]/15">{pendingRequests.length}</span>
           </div>
 
           <div className="max-h-56 overflow-y-auto flex flex-col gap-3 pr-1 text-xs">
             {pendingRequests.map(req => (
-              <div key={req.id} className="p-3 bg-semibold border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
+              <div key={req.id} className="p-3 bg-white border border-slate-150 rounded-2xl flex justify-between items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-100 font-extrabold">{req.type}</span>
-                    <span className="text-[9px] text-slate-400 font-medium font-mono">{req.timestamp.split(' ')[1] || req.timestamp}</span>
+                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-100 font-extrabold">{req.type}</span>
+                    <span className="text-[9px] text-slate-400 font-medium">{req.timestamp.split(' ')[1] || req.timestamp}</span>
                   </div>
-                  <p className="text-[10.5px] text-slate-700 font-semibold truncate uppercase mt-1.5">{req.requesterName}</p>
+                  <p className="text-[10.5px] text-slate-700 font-semibold truncate mt-1.5">{req.requesterName}</p>
                   <p className="text-[9.5px] text-slate-400 font-medium truncate italic mt-0.5">"{req.details}"</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -266,8 +266,8 @@ export default function ManagerDashboard({
         {/* Left Column: Staff Timesheet Ledger status */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 self-start flex flex-col gap-4.5">
           <div>
-            <h3 className="text-slate-800 font-black text-xs uppercase block">Submitted Timesheet Ledger</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Select a staff timesheet below to audit work clocks side-by-side with scheduled rosters.</p>
+            <h3 className="text-slate-800 font-black text-xs block">Submitted timesheets</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Select a staff timesheet to compare logged hours against the scheduled roster.</p>
           </div>
 
           <div className="flex flex-col gap-2.5">
@@ -293,26 +293,26 @@ export default function ManagerDashboard({
                 >
                   <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4 className="font-extrabold text-xs text-slate-800 truncate uppercase">{s.name}</h4>
+                      <h4 className="font-extrabold text-xs text-slate-800 truncate">{s.name}</h4>
                       <span className="text-[9px] text-slate-400">• {s.role.split(' ')[0]}</span>
                     </div>
-                    <p className="text-[10px] font-mono text-slate-500 font-semibold mt-1">
+                    <p className="text-[10px] text-slate-500 font-semibold mt-1">
                       {tsTotals.total}h worked · Sunday: {tsTotals.sunday}h · OT: {tsTotals.overtime}h
                     </p>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 select-none">
                     {ts.status === 'Draft' && (
-                      <span className="px-2 py-0.5 rounded text-[8.5px] bg-slate-100 text-slate-600 font-mono font-bold uppercase border border-slate-200">Draft</span>
+                      <span className="px-2 py-0.5 rounded text-[8.5px] bg-slate-100 text-slate-600 font-bold border border-slate-200">Draft</span>
                     )}
                     {ts.status === 'Submitted' && (
-                      <span className="px-2 py-0.5 rounded text-[8.5px] bg-indigo-100 text-indigo-800 font-mono font-black uppercase-bold border border-indigo-200 animate-pulse tracking-wide italic">Verify</span>
+                      <span className="px-2 py-0.5 rounded text-[8.5px] bg-indigo-100 text-indigo-800 font-black border border-indigo-200 animate-pulse">Needs review</span>
                     )}
                     {ts.status === 'Approved' && (
                       <span className="px-1.5 py-1 text-emerald-600 flex items-center gap-0.5 font-bold"><CheckCircle2 className="w-4 h-4" /></span>
                     )}
                     {ts.status === 'Rejected' && (
-                      <span className="px-1.5 py-1 text-[8.5px] bg-rose-50 border border-rose-200 text-rose-700 font-mono font-bold uppercase rounded">Rejected</span>
+                      <span className="px-1.5 py-1 text-[8.5px] bg-rose-50 border border-rose-200 text-rose-700 font-bold rounded">Rejected</span>
                     )}
                     <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-[#005c93] translate-x-1' : 'text-slate-300'}`} />
                   </div>
@@ -322,7 +322,7 @@ export default function ManagerDashboard({
           </div>
         </div>
 
-        {/* Right Columns: Clocking Auditor Inspection Station */}
+        {/* Right Columns: Timesheet comparison panel */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {currentInspectTimesheet && currentInspectStaff && inspectTotals ? (
             <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
@@ -330,8 +330,8 @@ export default function ManagerDashboard({
               {/* Inspection Header */}
               <div className="bg-slate-50 border-b border-slate-100 p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <span className="text-[9px] text-[#005c93] font-black uppercase font-mono tracking-wider block">Auditing workspace:</span>
-                  <h3 className="text-slate-900 font-black text-base uppercase mt-0.5">{currentInspectStaff.fullName}</h3>
+                  <span className="text-[9px] text-[#005c93] font-black tracking-wider block">Reviewing:</span>
+                  <h3 className="text-slate-900 font-black text-base mt-0.5">{currentInspectStaff.fullName}</h3>
                   <p className="text-[10.5px] text-slate-500 font-medium font-sans">Role: {currentInspectStaff.role} · ID: {currentInspectStaff.employeeNo || "EMP-MB01"}</p>
                 </div>
                 
@@ -347,19 +347,19 @@ export default function ManagerDashboard({
               {/* Aggregated Totals row before the grid list */}
               <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-gray-100 select-none">
                 <div className="p-4 border-r border-gray-100 text-center">
-                  <span className="text-[8.5px] text-slate-400 font-mono font-bold uppercase">Base Expected</span>
+                  <span className="text-[8.5px] text-slate-400 font-bold">Contracted</span>
                   <div className="text-slate-800 font-extrabold text-base mt-0.5">{currentInspectStaff.contractedHours} hrs</div>
                 </div>
                 <div className="p-4 border-r border-gray-100 text-center bg-blue-50/20">
-                  <span className="text-[8.5px] text-slate-400 font-mono font-bold uppercase">Regular Worked</span>
+                  <span className="text-[8.5px] text-slate-400 font-bold">Regular worked</span>
                   <div className="text-blue-900 font-extrabold text-base mt-0.5">{inspectTotals.regular} hrs</div>
                 </div>
                 <div className="p-4 border-r border-gray-100 text-center bg-sky-50/20">
-                  <span className="text-[8.5px] text-slate-400 font-mono font-bold uppercase">Sunday (1.5x)</span>
+                  <span className="text-[8.5px] text-slate-400 font-bold">Sunday (1.5x)</span>
                   <div className="text-[#005c93] font-extrabold text-base mt-0.5">{inspectTotals.sunday} hrs</div>
                 </div>
                 <div className="p-4 text-center bg-amber-50/20">
-                  <span className="text-[8.5px] text-slate-400 font-mono font-bold uppercase">OT & Holiday</span>
+                  <span className="text-[8.5px] text-slate-400 font-bold">OT & holiday</span>
                   <div className="text-amber-600 font-extrabold text-base mt-0.5">+{inspectTotals.overtime + inspectTotals.holiday} hrs</div>
                 </div>
               </div>
@@ -368,13 +368,13 @@ export default function ManagerDashboard({
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-400 text-[8.5px] font-mono border-b border-gray-100 font-bold select-none">
-                      <th className="py-2.5 px-5 font-bold">Date Log</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Planned Shift</th>
+                    <tr className="bg-slate-50 text-slate-400 text-[8.5px] border-b border-gray-100 font-bold select-none">
+                      <th className="py-2.5 px-5 font-bold">Date</th>
+                      <th className="py-2.5 px-3 font-bold text-center">Scheduled shift</th>
                       <th className="py-2.5 px-3 font-bold">Type</th>
-                      <th className="py-2.5 px-3 font-bold">Actual Clocks (In-Out)</th>
+                      <th className="py-2.5 px-3 font-bold">Clock in / out</th>
                       <th className="py-2.5 px-3 font-bold text-center">Net hrs</th>
-                      <th className="py-2.5 px-3 font-bold">Auditor Alerts</th>
+                      <th className="py-2.5 px-3 font-bold">Flags</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -388,14 +388,14 @@ export default function ManagerDashboard({
                       const plannedShiftCode = day.scheduledShift;
                       const plannedDef = SHIFTS[plannedShiftCode];
 
-                      // Auditor validation logic alerts
+                      // Flags worth a manager's attention
                       let alertTagSelect = null;
                       if (plannedShiftCode === 'OFF' && hasClocks) {
-                        alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-100 font-bold uppercase">Unscheduled attendance</span>;
+                        alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-100 font-bold">Worked on a day off</span>;
                       } else if (plannedShiftCode !== 'OFF' && ['AL','SL','CO','MD','TRN','OS'].indexOf(plannedShiftCode) === -1 && !hasClocks && day.workType === 'Absent') {
-                        alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200 font-black uppercase">Staff Absent</span>;
+                        alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200 font-black">Absent</span>;
                       } else if (day.overtimeHours > 0) {
-                        alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-150 font-bold uppercase">+{day.overtimeHours}h Overclock</span>;
+                        alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-150 font-bold">+{day.overtimeHours}h extra</span>;
                       }
 
                       return (
@@ -445,32 +445,31 @@ export default function ManagerDashboard({
                 
                 {/* Comments box */}
                 <div>
-                  <label className="text-[10px] text-slate-400 font-bold uppercase font-mono tracking-wider block mb-1.5 flex items-center gap-1">
-                    <MessageSquare className="w-3.5 h-3.5 text-slate-500" /> Supervisor Critique Remarks (Required if returned/rejected)
+                  <label className="text-[10px] text-slate-400 font-bold tracking-wider block mb-1.5 flex items-center gap-1">
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-500" /> Comments (required if you reject this timesheet)
                   </label>
                   <textarea
                     value={managerCommentText}
                     onChange={(e) => setManagerCommentText(e.target.value)}
                     rows={2}
-                    placeholder="e.g. Kasoka, please review your clock log on June 20, you clocked standard hours on scheduled rest without a corresponding OT approval ticket."
+                    placeholder="e.g. Please review your clock log on June 20 — you logged standard hours on a scheduled rest day without an approved extra-hours request."
                     className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-3 focus:border-[#009EE2] outline-none transition-colors placeholder-slate-400 leading-relaxed text-slate-800"
                   />
                 </div>
 
-                {/* Primary Authorization Decision line */}
+                {/* Approve / reject actions */}
                 <div className="flex gap-3 justify-end items-center">
-                  <span className="text-xs text-slate-500 font-semibold font-sans italic shrink-0">Authorization Stamp Terminal</span>
                   <button
                     onClick={handleRejectTimesheet}
                     className="py-2.5 px-4.5 border border-rose-200 hover:bg-rose-50 text-rose-700 font-bold text-xs rounded-xl cursor-pointer shadow-xs whitespace-nowrap"
                   >
-                    Disapprove & Return
+                    Reject
                   </button>
                   <button
                     onClick={handleApproveTimesheet}
                     className="py-2.5 px-6.5 bg-[#005c93] hover:bg-[#003764] text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-sky-200" /> Authorize & Sign Timesheet
+                    <CheckCircle2 className="w-4 h-4 text-sky-200" /> Approve timesheet
                   </button>
                 </div>
 
@@ -481,8 +480,8 @@ export default function ManagerDashboard({
             <div className="bg-slate-100 border border-slate-150 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center text-center gap-3">
               <UserCheck className="w-12 h-12 text-slate-300 animate-pulse" />
               <div>
-                <h4 className="font-extrabold text-slate-700 text-sm uppercase">Audit inspector terminal offline</h4>
-                <p className="text-xs text-slate-500 max-w-sm mt-1">Select a candidate pharmacist or submitted timesheet from the ledger on the left to initiate the compliance side-by-side audit.</p>
+                <h4 className="font-extrabold text-slate-700 text-sm">No timesheet selected</h4>
+                <p className="text-xs text-slate-500 max-w-sm mt-1">Select a staff member's timesheet on the left to compare it against their scheduled roster.</p>
               </div>
             </div>
           )}

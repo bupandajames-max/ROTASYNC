@@ -579,9 +579,9 @@ export default function TaskBoard({
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-4 text-xl">
               ✨
             </div>
-            <h3 className="text-sm font-black text-slate-800 uppercase">All Cleared under this View</h3>
+            <h3 className="text-sm font-bold text-slate-800">All caught up</h3>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
-              No pending `{activeUrgencyTab}` tasks found. Great job! Check other category filters or inspect historical audit logs below.
+              No tasks here right now. Great job! Try another tab above, or check completed tasks below.
             </p>
           </div>
         ) : (
@@ -708,14 +708,14 @@ export default function TaskBoard({
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-sans font-black text-xs text-[#009EE2]">Compliant Completed Folder Panel</h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Immutable audit checks ({completedTasks.length} cycles completed)</p>
+              <h3 className="font-sans font-bold text-xs text-[#009EE2]">Completed tasks</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">{completedTasks.length} done this cycle</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-md uppercase font-bold">
-              Archived Logs
+            <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-md font-bold">
+              History
             </span>
             <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showCompletedFolder ? 'rotate-180' : ''}`} />
           </div>

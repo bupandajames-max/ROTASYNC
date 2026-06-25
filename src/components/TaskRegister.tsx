@@ -363,7 +363,7 @@ export default function TaskRegister({
             <Database className="w-5 h-5 text-[#00aeff]" /> Task Master Directory
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            Configure custom pharmacy tasks, boundaries, and AI suggest models
+            Configure your task templates, who they apply to, and assignment suggestions
           </p>
         </div>
 
@@ -380,18 +380,18 @@ export default function TaskRegister({
         <div className="flex-1 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-[#1f3864]/10 text-[#1f3864] font-extrabold px-2 py-0.5 rounded-sm font-mono flex items-center gap-1">
-                <Zap className="w-3 h-3 text-[#00aeff] animate-pulse" /> Autonomous Routing Active
+              <span className="text-[10px] bg-[#1f3864]/10 text-[#1f3864] font-extrabold px-2 py-0.5 rounded-sm flex items-center gap-1">
+                <Zap className="w-3 h-3 text-[#00aeff] animate-pulse" /> Auto-assign on
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
             </div>
-            
-            <h3 className="text-[#1f3864] font-black text-sm uppercase tracking-wide mt-2.5 flex items-center gap-2">
-              📅 7-Day Forward Task Pre-Generation Service
+
+            <h3 className="text-[#1f3864] font-bold text-sm mt-2.5 flex items-center gap-2">
+              📅 Upcoming tasks, 7 days ahead
             </h3>
-            
+
             <p className="text-xs text-gray-500 leading-relaxed mt-1.5 max-w-xl">
-              Our background scheduler monitors upcoming calendar cycles and auto-generates tomorrow's daily board logs. To safeguard operations and preview the next <strong>7 days</strong> immediately, trigger the forward utility manually below.
+              Tomorrow's tasks generate automatically in the background. Use the button below to preview the next <strong>7 days</strong> right now instead of waiting.
             </p>
           </div>
 
@@ -401,18 +401,18 @@ export default function TaskRegister({
               disabled={!onPreGenerate7DaysTasks}
               className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#1f3864]/30 hover:bg-[#1f3864]/5 text-[#1f3864] rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
             >
-              <Play className="w-3.5 h-3.5 text-[#00aeff]" /> Pre-Generate Next 7 Days Tasks
+              <Play className="w-3.5 h-3.5 text-[#00aeff]" /> Preview next 7 days
             </button>
-            <div className="text-[11px] text-gray-400 font-bold font-mono">
-              Status: <span className="text-emerald-600 font-extrabold">Active (Autonomous)</span>
+            <div className="text-[11px] text-gray-400 font-bold">
+              Status: <span className="text-emerald-600 font-extrabold">On</span>
             </div>
           </div>
         </div>
 
         {/* Calendar Day status nodes */}
         <div className="flex flex-col gap-2 justify-center bg-white p-4 rounded-2xl border border-gray-100 min-w-[280px]">
-          <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-[#1f3864]" /> Schedule Horizon Status (Next 7 Days)
+          <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-[#1f3864]" /> Next 7 days
           </span>
           <div className="grid grid-cols-7 gap-1.5 mt-1">
             {next7DaysInfo.map((day, idx) => (
@@ -509,7 +509,7 @@ export default function TaskRegister({
             <span className="text-2xl font-black text-red-950 tracking-tight">{criticalCount}</span>
             <span className="text-[11px] text-red-650 font-bold">tasks</span>
           </div>
-          <p className="text-[10px] text-red-500/80 font-bold mt-1">Immediate duty response</p>
+          <p className="text-[10px] text-red-500/80 font-bold mt-1">Needs action right away</p>
         </div>
 
         {/* High Priority */}
@@ -522,7 +522,7 @@ export default function TaskRegister({
             <span className="text-2xl font-black text-orange-950 tracking-tight">{highCount}</span>
             <span className="text-[11px] text-orange-650 font-bold">tasks</span>
           </div>
-          <p className="text-[10px] text-orange-600/85 font-semibold mt-1">SLA target compliance</p>
+          <p className="text-[10px] text-orange-600/85 font-semibold mt-1">Keep within target time</p>
         </div>
 
         {/* Standard Priority */}
@@ -535,7 +535,7 @@ export default function TaskRegister({
             <span className="text-2xl font-black text-blue-950 tracking-tight">{standardCount}</span>
             <span className="text-[11px] text-blue-650 font-bold">tasks</span>
           </div>
-          <p className="text-[10px] text-blue-500/80 font-bold mt-1">Routine clinical tracking</p>
+          <p className="text-[10px] text-blue-500/80 font-bold mt-1">Regular day-to-day tracking</p>
         </div>
 
         {/* Routine Priority */}
