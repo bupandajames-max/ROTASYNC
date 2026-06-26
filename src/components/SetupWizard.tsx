@@ -168,9 +168,6 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
       name: facName.trim(),
       location: facLocation.trim(),
       leadManager: leadManagerName,
-      fridgeTargetTemp: '',
-      dailyKpiWordCheck: '',
-      ipDevice: '',
       facilitiesType: facType.trim() || 'Branch',
     };
 

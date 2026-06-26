@@ -98,12 +98,6 @@ export default function Header({
   const [newFacLoc, setNewFacLoc] = useState('');
   const [newFacManager, setNewFacManager] = useState('');
   const [newFacType, setNewFacType] = useState('Branch');
-  // No longer shown in this form (see Settings > Facilities & Departments
-  // redesign) - these stay on the Facility type for now, just always
-  // created empty instead of seeded with clinic-specific defaults.
-  const [newFacTemp, setNewFacTemp] = useState('');
-  const [newFacKpi, setNewFacKpi] = useState('');
-  const [newFacIp, setNewFacIp] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -126,9 +120,6 @@ export default function Header({
       name: newFacName,
       location: newFacLoc,
       leadManager: newFacManager,
-      fridgeTargetTemp: newFacTemp,
-      dailyKpiWordCheck: newFacKpi,
-      ipDevice: newFacIp,
       facilitiesType: newFacType as any
     };
 
@@ -138,10 +129,7 @@ export default function Header({
     setNewFacName('');
     setNewFacLoc('');
     setNewFacManager('');
-    setNewFacType('Enterprise Hub');
-    setNewFacTemp('99.5% SLA');
-    setNewFacKpi('Roster Compliance Log');
-    setNewFacIp('192.168.10.15');
+    setNewFacType('Branch');
     setShowProvisionModal(false);
   };
 

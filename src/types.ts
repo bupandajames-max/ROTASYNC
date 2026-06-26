@@ -200,9 +200,6 @@ export interface Facility {
   name: string;
   location: string;
   leadManager: string;
-  fridgeTargetTemp: string;
-  dailyKpiWordCheck: string;
-  ipDevice: string;
   facilitiesType: string; // org-defined classification (e.g. 'Primary Care', 'Warehouse', 'Branch')
 }
 

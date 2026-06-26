@@ -178,9 +178,6 @@ export default function EnterpriseAdmin({
   const [facEditLoc, setFacEditLoc] = useState('');
   const [facEditManager, setFacEditManager] = useState('');
   const [facEditType, setFacEditType] = useState<string>('Branch');
-  const [facEditSlaTemp, setFacEditSlaTemp] = useState('');
-  const [facEditKpi, setFacEditKpi] = useState('');
-  const [facEditIp, setFacEditIp] = useState('');
 
   // Inline create Facility States
   const [showAddFacilityForm, setShowAddFacilityForm] = useState(false);
@@ -188,12 +185,6 @@ export default function EnterpriseAdmin({
   const [facNewLoc, setFacNewLoc] = useState('');
   const [facNewManager, setFacNewManager] = useState('');
   const [facNewType, setFacNewType] = useState<string>('Branch');
-  // No longer surfaced in the create form (see Settings > Facilities &
-  // Departments redesign) - these fields stay on the Facility type for now,
-  // just always created empty instead of seeded with clinic-specific defaults.
-  const [facNewSlaTemp, setFacNewSlaTemp] = useState('');
-  const [facNewKpi, setFacNewKpi] = useState('');
-  const [facNewIp, setFacNewIp] = useState('');
 
   // New Department Form State
   const [newDeptName, setNewDeptName] = useState('');
@@ -388,9 +379,6 @@ export default function EnterpriseAdmin({
     setFacEditLoc(fac.location);
     setFacEditManager(fac.leadManager);
     setFacEditType(fac.facilitiesType);
-    setFacEditSlaTemp(fac.fridgeTargetTemp);
-    setFacEditKpi(fac.dailyKpiWordCheck);
-    setFacEditIp(fac.ipDevice);
   };
 
   const handleUpdateFacilitySubmit = (e: React.FormEvent) => {
@@ -402,9 +390,6 @@ export default function EnterpriseAdmin({
       location: facEditLoc,
       leadManager: facEditManager,
       facilitiesType: facEditType,
-      fridgeTargetTemp: facEditSlaTemp,
-      dailyKpiWordCheck: facEditKpi,
-      ipDevice: facEditIp,
     });
     setEditingFacility(null);
   };
@@ -421,9 +406,6 @@ export default function EnterpriseAdmin({
       name: facNewName,
       location: facNewLoc,
       leadManager: facNewManager,
-      fridgeTargetTemp: facNewSlaTemp,
-      dailyKpiWordCheck: facNewKpi,
-      ipDevice: facNewIp,
       facilitiesType: facNewType,
     };
     onCreateFacility(newFac);
@@ -433,9 +415,6 @@ export default function EnterpriseAdmin({
     setFacNewLoc('');
     setFacNewManager('');
     setFacNewType('Branch');
-    setFacNewSlaTemp('2.0 – 8.0°C SLA');
-    setFacNewKpi('Verify dynamic checklist inputs');
-    setFacNewIp('192.168.10.15');
     setShowAddFacilityForm(false);
   };
 

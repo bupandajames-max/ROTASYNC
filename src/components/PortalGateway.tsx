@@ -111,9 +111,6 @@ export default function PortalGateway({
         location: newFacLocation.trim(),
         leadManager: newFacManager.trim() || fullName,
         facilitiesType: 'Branch',
-        fridgeTargetTemp: '',
-        dailyKpiWordCheck: '',
-        ipDevice: ''
       };
       
       // Provision the Workspace dynamically
