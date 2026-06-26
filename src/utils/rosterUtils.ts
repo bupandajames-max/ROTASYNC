@@ -12,7 +12,13 @@ type ShiftMap = { [code: string]: ShiftDef };
  */
 export function computeShiftDuration(start: string, end: string): number {
   const toMinutes = (t: string) => {
-    const [h, m] = t.split(':').map(Number);
+    const parts = t.split(':');
+    if (parts.length !== 2) return null;
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    // Number('') is 0, not NaN, so an empty/missing half (e.g. "" or ":30")
+    // would otherwise slip past a Number.isNaN-only check and produce NaN
+    // further down instead of being rejected here.
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
     return h * 60 + m;
   };
@@ -24,13 +30,22 @@ export function computeShiftDuration(start: string, end: string): number {
   return Math.round((diff / 60) * 100) / 100; // round to 2dp for fractional shifts
 }
 
+// Parses a "YYYY-MM-DD" string as a local midnight Date, instead of new
+// Date(str)'s UTC-midnight parsing — which, in any timezone ahead of UTC,
+// carries a non-zero local time-of-day that throws off later <= comparisons
+// against dates built directly from Y/M/D (see getDatesForCycle below).
+function parseLocalDateOnly(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
 // Generate days between start (e.g. 2026-06-15) and end (e.g. 2026-07-14) inclusive
 export function getDatesForCycle(startStr: string, endStr?: string): string[] {
-  const start = new Date(startStr);
+  const start = parseLocalDateOnly(startStr);
   let end: Date;
 
   if (endStr) {
-    end = new Date(endStr);
+    end = parseLocalDateOnly(endStr);
   } else {
     // Smart default detection based on start day:
     const startDay = start.getDate();
