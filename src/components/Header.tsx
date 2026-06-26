@@ -184,7 +184,7 @@ export default function Header({
           {firebaseUser ? (
             <div className="flex items-center gap-2 bg-[#0d1527] px-3 py-1.5 rounded-xl border border-emerald-500/40 text-[11px] font-bold shadow-inner text-emerald-300" title="Connected to cloud sync. Sign out from the Account menu.">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse border border-emerald-100 shrink-0" />
-              <span className="hidden md:inline truncate max-w-[120px]">Cloud Synced: {firebaseUser.email?.split('@')[0]}</span>
+              <span className="hidden md:inline truncate max-w-[120px]">Signed in: {firebaseUser.email?.split('@')[0]}</span>
             </div>
           ) : (
             <button

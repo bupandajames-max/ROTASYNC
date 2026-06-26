@@ -90,7 +90,7 @@ export default function Navigation({ currentTab, setCurrentTab, isManagerView, a
           </span>
         </div>
         <div className="flex justify-between">
-          <span>TZ Location:</span>
+          <span>Time zone:</span>
           <span className="font-semibold text-slate-700">{timezoneLabel || 'Not set'}</span>
         </div>
       </div>

@@ -188,9 +188,12 @@ export default function EnterpriseAdmin({
   const [facNewLoc, setFacNewLoc] = useState('');
   const [facNewManager, setFacNewManager] = useState('');
   const [facNewType, setFacNewType] = useState<string>('Branch');
-  const [facNewSlaTemp, setFacNewSlaTemp] = useState('2.0 – 8.0°C SLA');
-  const [facNewKpi, setFacNewKpi] = useState('Verify dynamic checklist inputs');
-  const [facNewIp, setFacNewIp] = useState('192.168.10.15');
+  // No longer surfaced in the create form (see Settings > Facilities &
+  // Departments redesign) - these fields stay on the Facility type for now,
+  // just always created empty instead of seeded with clinic-specific defaults.
+  const [facNewSlaTemp, setFacNewSlaTemp] = useState('');
+  const [facNewKpi, setFacNewKpi] = useState('');
+  const [facNewIp, setFacNewIp] = useState('');
 
   // New Department Form State
   const [newDeptName, setNewDeptName] = useState('');
@@ -515,7 +518,7 @@ export default function EnterpriseAdmin({
       id: deptId,
       facilityId: selectedFacilityId,
       name: newDeptName,
-      description: newDeptDesc || 'No custom description provided.'
+      description: newDeptDesc || ''
     };
 
     if (onCreateDepartment) {
@@ -820,7 +823,7 @@ export default function EnterpriseAdmin({
               </button>
             </div>
             <p className="text-[9.5px] text-slate-500 mt-0.5">
-              Restricts access strictly based on dynamic {taxonomy.groupSingular.toLowerCase()} membership.
+              When on, each person only sees their own {taxonomy.groupSingular.toLowerCase()}'s roster and tasks.
             </p>
           </div>
         </div>
@@ -862,10 +865,10 @@ export default function EnterpriseAdmin({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-black text-slate-800 mb-0.5 flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-indigo-650" /> Configure & Manage {taxonomy.workspacePlural}
+                  <Building2 className="w-5 h-5 text-indigo-650" /> Your {taxonomy.workspacePlural}
                 </h3>
                 <p className="text-xs text-slate-500 font-sans leading-relaxed">
-                  Dynamically provision, edit, select, or delete custom {taxonomy.workspacePlural.toLowerCase()} in real-time.
+                  Add, edit, or remove the {taxonomy.workspacePlural.toLowerCase()} in your organization.
                 </p>
               </div>
               {canManageFacilities && (
@@ -874,7 +877,7 @@ export default function EnterpriseAdmin({
                   onClick={() => setShowAddFacilityForm(!showAddFacilityForm)}
                   className="px-4 py-2 bg-indigo-950 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer w-full md:w-auto self-start"
                 >
-                  <Plus className="w-4 h-4" /> Add custom {taxonomy.workspaceSingular}
+                  <Plus className="w-4 h-4" /> Add a {taxonomy.workspaceSingular.toLowerCase()}
                 </button>
               )}
             </div>
@@ -882,10 +885,10 @@ export default function EnterpriseAdmin({
             {/* Fac New Inline Form */}
             {showAddFacilityForm && (
               <form onSubmit={handleInlineCreateFacility} className="bg-white p-5 rounded-2xl border border-slate-200 mb-6 space-y-4 animate-[fadeIn_0.15s_ease-out] shadow-sm">
-                <h4 className="text-xs font-black uppercase text-indigo-950">Add New {taxonomy.workspaceSingular}</h4>
+                <h4 className="text-xs font-black text-indigo-950">New {taxonomy.workspaceSingular}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Workspace Name *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Name *</label>
                     <input
                       type="text"
                       required
@@ -896,7 +899,7 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Location / Region *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Location *</label>
                     <input
                       type="text"
                       required
@@ -907,11 +910,11 @@ export default function EnterpriseAdmin({
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Lead Operations Manager *</label>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Manager *</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Dr. Arthur Tembo"
+                      placeholder="e.g. Arthur Tembo"
                       value={facNewManager}
                       onChange={(e) => setFacNewManager(e.target.value)}
                       className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600 focus:bg-white mt-1"
@@ -919,47 +922,15 @@ export default function EnterpriseAdmin({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Workspace Classification</label>
-                    <select
-                      value={facNewType}
-                      onChange={(e) => setFacNewType(e.target.value)}
-                      className="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600 focus:bg-white mt-1"
-                    >
-                      {facilityTypes.map(ft => <option key={ft} value={ft}>{ft}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Fridge SLA Temp Range</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 2.0°C – 8.0°C SLA"
-                      value={facNewSlaTemp}
-                      onChange={(e) => setFacNewSlaTemp(e.target.value)}
-                      className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600 focus:bg-white mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">KPI Audit Phrase</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. System Backup completed"
-                      value={facNewKpi}
-                      onChange={(e) => setFacNewKpi(e.target.value)}
-                      className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600 focus:bg-white mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Compliance Gateway IP</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 192.168.10.15"
-                      value={facNewIp}
-                      onChange={(e) => setFacNewIp(e.target.value)}
-                      className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600 focus:bg-white mt-1"
-                    />
-                  </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 font-mono">Type</label>
+                  <select
+                    value={facNewType}
+                    onChange={(e) => setFacNewType(e.target.value)}
+                    className="w-full md:w-1/4 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-600 focus:bg-white mt-1"
+                  >
+                    {facilityTypes.map(ft => <option key={ft} value={ft}>{ft}</option>)}
+                  </select>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -1033,35 +1004,19 @@ export default function EnterpriseAdmin({
                         📍 {fac.location}
                       </p>
                       <p className="text-[10px] text-slate-500 font-semibold truncate" title={fac.leadManager}>
-                        👤 Supervisor: {fac.leadManager}
+                        👤 Manager: {fac.leadManager}
                       </p>
-
-                      <div className="text-[9px] bg-slate-50 p-2 rounded-xl border border-slate-100 space-y-1 font-mono text-slate-600">
-                        <div className="truncate">🌡️ Temp SLA: {fac.fridgeTargetTemp}</div>
-                        <div className="truncate">🔌 Gateway IP: {fac.ipDevice}</div>
-                        <div className="truncate" title={fac.dailyKpiWordCheck}>📋 KPI: {fac.dailyKpiWordCheck}</div>
-                      </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedFacilityId(fac.id)}
-                      className={`w-full mt-4 py-2 rounded-xl text-[10px] font-black transition-all uppercase flex items-center justify-center gap-1.5 cursor-pointer ${
-                        isActive
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-default shadow-xs font-extrabold'
-                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-100'
-                      }`}
-                      disabled={isActive}
-                    >
-                      {isActive ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                          Active Context
-                        </>
-                      ) : (
-                        'Activate Site'
-                      )}
-                    </button>
+                    {/* Switching which facility you're working in happens from
+                        the "Active facility" picker in the header, not here -
+                        this just shows whether this is the one you're viewing. */}
+                    {isActive && (
+                      <div className="w-full mt-4 py-2 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                        Currently viewing
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1072,9 +1027,9 @@ export default function EnterpriseAdmin({
           <div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-3xl border border-slate-100 text-left">
-                <h3 className="text-xs font-black text-slate-800 mb-2">Add custom {taxonomy.groupSingular}</h3>
+                <h3 className="text-xs font-black text-slate-800 mb-2">Add a {taxonomy.groupSingular.toLowerCase()}</h3>
                 <p className="text-[11px] text-slate-500 mb-4">
-                  Partition the <strong className="text-slate-750">{activeFacility.name}</strong> workspace into dynamic sub-teams for discrete roster scheduling.
+                  Split <strong className="text-slate-750">{activeFacility.name}</strong> into smaller teams, like Pharmacy or Front Desk.
                 </p>
 
                 <form onSubmit={handleCreateDept} className="space-y-3">
@@ -1083,16 +1038,16 @@ export default function EnterpriseAdmin({
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Pharmacy, Core Services, Technical Hub"
+                      placeholder="e.g. Pharmacy, Front Desk, Warehouse"
                       value={newDeptName}
                       onChange={(e) => setNewDeptName(e.target.value)}
                       className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 mt-1"
                     />
                   </div>
                   <div>
-                    <label className="text-[9.5px] font-black text-slate-400 font-mono">Description / Objectives</label>
+                    <label className="text-[9.5px] font-black text-slate-400 font-mono">Description (optional)</label>
                     <textarea
-                      placeholder="Define the primary operational objectives..."
+                      placeholder="What does this team do?"
                       value={newDeptDesc}
                       onChange={(e) => setNewDeptDesc(e.target.value)}
                       rows={2}
@@ -1108,7 +1063,7 @@ export default function EnterpriseAdmin({
                       className="flex-1 py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/60 font-extrabold text-[11px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                      {aiSuggesting ? 'Analyzing...' : '✨ Suggest AI Tasks'}
+                      {aiSuggesting ? 'Thinking...' : '✨ Suggest tasks for this team'}
                     </button>
                   </div>
 
@@ -1116,7 +1071,7 @@ export default function EnterpriseAdmin({
                     <div className="p-4 bg-amber-50/40 rounded-xl border border-amber-100/60 flex flex-col items-center justify-center text-center space-y-2 mt-2">
                       <div className="w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
                       <p className="text-[10px] text-amber-800 font-bold tracking-tight">
-                        Gemini is designing custom procedures for "{newDeptName}"...
+                        Coming up with suggestions for "{newDeptName}"...
                       </p>
                     </div>
                   )}
@@ -1131,25 +1086,25 @@ export default function EnterpriseAdmin({
                     <div className="bg-indigo-50/40 border border-indigo-100 p-4 rounded-xl text-xs space-y-3.5 mt-4">
                       <div className="flex items-center gap-1.5 font-bold text-indigo-950">
                         <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-                        <span>AI Operations Suggestions</span>
+                        <span>Suggestions</span>
                       </div>
-                      
+
                       <div className="space-y-1">
-                        <div className="text-[10px] text-slate-400 font-mono font-bold">Suggested Description:</div>
+                        <div className="text-[10px] text-slate-400 font-mono font-bold">Suggested description:</div>
                         <p className="text-slate-700 italic font-medium leading-relaxed">"{suggestedObjective}"</p>
                         <button
                           type="button"
                           onClick={() => setNewDeptDesc(suggestedObjective)}
                           className="text-[10px] font-bold text-indigo-700 bg-white hover:bg-indigo-50 px-2 py-1 rounded border border-indigo-200 transition-all cursor-pointer mt-1"
                         >
-                          ✓ Auto-Fill Description
+                          ✓ Use this description
                         </button>
                       </div>
 
                       {suggestedCategories.length > 0 && (
                         <div className="space-y-1 pt-2 border-t border-indigo-100/50">
                           <div className="text-[10px] text-slate-400 font-mono font-bold mb-1">
-                            Proposed Categories <span className="text-slate-300">(added to this workspace on create)</span>:
+                            Task categories <span className="text-slate-300">(added when you create this team)</span>:
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {suggestedCategories.map((c) => (
@@ -1168,7 +1123,7 @@ export default function EnterpriseAdmin({
                       {suggestedTasks && suggestedTasks.length > 0 && (
                         <div className="space-y-2 pt-2 border-t border-indigo-100/50">
                           <div className="text-[10px] text-slate-400 font-mono font-bold mb-1.5">
-                            Suggested Core Roster Tasks:
+                            Suggested tasks:
                           </div>
                           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                             {suggestedTasks.map((t, idx) => (
@@ -1222,7 +1177,7 @@ export default function EnterpriseAdmin({
                             ))}
                           </div>
                           <p className="text-[9px] text-slate-400 italic font-medium">
-                            Constructed tasks will automatically register under category "{newDeptName}" once department is created.
+                            These tasks will be created under "{newDeptName}" when you save.
                           </p>
                         </div>
                       )}
@@ -1241,16 +1196,16 @@ export default function EnterpriseAdmin({
 
               <div className="lg:col-span-2 space-y-4 text-left">
                 <div className="flex justify-between items-center bg-indigo-50/50 px-4 py-2.5 rounded-xl border border-indigo-100">
-                  <span className="text-xs text-indigo-950 font-bold">Workspace context: {activeFacility.name}</span>
-                  <span className="text-[10px] text-slate-500">{facilityDepts.length} Registered {taxonomy.groupPlural}</span>
+                  <span className="text-xs text-indigo-950 font-bold">{taxonomy.groupPlural} in {activeFacility.name}</span>
+                  <span className="text-[10px] text-slate-500">{facilityDepts.length} {(facilityDepts.length === 1 ? taxonomy.groupSingular : taxonomy.groupPlural).toLowerCase()}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {facilityDepts.length === 0 ? (
                     <div className="col-span-2 text-center p-8 bg-slate-50 rounded-2xl border border-slate-100 border-dashed text-slate-400 font-semibold text-xs">
                       <Layers className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-                      <p>No custom {taxonomy.groupPlural.toLowerCase()} declared yet.</p>
-                      <p className="text-[10px] mt-1 font-medium text-slate-400">Add dynamic sub-teams to establish sandboxed rosters & tasks.</p>
+                      <p>No {taxonomy.groupPlural.toLowerCase()} yet.</p>
+                      <p className="text-[10px] mt-1 font-medium text-slate-400">Add one to organize your team into smaller groups.</p>
                     </div>
                   ) : (
                     facilityDepts.map((dept) => {
@@ -1280,20 +1235,21 @@ export default function EnterpriseAdmin({
                           </div>
 
                           <div className="border-t border-slate-50 mt-4 pt-3 flex justify-between items-center text-[10px]">
-                            <span className="font-mono text-slate-500">{deptStaffCount} allocated colleagues</span>
+                            <span className="font-mono text-slate-500">{deptStaffCount} team members</span>
                             <button
                               type="button"
                               onClick={() => {
                                 setCurrentDeptId(isDeptCurrent ? '' : dept.id);
                               }}
-                              className={`px-2.5 py-1 rounded-md font-bold transition-all uppercase flex items-center gap-1 cursor-pointer ${
-                                isDeptCurrent 
-                                  ? 'bg-emerald-100 bg-emerald-100 text-emerald-800' 
+                              className={`px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                isDeptCurrent
+                                  ? 'bg-emerald-100 bg-emerald-100 text-emerald-800'
                                   : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-850'
                               }`}
+                              title="Filters the roster/task views to just this department. Doesn't change which facility you're in."
                             >
                               {isDeptCurrent ? <Check className="w-3 h-3" strokeWidth={3} /> : null}
-                              {isDeptCurrent ? 'Active' : 'Switch to this'}
+                              {isDeptCurrent ? 'Filtering to this' : 'Filter to this'}
                             </button>
                           </div>
                         </div>
@@ -2702,7 +2658,7 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Supervisor / Lead Manager *</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Manager *</label>
                 <input
                   type="text"
                   required
@@ -2712,39 +2668,8 @@ export default function EnterpriseAdmin({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">SLA Target Temperature</label>
-                  <input
-                    type="text"
-                    value={facEditSlaTemp}
-                    onChange={(e) => setFacEditSlaTemp(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-650 mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">Compliance IP Target</label>
-                  <input
-                    type="text"
-                    value={facEditIp}
-                    onChange={(e) => setFacEditIp(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-650 mt-1"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Daily KPI Audit Check Phrase</label>
-                <input
-                  type="text"
-                  value={facEditKpi}
-                  onChange={(e) => setFacEditKpi(e.target.value)}
-                  className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-650 mt-1"
-                />
-              </div>
-
-              <div>
-                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Classification Type</label>
+                <label className="text-[9.5px] font-black text-slate-400 block mb-1">Type</label>
                 <select
                   value={facEditType}
                   onChange={(e) => setFacEditType(e.target.value)}
