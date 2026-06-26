@@ -97,10 +97,13 @@ export default function Header({
   const [newFacName, setNewFacName] = useState('');
   const [newFacLoc, setNewFacLoc] = useState('');
   const [newFacManager, setNewFacManager] = useState('');
-  const [newFacType, setNewFacType] = useState('Enterprise Hub');
-  const [newFacTemp, setNewFacTemp] = useState('99.9% Rota SLA');
-  const [newFacKpi, setNewFacKpi] = useState('Shift Audits & Overtime Logs');
-  const [newFacIp, setNewFacIp] = useState('192.168.10.15');
+  const [newFacType, setNewFacType] = useState('Branch');
+  // No longer shown in this form (see Settings > Facilities & Departments
+  // redesign) - these stay on the Facility type for now, just always
+  // created empty instead of seeded with clinic-specific defaults.
+  const [newFacTemp, setNewFacTemp] = useState('');
+  const [newFacKpi, setNewFacKpi] = useState('');
+  const [newFacIp, setNewFacIp] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -509,51 +512,15 @@ export default function Header({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-black text-slate-400 font-mono">Workspace Type</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Corporate Site"
-                    value={newFacType}
-                    onChange={(e) => setNewFacType(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-[#009EE2] mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-black text-slate-400 font-mono">Primary Goal</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Full shift coverage"
-                    value={newFacTemp}
-                    onChange={(e) => setNewFacTemp(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-[#009EE2] mt-1"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-black text-slate-400 font-mono">Site / Device ID</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Main building"
-                    value={newFacIp}
-                    onChange={(e) => setNewFacIp(e.target.value)}
-                    className="w-full text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-[#009EE2] mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-black text-slate-400 font-mono">Key Measure</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Roster compliance"
-                    value={newFacKpi}
-                    onChange={(e) => setNewFacKpi(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-[#009EE2] mt-1"
-                  />
-                </div>
+              <div>
+                <label className="text-[11px] font-black text-slate-400 font-mono">Type</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Branch"
+                  value={newFacType}
+                  onChange={(e) => setNewFacType(e.target.value)}
+                  className="w-full md:w-1/2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-[#009EE2] mt-1"
+                />
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-slate-50">
