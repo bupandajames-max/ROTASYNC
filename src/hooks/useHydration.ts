@@ -242,7 +242,7 @@ export function useHydration(deps: HydrationDeps) {
               fullName: onboardedUser.fullName || legacyUser.fullName,
               phone: onboardedUser.phone || legacyUser.phone,
               gender: onboardedUser.gender || legacyUser.gender,
-              isManager: legacyUser.isManager || onboardedUser.isManager || true,
+              isManager: legacyUser.isManager || onboardedUser.isManager,
               departmentId: legacyUser.departmentId || onboardedUser.departmentId
             };
             loadedStaff = loadedStaff.filter(s => s.id !== onboardedUser.id);
@@ -460,7 +460,7 @@ export function useHydration(deps: HydrationDeps) {
                   fullName: onboardedUser.fullName || legacyUser.fullName,
                   phone: onboardedUser.phone || legacyUser.phone,
                   gender: onboardedUser.gender || legacyUser.gender,
-                  isManager: legacyUser.isManager || onboardedUser.isManager || true,
+                  isManager: legacyUser.isManager || onboardedUser.isManager,
                   departmentId: legacyUser.departmentId || onboardedUser.departmentId
                 };
 

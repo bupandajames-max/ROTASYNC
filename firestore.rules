@@ -127,11 +127,23 @@ service cloud.firestore {
       allow delete: if isManagerLevel();
     }
 
-    // Role mirror — one doc per authenticated user, keyed by auth UID. A user may
-    // only write their own doc; reads are open to signed-in users.
+    // Role mirror — one doc per authenticated user, keyed by auth UID. This is
+    // the doc callerLevel() reads, so it's the actual privilege choke point:
+    // a user may always write their OWN doc at 'staff' (the safe default),
+    // but may not self-escalate beyond that. Re-affirming a level already on
+    // the doc is allowed (so an already-legitimately-elevated user's own
+    // hydration write doesn't break); moving a level UP for yourself is not.
+    // Granting someone a higher tier is a separate write performed by an
+    // existing manager-level+ user, targeting that OTHER person's doc.
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && (incoming().accessLevel == 'staff' || isSuperEmail());
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && (incoming().accessLevel == 'staff' || incoming().accessLevel == existing().accessLevel || isSuperEmail());
+      allow update: if isSignedIn() && request.auth.uid != userId
+        && isManagerLevel() && inMyFacility(incoming().facilityId);
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     // Facilities (sites): super users only.

@@ -70,7 +70,6 @@ export default function PortalGateway({
   const [phone, setPhone] = useState('');
   const [selectedDeptId, setSelectedDeptId] = useState('');
   const [role, setRole] = useState('');
-  const [isManager, setIsManager] = useState(false);
   const [gender, setGender] = useState<'F' | 'M' | ''>('');
   const [selectedFacId, setSelectedFacId] = useState(selectedFacilityId || (facilities[0]?.id || ''));
   const [isDemoUserSelectOpen, setIsDemoUserSelectOpen] = useState(false);
@@ -152,7 +151,9 @@ export default function PortalGateway({
       gender: gender,
       fullName: fullName,
       employeeNo: employeeNo,
-      isManager: isManager,
+      // Always joins as a general member — admin access can only be granted
+      // afterward by an existing manager (see firestore.rules users/{uid}).
+      isManager: false,
       facilityId: finalFacId,
       departmentId: finalDeptId && finalDeptId !== 'new_dept_option' ? finalDeptId : undefined
     };
@@ -568,32 +569,13 @@ export default function PortalGateway({
               />
             </div>
 
-            {/* Privilege Level Selection (Manager vs Staff) */}
-            <div className="space-y-1.5">
-              <label className="text-[10.5px] uppercase font-mono tracking-wider font-extrabold text-slate-400">Roster Access Mode</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsManager(false)}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                    !isManager 
-                      ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
-                      : 'border-slate-800 text-slate-400 hover:bg-slate-800/40'
-                  }`}
-                >
-                  General Member
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsManager(true)}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                    isManager 
-                      ? 'bg-rose-500/10 border-rose-500 text-rose-400' 
-                      : 'border-slate-800 text-slate-400 hover:bg-slate-800/40'
-                  }`}
-                >
-                  Admin / Supervisor
-                </button>
+            {/* Access level is no longer self-selected here — every new join starts
+                as a general member. An existing manager grants admin access from
+                inside the workspace afterward, so it can't be self-asserted at
+                sign-up. */}
+            <div className="space-y-1.5 col-span-1 md:col-span-2">
+              <div className="text-[11px] text-slate-400 bg-slate-950/60 border border-slate-800 rounded-xl p-3 leading-relaxed">
+                You'll join as a general member. If you need admin/supervisor access, ask an existing manager in this workspace to grant it once you're in.
               </div>
             </div>
 
