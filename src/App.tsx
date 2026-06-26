@@ -36,15 +36,20 @@ import DashboardHome from './components/DashboardHome';
 import RosterGrid from './components/RosterGrid';
 import TaskBoard from './components/TaskBoard';
 import TimesheetPortal from './components/TimesheetPortal';
-import TaskRegister from './components/TaskRegister';
-import ManagerDashboard from './components/ManagerDashboard';
-import Analytics from './components/Analytics';
 import RosterWizard from './components/RosterWizard';
 import NewStaffOnboardingModal from './components/NewStaffOnboardingModal';
 import StaffPortal from './components/StaffPortal';
-import EnterpriseAdmin from './components/EnterpriseAdmin';
 import PortalGateway from './components/PortalGateway';
-import { Sparkles, Calendar, ClipboardCheck, Clock } from 'lucide-react';
+
+// Manager-only screens, code-split so the common staff/day-to-day path
+// doesn't have to download them upfront. Each is already conditionally
+// mounted (currentTab === 'x' && ...), not always-mounted-but-hidden, so
+// lazy() is safe here without causing a Suspense flash on initial load.
+const TaskRegister = React.lazy(() => import('./components/TaskRegister'));
+const ManagerDashboard = React.lazy(() => import('./components/ManagerDashboard'));
+const Analytics = React.lazy(() => import('./components/Analytics'));
+const EnterpriseAdmin = React.lazy(() => import('./components/EnterpriseAdmin'));
+import { Sparkles, Calendar, ClipboardCheck, Clock, Loader2 } from 'lucide-react';
 import {
   dbGetCollection,
   dbSetDoc,
@@ -1569,6 +1574,7 @@ export default function App() {
 
         {/* Main Panel views */}
         <main className="flex-1 p-6 w-full overflow-hidden">
+        <React.Suspense fallback={<div className="flex items-center justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-indigo-400" /></div>}>
           {/* Home Dashboard */}
           {currentTab === 'home' && (
             <div className="flex flex-col gap-6">
@@ -1812,6 +1818,7 @@ export default function App() {
               onRevokePlatformAdmin={handleRevokePlatformAdmin}
             />
           )}
+        </React.Suspense>
         </main>
       </div>
 
