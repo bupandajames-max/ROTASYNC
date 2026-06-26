@@ -217,6 +217,11 @@ export default function EnterpriseAdmin({
   // it to a reusable template (see promoteShift below).
   const [adHocRenameDrafts, setAdHocRenameDrafts] = useState<{ [code: string]: string }>({});
 
+  // Set while editing an existing shift (vs. creating a new one) — reuses
+  // the same form below. The code itself can't be changed during an edit,
+  // since cells already on the grid reference it by code.
+  const [editingShiftCode, setEditingShiftCode] = useState<string | null>(null);
+
   // New Staff Form State
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffFullName, setNewStaffFullName] = useState('');
@@ -552,23 +557,32 @@ export default function EnterpriseAdmin({
     setSuggestedTasks([]);
   };
 
-  // Create Shift
+  // Create or update a shift. In edit mode (editingShiftCode set), the code
+  // is locked and we overwrite the existing entry in place; otherwise this
+  // creates a brand new one, including resurrecting an orphaned code that's
+  // still assigned on the grid but has no definition anymore.
   const handleCreateShift = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newShiftCode || !newShiftName) return;
 
     const codeUpper = newShiftCode.toUpperCase().trim();
-    if (shifts[codeUpper]) {
+    if (!editingShiftCode && shifts[codeUpper]) {
       toast.error(`Shift code "${codeUpper}" is already in use. Please choose a unique code.`);
       return;
     }
 
     const isOvernight = newShiftEnd <= newShiftStart;
+    const existing = editingShiftCode ? shifts[editingShiftCode] : undefined;
     const newShift: ShiftDef = {
+      ...existing,
       code: codeUpper,
       name: newShiftName,
-      time: `${newShiftStart} – ${newShiftEnd}${isOvernight ? ' (overnight)' : ''}`,
-      hours: Number(newShiftHours),
+      // Leave/absence types don't run on a clock — keep their existing
+      // time label and hours rather than overwriting with the Start/End
+      // inputs (which stay hidden for these in the form below).
+      ...(existing?.isLeave
+        ? {}
+        : { time: `${newShiftStart} – ${newShiftEnd}${isOvernight ? ' (overnight)' : ''}`, hours: Number(newShiftHours) }),
       bg: newShiftBg,
       fg: newShiftFg,
       active: true
@@ -576,8 +590,26 @@ export default function EnterpriseAdmin({
 
     const updated = { ...shifts, [codeUpper]: newShift };
     setShifts(updated);
-    
-    // Reset Form
+    toast.success(editingShiftCode ? `"${newShiftName}" updated.` : `"${newShiftName}" added.`);
+    cancelEditShift();
+  };
+
+  const startEditShift = (code: string) => {
+    const def = shifts[code];
+    if (!def) return;
+    setEditingShiftCode(code);
+    setNewShiftCode(code);
+    setNewShiftName(def.name);
+    const [start, end] = def.time.replace(' (overnight)', '').split(' – ');
+    setNewShiftStart(start || '08:00');
+    setNewShiftEnd(end || '17:00');
+    setNewShiftHours(def.hours);
+    setNewShiftBg(def.bg);
+    setNewShiftFg(def.fg);
+  };
+
+  const cancelEditShift = () => {
+    setEditingShiftCode(null);
     setNewShiftCode('');
     setNewShiftName('');
     setNewShiftStart('08:00');
@@ -1268,9 +1300,9 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'shifts' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-            <h3 className="text-xs font-black text-slate-850 mb-2">Add a shift</h3>
+            <h3 className="text-xs font-black text-slate-850 mb-2">{editingShiftCode ? `Edit "${editingShiftCode}"` : 'Add a shift'}</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
-              Set the code, name, time, and color shown on the roster.
+              {editingShiftCode ? 'Update its name, time, and color. The code stays the same so existing roster cells keep working.' : 'Set the code, name, time, and color shown on the roster.'}
             </p>
 
             <form onSubmit={handleCreateShift} className="space-y-3">
@@ -1282,9 +1314,10 @@ export default function EnterpriseAdmin({
                     required
                     maxLength={3}
                     placeholder="E.g. S1"
+                    disabled={!!editingShiftCode}
                     value={newShiftCode}
                     onChange={(e) => setNewShiftCode(e.target.value)}
-                    className="w-full text-xs font-black bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650 text-center uppercase"
+                    className="w-full text-xs font-black bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650 text-center uppercase disabled:bg-slate-100 disabled:text-slate-400"
                   />
                 </div>
                 <div className="col-span-2">
@@ -1300,37 +1333,43 @@ export default function EnterpriseAdmin({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 font-mono">Start</label>
-                  <input
-                    type="time"
-                    value={newShiftStart}
-                    onChange={(e) => { setNewShiftStart(e.target.value); setNewShiftHours(computeShiftDuration(e.target.value, newShiftEnd)); }}
-                    className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
-                  />
+              {editingShiftCode && shifts[editingShiftCode]?.isLeave ? (
+                <p className="text-[10px] text-slate-400 bg-white border border-slate-100 rounded-xl p-2.5">
+                  Leave & absence types don't run on a clock, so there's no time to edit here — just the name and color.
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Start</label>
+                    <input
+                      type="time"
+                      value={newShiftStart}
+                      onChange={(e) => { setNewShiftStart(e.target.value); setNewShiftHours(computeShiftDuration(e.target.value, newShiftEnd)); }}
+                      className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">End</label>
+                    <input
+                      type="time"
+                      value={newShiftEnd}
+                      onChange={(e) => { setNewShiftEnd(e.target.value); setNewShiftHours(computeShiftDuration(newShiftStart, e.target.value)); }}
+                      className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 font-mono">Hours (computed)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={24}
+                      value={newShiftHours}
+                      onChange={(e) => setNewShiftHours(Number(e.target.value))}
+                      className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650 text-center"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 font-mono">End</label>
-                  <input
-                    type="time"
-                    value={newShiftEnd}
-                    onChange={(e) => { setNewShiftEnd(e.target.value); setNewShiftHours(computeShiftDuration(newShiftStart, e.target.value)); }}
-                    className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
-                  />
-                </div>
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 font-mono">Hours (computed)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={24}
-                    value={newShiftHours}
-                    onChange={(e) => setNewShiftHours(Number(e.target.value))}
-                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650 text-center"
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -1370,12 +1409,23 @@ export default function EnterpriseAdmin({
                 </span>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-indigo-950 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Save Shift Template
-              </button>
+              <div className="flex gap-2">
+                {editingShiftCode && (
+                  <button
+                    type="button"
+                    onClick={cancelEditShift}
+                    className="px-4 py-2.5 border border-slate-200 hover:bg-white text-slate-500 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-indigo-950 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> {editingShiftCode ? 'Save changes' : 'Save Shift Template'}
+                </button>
+              </div>
             </form>
           </div>
 
@@ -1401,14 +1451,22 @@ export default function EnterpriseAdmin({
                           >
                             {code}
                           </span>
-                          {!isSystem && (
+                          <div className="flex gap-0.5">
                             <button
-                              onClick={() => deleteShift(code)}
-                              className="text-slate-400 hover:text-rose-600 p-0.5 rounded-md hover:bg-white"
+                              onClick={() => startEditShift(code)}
+                              className="text-slate-400 hover:text-indigo-600 p-0.5 rounded-md hover:bg-white"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Pencil className="w-3.5 h-3.5" />
                             </button>
-                          )}
+                            {!isSystem && (
+                              <button
+                                onClick={() => deleteShift(code)}
+                                className="text-slate-400 hover:text-rose-600 p-0.5 rounded-md hover:bg-white"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         <div className="mt-2 text-left">

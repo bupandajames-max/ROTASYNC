@@ -991,9 +991,16 @@ export default function RosterGrid({
                         {cycleDates.map((_dKey, dIdx) => {
                           const value = activeCycle.shifts[staff.id]?.[dIdx] || 'OFF';
                           const def = shiftDefs[value];
+                          // A code assigned on the grid with no matching entry in shiftDefs —
+                          // e.g. a shift that's since been deleted from Settings. Flagged
+                          // visibly rather than silently showing a blank/default cell, so it
+                          // doesn't get mistaken for an intentional, defined shift.
+                          const isUnknownShift = value !== 'OFF' && !def;
                           const style = def
                             ? { backgroundColor: def.bg, color: def.fg }
-                            : { backgroundColor: '#ffffff', color: '#000000' };
+                            : isUnknownShift
+                              ? { backgroundColor: '#FEF2F2', color: '#991B1B' }
+                              : { backgroundColor: '#ffffff', color: '#000000' };
 
                           const isDraggedOver = draggedOverCell?.staffId === staff.id && draggedOverCell?.dayIdx === dIdx;
                           const isBeingDragged = draggedCell?.staffId === staff.id && draggedCell?.dayIdx === dIdx;
@@ -1013,7 +1020,7 @@ export default function RosterGrid({
                                   ? 'cursor-grab active:cursor-grabbing hover:shadow-inner hover:brightness-105' 
                                   : ''
                               } ${isBeingDragged ? 'opacity-40 scale-95' : ''}`}
-                              title={`${staff.name} • Day ${dIdx + 1}: ${def?.name || value}`}
+                              title={`${staff.name} • Day ${dIdx + 1}: ${isUnknownShift ? `Unknown shift "${value}" — no longer defined in Settings. Click to reassign, or re-add "${value}" in Settings > Shift Planner.` : (def?.name || value)}`}
                             >
                               {/* Visual overlay for dragover */}
                               {isDraggedOver && (
@@ -1033,28 +1040,12 @@ export default function RosterGrid({
 
                               {isGridLocked ? (
                                 <div className="w-full h-full flex flex-col justify-center items-center py-1 select-none">
-                                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs border border-black/5 bg-white/40 tracking-wider" style={{ color: def?.fg }}>
+                                  <span className={`inline-flex items-center gap-0.5 justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs tracking-wider ${isUnknownShift ? 'border border-dashed border-rose-300 bg-rose-50' : 'border border-black/5 bg-white/40'}`} style={{ color: isUnknownShift ? '#991B1B' : def?.fg }}>
+                                    {isUnknownShift && <AlertTriangle className="w-2.5 h-2.5" />}
                                     {value}
                                   </span>
-                                  <span className="text-[10px] font-mono font-bold mt-1 tracking-tighter uppercase" style={{ color: def?.fg ? `${def.fg}bf` : '#475569' }}>
-                                    {(() => {
-                                      if (value === 'OFF') return 'Rest';
-                                      if (value === 'A') return '08-17';
-                                      if (value === 'A+') return '08-18';
-                                      if (value === 'B') return '10-19';
-                                      if (value === 'C') return '12-21';
-                                      if (value === 'D') return '16-Cl';
-                                      if (value === 'E') return '11h';
-                                      if (value === 'SC') return '18-08';
-                                      if (value === 'N') return '20-08';
-                                      if (value === 'MD') return 'Mat';
-                                      if (value === 'AL') return 'AL 8h';
-                                      if (value === 'SL') return 'SL 8h';
-                                      if (value === 'CO') return 'CO 8h';
-                                      if (value === 'TRN') return 'TRN 8h';
-                                      if (value === 'OS') return 'OS 8h';
-                                      return def?.hours ? `${def.hours}h` : 'Rest';
-                                    })()}
+                                  <span className="text-[10px] font-mono font-bold mt-1 tracking-tighter uppercase" style={{ color: isUnknownShift ? '#B91C1C' : (def?.fg ? `${def.fg}bf` : '#475569') }}>
+                                    {isUnknownShift ? 'Unknown' : (value === 'OFF' ? 'Rest' : (def?.hours != null ? `${def.hours}h` : 'Rest'))}
                                   </span>
                                 </div>
                               ) : (
@@ -1067,28 +1058,12 @@ export default function RosterGrid({
                                         setEditingCell({ staffId: staff.id, dayIdx: dIdx, x: r.left, y: r.bottom + 4 });
                                       }}
                                     >
-                                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs border border-black/5 bg-white/40 tracking-wider group-hover/btn:scale-105 transition-transform" style={{ color: def?.fg }}>
+                                      <span className={`inline-flex items-center gap-0.5 justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs tracking-wider group-hover/btn:scale-105 transition-transform ${isUnknownShift ? 'border border-dashed border-rose-300 bg-rose-50' : 'border border-black/5 bg-white/40'}`} style={{ color: isUnknownShift ? '#991B1B' : def?.fg }}>
+                                        {isUnknownShift && <AlertTriangle className="w-2.5 h-2.5" />}
                                         {value}
                                       </span>
-                                      <span className="text-[10px] font-mono font-bold mt-1 tracking-tighter uppercase" style={{ color: def?.fg ? `${def.fg}bf` : '#475569' }}>
-                                        {(() => {
-                                          if (value === 'OFF') return 'Rest';
-                                          if (value === 'A') return '08-17';
-                                          if (value === 'A+') return '08-18';
-                                          if (value === 'B') return '10-19';
-                                          if (value === 'C') return '12-21';
-                                          if (value === 'D') return '16-Cl';
-                                          if (value === 'E') return '11h';
-                                          if (value === 'SC') return '18-08';
-                                          if (value === 'N') return '20-08';
-                                          if (value === 'MD') return 'Mat';
-                                          if (value === 'AL') return 'AL 8h';
-                                          if (value === 'SL') return 'SL 8h';
-                                          if (value === 'CO') return 'CO 8h';
-                                          if (value === 'TRN') return 'TRN 8h';
-                                          if (value === 'OS') return 'OS 8h';
-                                          return def?.hours ? `${def.hours}h` : 'Rest';
-                                        })()}
+                                      <span className="text-[10px] font-mono font-bold mt-1 tracking-tighter uppercase" style={{ color: isUnknownShift ? '#B91C1C' : (def?.fg ? `${def.fg}bf` : '#475569') }}>
+                                        {isUnknownShift ? 'Unknown' : (value === 'OFF' ? 'Rest' : (def?.hours != null ? `${def.hours}h` : 'Rest'))}
                                       </span>
                                     </div>
                                   )}
