@@ -58,7 +58,7 @@ export default function NewStaffOnboardingModal({
   const [name, setName] = useState('');
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState<'M' | 'F' | ''>('M');
-  const [role, setRole] = useState('Pharmacist');
+  const [role, setRole] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [employeeNo, setEmployeeNo] = useState('');
@@ -85,10 +85,9 @@ export default function NewStaffOnboardingModal({
     setEmail(prefix ? `${prefix}@example.com` : '');
   };
 
-  // Re-generate clinical values if empty on setup
   const generateRandomEmployeeNo = () => {
     const num = Math.floor(100000 + Math.random() * 900000);
-    setEmployeeNo(`MBCH-${num}`);
+    setEmployeeNo(`EMP-${num}`);
   };
 
   const handleNext = () => {
@@ -142,12 +141,10 @@ export default function NewStaffOnboardingModal({
       role,
       contractedHours: Number(contractedHours),
       gender,
-      employeeNo: employeeNo.trim() || `MBCH-${Math.floor(100000 + Math.random() * 900000)}`,
+      employeeNo: employeeNo.trim() || `EMP-${Math.floor(100000 + Math.random() * 900000)}`,
       isManager,
       facilityId: selectedFacilityId,
       departmentId,
-      rosterTrack,
-      rosterNotes: rosterNotes.trim()
     };
 
     onAddStaff(finalStaff);
@@ -156,7 +153,7 @@ export default function NewStaffOnboardingModal({
     setName('');
     setFullName('');
     setGender('M');
-    setRole('Pharmacist');
+    setRole('');
     setEmail('');
     setPhone('');
     setEmployeeNo('');
@@ -287,7 +284,7 @@ export default function NewStaffOnboardingModal({
           <div className="text-[10px] text-rose-200/50 font-sans border-t border-rose-950 pt-4 flex gap-2">
             <ShieldCheck className="w-4.5 h-4.5 shrink-0 text-amber-400" />
             <span>
-              Onboarding automatically registers the employee ID under Zambia Labor guidelines, configuring baseline timesheet compliance rules.
+              Sets up their employee ID and starting timesheet automatically.
             </span>
           </div>
         </div>
@@ -337,26 +334,26 @@ export default function NewStaffOnboardingModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 md:col-span-1">
-                      <label className="text-[10px] font-black text-slate-500 block">Short Name / Call Sign <span className="text-red-500">*</span></label>
+                      <label className="text-[10px] font-black text-slate-500 block">Short Name <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         required
                         value={name}
                         onChange={handleNameChange}
-                        placeholder="e.g. Getrude"
+                        placeholder="e.g. Jane"
                         className="w-full text-xs font-bold bg-slate-50 border border-slate-150 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-[#7A1230] outline-none mt-1.5"
                       />
                       <span className="text-[9px] text-slate-400 mt-1 block">Used for roster grid layout.</span>
                     </div>
 
                     <div className="col-span-2 md:col-span-1">
-                      <label className="text-[10px] font-black text-slate-500 block">Full Professional Name <span className="text-red-500">*</span></label>
+                      <label className="text-[10px] font-black text-slate-500 block">Full Name <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="e.g. Getrude Mwansa"
+                        placeholder="e.g. Jane Doe"
                         className="w-full text-xs font-bold bg-slate-50 border border-slate-150 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-[#7A1230] outline-none mt-1.5"
                       />
                     </div>
@@ -398,7 +395,7 @@ export default function NewStaffOnboardingModal({
                           type="text"
                           value={employeeNo}
                           onChange={(e) => setEmployeeNo(e.target.value)}
-                          placeholder="e.g. MBCH-923812"
+                          placeholder="e.g. EMP-923812"
                           className="w-full text-xs font-mono font-bold bg-slate-50 border border-slate-150 rounded-xl p-2 focus:bg-white focus:ring-1 focus:ring-[#7A1230] outline-none"
                         />
                         <button
@@ -415,19 +412,14 @@ export default function NewStaffOnboardingModal({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-slate-500 block">Title / Primary Role</label>
-                      <select
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Operator"
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
-                        className="w-full text-xs font-extrabold select bg-slate-50 border border-slate-150 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-[#7A1230] outline-none mt-1.5"
-                      >
-                        <option value="Pharmacist">Pharmacist</option>
-                        <option value="Lead Pharmacist">Lead Pharmacist</option>
-                        <option value="Clinical Officer">Clinical Officer</option>
-                        <option value="Laboratory Technician">Laboratory Technician</option>
-                        <option value="Registered Nurse">Registered Nurse</option>
-                        <option value="Assistant Operator">Assistant Operator</option>
-                        <option value="Site Supervisor">Site Supervisor</option>
-                      </select>
+                        className="w-full text-xs font-extrabold bg-slate-50 border border-slate-150 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-[#7A1230] outline-none mt-1.5"
+                      />
                     </div>
 
                     <div className="flex items-center pt-5">

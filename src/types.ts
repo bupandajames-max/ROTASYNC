@@ -27,8 +27,6 @@ export interface StaffMember {
   isManager?: boolean;
   facilityId?: string;
   departmentId?: string;
-  rosterTrack?: string; // 'Rotating 24/7', 'Days Only', 'Nights Only', 'Flexible Custom'
-  rosterNotes?: string;
   skills?: string[]; // competencies used for skills-based task eligibility
 }
 
@@ -158,20 +156,10 @@ export interface Timesheet {
   managerComment?: string;
 }
 
-export interface ComplianceEntry {
-  id: string;
-  date: string; // YYYY-MM-DD HH:mm
-  type: string;
-  notes: string;
-  staffName: string;
-  supervisorName: string;
-  status: 'Complete';
-}
-
 export interface ApprovalRequest {
   id: string;
   timestamp: string; // YYYY-MM-DD HH:mm
-  type: 'SWAP' | 'EXTRA' | 'COMPLIANCE' | 'MONTHLY';
+  type: 'SWAP' | 'EXTRA' | 'MONTHLY';
   requesterName: string;
   shiftData?: string; // e.g. "2026-06-18|A" for swaps/extra hours
   targetName?: string; // colleague with whom swapping, or supervisor signing, or hours amount

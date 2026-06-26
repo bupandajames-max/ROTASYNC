@@ -102,15 +102,8 @@ export default function StaffPortal({
           colleagueTotalHours += SHIFTS[code]?.hours || 0;
         });
 
-        // Role similarity matching (Zambian credential compatibility)
-        const r1 = activeStaff.role.toLowerCase();
-        const r2 = colleague.role.toLowerCase();
-        const exactRoleMatch = activeStaff.role === colleague.role;
-        const familyRoleMatch =
-          (r1.includes('pharma') && r2.includes('pharma')) ||
-          (r1.includes('nurse') && r2.includes('nurse')) ||
-          ((r1.includes('tech') || r1.includes('lab')) && (r2.includes('tech') || r2.includes('lab')));
-        const isRoleCompatible = exactRoleMatch || familyRoleMatch;
+        // A swap candidate needs the same role to actually cover the shift.
+        const isRoleCompatible = activeStaff.role === colleague.role;
 
         // Fatigue check (11 hour break compliance)
         let fatigueMessage = '';
@@ -742,13 +735,12 @@ export default function StaffPortal({
                 </div>
                 <div className="text-center">
                   <div className="border-b border-gray-800 h-10 w-full mb-1"></div>
-                  <div className="font-bold">Unit Lead Signature</div>
+                  <div className="font-bold">Supervisor Signature</div>
                   <div className="text-gray-400">{activeFacility?.leadManager || ''}</div>
                 </div>
                 <div className="text-center">
                   <div className="border-b border-gray-800 h-10 w-full mb-1"></div>
-                  <div className="font-bold">Hospital Mgr Signature</div>
-                  <div className="text-gray-400">Operations Control</div>
+                  <div className="font-bold">Manager Signature</div>
                 </div>
               </div>
             </div>

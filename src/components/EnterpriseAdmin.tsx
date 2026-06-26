@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel } from '../types';
 import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
 import { computeShiftDuration } from '../utils/rosterUtils';
+import { LEGACY_FACILITY_ID } from '../utils/storageKeys';
 import { useToast } from './ui/ToastProvider';
 import { useConfirm } from './ui/ConfirmProvider';
 import {
@@ -2304,7 +2305,7 @@ export default function EnterpriseAdmin({
                         <td className="py-3 px-3">
                           <button
                             onClick={() => {
-                              setSelectedFacilityId(s.facilityId || 'kansanshi');
+                              setSelectedFacilityId(s.facilityId || LEGACY_FACILITY_ID);
                               if (s.departmentId) {
                                 setCurrentDeptId(s.departmentId);
                                 setIsSandboxStrictMode(true);
