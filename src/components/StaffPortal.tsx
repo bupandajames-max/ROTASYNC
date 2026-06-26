@@ -666,8 +666,8 @@ export default function StaffPortal({
             {/* Branded Timesheet Preview */}
             <div id="timesheetPrintable" className="p-4 border border-gray-200 rounded-xl bg-white font-sans max-h-[70vh] overflow-y-auto">
               <div className="border-b-2 border-[#1f3864] pb-4 mb-4 text-center">
-                <h2 className="text-[#009EE2] font-extrabold text-base">Mary Begg Health Services</h2>
-                <h3 className="text-gray-800 text-sm font-semibold">{activeFacility?.name} — {activeFacility?.location}</h3>
+                <h2 className="text-[#009EE2] font-extrabold text-base">{activeFacility?.name}</h2>
+                <h3 className="text-gray-800 text-sm font-semibold">{activeFacility?.location}</h3>
                 <p className="text-[10px] text-gray-500 mt-1 font-bold">Official Cycle Timesheet Record</p>
               </div>
 

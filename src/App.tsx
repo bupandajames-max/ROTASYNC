@@ -473,10 +473,10 @@ export default function App() {
         const guestStaff: StaffMember = {
           id: 'guest-staff-silo',
           name: 'Demo Staff',
-          email: 'staff@marybegg.demo',
+          email: 'staff@example.com',
           role: 'Emulated Staff',
           facilityId: selectedFacilityId,
-          phone: '+260 970 000 000',
+          phone: '',
           contractedHours: 168,
           gender: 'M',
           fullName: 'Emulated Practice Staff',
@@ -1564,6 +1564,7 @@ export default function App() {
           isManagerView={isManagerView || staffList.length === 0}
           accessLevel={access.accessLevel}
           taxonomy={taxonomy}
+          timezoneLabel={timezoneLabel}
         />
 
         {/* Main Panel views */}
@@ -1669,6 +1670,7 @@ export default function App() {
               selectedFacilityId={selectedFacilityId}
               facilities={facilities}
               taxonomy={taxonomy}
+              shifts={shifts}
             />
           )}
 

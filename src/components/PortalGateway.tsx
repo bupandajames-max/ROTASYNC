@@ -110,10 +110,10 @@ export default function PortalGateway({
         name: newFacName.trim(),
         location: newFacLocation.trim(),
         leadManager: newFacManager.trim() || fullName,
-        facilitiesType: 'Primary Care',
-        fridgeTargetTemp: '2.0% – 8.0% SLA',
-        dailyKpiWordCheck: 'Checklist compliance',
-        ipDevice: '192.168.10.12'
+        facilitiesType: 'Branch',
+        fridgeTargetTemp: '',
+        dailyKpiWordCheck: '',
+        ipDevice: ''
       };
       
       // Provision the Workspace dynamically
@@ -145,7 +145,7 @@ export default function PortalGateway({
       id: `staff-${Math.random().toString(36).substring(2, 11)}`,
       name: shortName,
       email: firebaseUser.email,
-      phone: phone || '+260 970 000 000',
+      phone: phone,
       role: role,
       contractedHours: 168,
       gender: gender,
@@ -447,7 +447,7 @@ export default function PortalGateway({
                       <input
                         type="text"
                         required={selectedFacId === 'new_fac_option'}
-                        placeholder="e.g. Mary Begg Clinic"
+                        placeholder="e.g. Acme Logistics"
                         value={newFacName}
                         onChange={(e) => setNewFacName(e.target.value)}
                         className="w-full text-xs bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none focus:border-[#009EE2]"
@@ -565,7 +565,7 @@ export default function PortalGateway({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full text-xs px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:border-[#009EE2] text-slate-100 focus:outline-none"
-                placeholder="e.g. +260 970 000 000"
+                placeholder="e.g. +1 555 0100"
               />
             </div>
 

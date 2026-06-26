@@ -87,7 +87,7 @@ export default function RosterGrid({
 
   // Operational Cycle configuration states
   const [isConfiguringCycle, setIsConfiguringCycle] = useState(false);
-  const [cyclePreset, setCyclePreset] = useState<'mbegg' | 'calendar' | 'custom'>('mbegg');
+  const [cyclePreset, setCyclePreset] = useState<'fifteenToFourteen' | 'calendar' | 'custom'>('fifteenToFourteen');
   const [customStart, setCustomStart] = useState(activeCycle?.startDate || '2026-06-15');
   const [customEnd, setCustomEnd] = useState(activeCycle?.endDate || '2026-07-14');
 
@@ -106,7 +106,7 @@ export default function RosterGrid({
       const lastDayOfStartMonth = new Date(d1.getFullYear(), d1.getMonth() + 1, 0).getDate();
       
       if (startDay === 15 && endDay === 14 && diffMonths === 1) {
-        setCyclePreset('mbegg');
+        setCyclePreset('fifteenToFourteen');
       } else if (startDay === 1 && endDay === lastDayOfStartMonth && diffMonths === 0) {
         setCyclePreset('calendar');
       } else {
@@ -115,11 +115,11 @@ export default function RosterGrid({
     }
   }, [activeCycle]);
 
-  const handlePresetChange = (preset: 'mbegg' | 'calendar' | 'custom', baseDateStr?: string) => {
+  const handlePresetChange = (preset: 'fifteenToFourteen' | 'calendar' | 'custom', baseDateStr?: string) => {
     setCyclePreset(preset);
     const pivot = parseLocalDate(baseDateStr || customStart);
     
-    if (preset === 'mbegg') {
+    if (preset === 'fifteenToFourteen') {
       const yStr = pivot.getFullYear();
       const mStr = String(pivot.getMonth() + 1).padStart(2, '0');
       const startVal = `${yStr}-${mStr}-15`;
@@ -710,7 +710,7 @@ export default function RosterGrid({
                     Custom Operational & Billing Period
                   </h3>
                   <p className="text-xs text-slate-550 leading-relaxed mt-0.5">
-                    Align your roster grid to any customized scheduling layout. You can run standard Mary Begg cycles (15th to 14th of following month), basic calendar months (1st to last day of same month), or input custom start and end dates. **All draft shift assignments are preserved and shifted dynamically to align with their calendar dates.**
+                    Align your roster grid to any customized scheduling layout. You can run 15th-to-14th cycles (15th to 14th of the following month), basic calendar months (1st to last day of the same month), or input custom start and end dates. **All draft shift assignments are preserved and shifted dynamically to align with their calendar dates.**
                   </p>
                 </div>
                 <button
@@ -727,9 +727,9 @@ export default function RosterGrid({
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => handlePresetChange('mbegg')}
+                      onClick={() => handlePresetChange('fifteenToFourteen')}
                       className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
-                        cyclePreset === 'mbegg'
+                        cyclePreset === 'fifteenToFourteen'
                           ? 'bg-[#7A1230] text-white border-transparent'
                           : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       }`}
@@ -923,7 +923,6 @@ export default function RosterGrid({
                         <td className="sticky left-0 bg-white z-10 px-4 py-3 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] font-semibold text-sm text-gray-900 group">
                           <div className="flex flex-col">
                             <span className="flex items-center gap-1 font-bold">
-                              {staff.gender === 'F' && <span className="text-[#880e4f] text-xs" title="Mother's Day Entitled">♀</span>}
                               {staff.name}
                             </span>
                             <span className="text-[10px] text-gray-400 font-mono tracking-tight font-normal">
@@ -1154,7 +1153,7 @@ export default function RosterGrid({
                     <Layers className="w-4 h-4 text-sky-400" /> Real-time Shift Coverage Heatmap
                   </h3>
                   <p className="text-[10px] text-blue-200 font-semibold">
-                    Automated staffing level checks across key pharmacy stations
+                    Automated staffing level checks across key stations
                   </p>
                 </div>
 
@@ -1277,38 +1276,15 @@ export default function RosterGrid({
               </div>
 
               {/* Legend Information Box */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 max-w-sm gap-4">
                 <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">
                   <h4 className="text-xs font-bold text-gray-700 border-b border-gray-150 pb-2 flex items-center gap-1.5">
                     <span className="w-1.5 h-3 bg-red-500 rounded-sm"></span>
-                    Heatmap Color Rules & Analytics
+                    Heatmap Color Key
                   </h4>
                   <div className="flex flex-col gap-1.5 text-xs text-slate-600">
-                    <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-red-100 border border-red-200 inline-block"></span> <span>Unassigned E on Weekend / PH</span></div>
                     <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-amber-100 border border-amber-250 inline-block"></span> <span>Understaffed Station (&lt; 2 staff)</span></div>
                     <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 rounded bg-emerald-100 border border-emerald-200 inline-block"></span> <span>Fully Covered / Adequate Cover</span></div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-gray-700 border-b border-gray-150 pb-2 flex items-center gap-1.5">
-                    <span className="w-1.5 h-3 bg-[#7A1230] rounded-sm"></span>
-                    Special Shifts & Warns
-                  </h4>
-                  <div className="flex flex-col gap-1.5 text-xs text-slate-600">
-                    <p><strong>SC Shift:</strong> 18:00 – 08:00 Stock Count. Must only be scheduled on the last calendar day of the month.</p>
-                    <p><strong>E Shift:</strong> 11-hour weekend specialty shift designed to rotate fairly among pharmacists.</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-4.5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                  <h4 className="text-xs font-bold text-gray-700 border-b border-gray-150 pb-2 flex items-center gap-1.5">
-                    <span className="w-1.5 h-3 bg-blue-500 rounded-sm"></span>
-                    Zambian Labor Compliance
-                  </h4>
-                  <div className="flex flex-col gap-1.5 text-xs text-[#5D4037]">
-                    <p><strong>Mother's Day:</strong> One paid day off per cycle is automatically mandated for female staff, restricted to mid-week.</p>
-                    <p><strong>Contracted Cap:</strong> Normal target is 168 hours. Overtime is tracked automatically and highlighted in real-time.</p>
                   </div>
                 </div>
               </div>

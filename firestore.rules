@@ -75,7 +75,9 @@ service cloud.firestore {
         && data.id is string && data.id.size() <= 128
         && data.name is string && data.name.size() > 0 && data.name.size() <= 150
         && data.location is string && data.location.size() <= 150
-        && (!data.keys().contains('facilitiesType') || data.facilitiesType in ['Mine Clinic', 'Primary Care', 'Surgery Hub', 'Executive Care']);
+        // Org-defined classification (e.g. 'Branch', 'Warehouse', 'Primary Care')
+        // — free text per workspace, not a fixed clinical enum.
+        && (!data.keys().contains('facilitiesType') || (data.facilitiesType is string && data.facilitiesType.size() <= 100));
     }
 
     function isValidDepartment(data) {

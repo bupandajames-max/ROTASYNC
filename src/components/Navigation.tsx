@@ -11,9 +11,10 @@ interface NavigationProps {
     taskPlural: string;
     [key: string]: string;
   };
+  timezoneLabel?: string;
 }
 
-export default function Navigation({ currentTab, setCurrentTab, isManagerView, accessLevel, taxonomy }: NavigationProps) {
+export default function Navigation({ currentTab, setCurrentTab, isManagerView, accessLevel, taxonomy, timezoneLabel }: NavigationProps) {
   // Anyone above 'staff' (or the bootstrap manager view) gets the management tabs.
   const canManage = (accessLevel && accessLevel !== 'staff') || isManagerView;
 
@@ -90,7 +91,7 @@ export default function Navigation({ currentTab, setCurrentTab, isManagerView, a
         </div>
         <div className="flex justify-between">
           <span>TZ Location:</span>
-          <span className="font-semibold text-slate-700">Zambia (CAT)</span>
+          <span className="font-semibold text-slate-700">{timezoneLabel || 'Not set'}</span>
         </div>
       </div>
     </nav>

@@ -38,7 +38,7 @@ export function getDatesForCycle(startStr: string, endStr?: string): string[] {
       // Standard Calendar Month (from 1st to late/end of same month)
       end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // last day of current month
     } else if (startDay === 15) {
-      // Standard Mary Begg 15th to 14th cycle
+      // Standard 15th-to-14th cycle
       end = new Date(start.getFullYear(), start.getMonth() + 1, 14); // 14th of next month
     } else {
       // General fallback: standard 30-day billing/scheduling window

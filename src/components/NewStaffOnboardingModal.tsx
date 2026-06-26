@@ -82,7 +82,7 @@ export default function NewStaffOnboardingModal({
     }
     // Auto email
     const prefix = val.trim().toLowerCase().replace(/\s+/g, '.');
-    setEmail(prefix ? `${prefix}@beggclinic.com` : '');
+    setEmail(prefix ? `${prefix}@example.com` : '');
   };
 
   // Re-generate clinical values if empty on setup
@@ -137,8 +137,8 @@ export default function NewStaffOnboardingModal({
       id: `staff-${Date.now()}`,
       name: name.trim(),
       fullName: fullName.trim(),
-      email: email.trim() || `${name.toLowerCase()}@beggclinic.com`,
-      phone: phone.trim() || '+260 970 000 000',
+      email: email.trim() || `${name.toLowerCase().replace(/\s+/g, '')}@example.com`,
+      phone: phone.trim(),
       role,
       contractedHours: Number(contractedHours),
       gender,
@@ -456,7 +456,7 @@ export default function NewStaffOnboardingModal({
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="doctor@beggclinic.com"
+                          placeholder="e.g. jane@example.com"
                           className="w-full text-xs font-bold bg-slate-50 border border-slate-150 rounded-xl p-3 pl-9 focus:bg-white focus:ring-1 focus:ring-[#7A1230] outline-none"
                         />
                       </div>

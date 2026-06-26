@@ -177,7 +177,7 @@ export default function EnterpriseAdmin({
   const [facEditName, setFacEditName] = useState('');
   const [facEditLoc, setFacEditLoc] = useState('');
   const [facEditManager, setFacEditManager] = useState('');
-  const [facEditType, setFacEditType] = useState<string>('Primary Care');
+  const [facEditType, setFacEditType] = useState<string>('Branch');
   const [facEditSlaTemp, setFacEditSlaTemp] = useState('');
   const [facEditKpi, setFacEditKpi] = useState('');
   const [facEditIp, setFacEditIp] = useState('');
@@ -187,7 +187,7 @@ export default function EnterpriseAdmin({
   const [facNewName, setFacNewName] = useState('');
   const [facNewLoc, setFacNewLoc] = useState('');
   const [facNewManager, setFacNewManager] = useState('');
-  const [facNewType, setFacNewType] = useState<string>('Primary Care');
+  const [facNewType, setFacNewType] = useState<string>('Branch');
   const [facNewSlaTemp, setFacNewSlaTemp] = useState('2.0 – 8.0°C SLA');
   const [facNewKpi, setFacNewKpi] = useState('Verify dynamic checklist inputs');
   const [facNewIp, setFacNewIp] = useState('192.168.10.15');
@@ -429,7 +429,7 @@ export default function EnterpriseAdmin({
     setFacNewName('');
     setFacNewLoc('');
     setFacNewManager('');
-    setFacNewType('Primary Care');
+    setFacNewType('Branch');
     setFacNewSlaTemp('2.0 – 8.0°C SLA');
     setFacNewKpi('Verify dynamic checklist inputs');
     setFacNewIp('192.168.10.15');
@@ -1786,7 +1786,7 @@ export default function EnterpriseAdmin({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Kasoka"
+                  placeholder="e.g. Jane"
                   value={newStaffName}
                   onChange={(e) => setNewStaffName(e.target.value)}
                   className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
@@ -1798,7 +1798,7 @@ export default function EnterpriseAdmin({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Kasoka Mwansa"
+                  placeholder="e.g. Jane Doe"
                   value={newStaffFullName}
                   onChange={(e) => setNewStaffFullName(e.target.value)}
                   className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
@@ -2128,7 +2128,7 @@ export default function EnterpriseAdmin({
                     setNewTaskPattern(e.target.value as any);
                     if (e.target.value === 'Shift-based') setNewTaskAssignedVal('Shift A');
                     else if (e.target.value === 'Dispensing-rotate') setNewTaskAssignedVal('0');
-                    else if (e.target.value === 'Person-specific') setNewTaskAssignedVal('Kasoka');
+                    else if (e.target.value === 'Person-specific') setNewTaskAssignedVal('Jane');
                     else setNewTaskAssignedVal('');
                   }}
                   className="w-full text-xs font-extrabold bg-indigo-50/50 border border-indigo-150 rounded-xl p-3 focus:ring-1 focus:ring-indigo-600 outline-none mt-1"
@@ -2800,7 +2800,7 @@ export default function EnterpriseAdmin({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Kasoka"
+                    placeholder="e.g. Jane"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
@@ -2824,7 +2824,7 @@ export default function EnterpriseAdmin({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Kasoka Mwansa"
+                  placeholder="e.g. Jane Doe"
                   value={editFullName}
                   onChange={(e) => setEditFullName(e.target.value)}
                   className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"

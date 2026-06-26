@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Timesheet, TimesheetDay, StaffMember, RosterCycle, PublicHoliday } from '../types';
+import { Timesheet, TimesheetDay, StaffMember, RosterCycle, PublicHoliday, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { reevaluateTimesheetDay, sumTimesheetTotals } from '../utils/timesheetUtils';
 import { isPublicHoliday } from '../utils/rosterUtils';
@@ -35,6 +35,7 @@ interface TimesheetPortalProps {
     memberSingular: string;
     [key: string]: string;
   };
+  shifts?: { [code: string]: ShiftDef };
 }
 
 export default function TimesheetPortal({
@@ -47,11 +48,17 @@ export default function TimesheetPortal({
   onUpdateTimesheet,
   selectedFacilityId,
   facilities,
+  shifts,
   taxonomy,
 }: TimesheetPortalProps) {
   const confirm = useConfirm();
   const activeStaff = staffList.find(s => s.id === activeStaffId);
   const activeFacility = facilities.find((f: any) => f.id === activeStaff?.facilityId) || facilities.find((f: any) => f.id === selectedFacilityId) || facilities[0];
+  // Leave types come from the workspace's actual shift registry, not a fixed
+  // list — so this always matches what Settings > Shift Planner defines,
+  // instead of drifting out of sync with names/codes that change or get removed.
+  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const activeLeaveTypes = Object.entries(shiftDefs).filter(([, d]) => d.isLeave && d.active !== false);
 
   // Find or auto-initialize timesheet
   const myTimesheet = timesheets.find(t => t.staffId === activeStaffId);
@@ -506,12 +513,9 @@ export default function TimesheetPortal({
                     onChange={(e) => setEditActualShift(e.target.value)}
                     className="w-full text-xs font-semibold bg-slate-50 border border-slate-150 rounded-xl p-3 mt-1.5 outline-none focus:border-[#009EE2] transition-colors"
                   >
-                    <option value="AL">AL — Annual Leave</option>
-                    <option value="SL">SL — Sick/Study Leave</option>
-                    <option value="CO">CO — Compassionate Leave</option>
-                    <option value="MD">MD — Mother's Day Off (Paid)</option>
-                    <option value="TRN">TRN — Training/Workshop</option>
-                    <option value="OS">OS — Off-Site Duty</option>
+                    {activeLeaveTypes.map(([code, def]) => (
+                      <option key={code} value={code}>{code} — {def.name}</option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -589,9 +593,9 @@ export default function TimesheetPortal({
               
               {/* Report Header Logo Section */}
               <div className="border-b-2 border-[#1f3864] pb-5 mb-5 text-center">
-                <h2 className="text-[#009EE2] font-extrabold text-base">Mary Begg Health Services</h2>
-                <h3 className="text-gray-800 text-xs font-bold uppercase mt-1">{activeFacility?.name} — {activeFacility?.location}</h3>
-                <p className="text-[10px] text-gray-500 mt-2 font-black text-rose-800">Official Cycle Timesheet Record (Zambia CAT)</p>
+                <h2 className="text-[#009EE2] font-extrabold text-base">{activeFacility?.name}</h2>
+                <h3 className="text-gray-800 text-xs font-bold uppercase mt-1">{activeFacility?.location}</h3>
+                <p className="text-[10px] text-gray-500 mt-2 font-black text-rose-800">Official Cycle Timesheet Record</p>
               </div>
 
               {/* Master Data Grid Header */}
@@ -699,7 +703,7 @@ export default function TimesheetPortal({
                 </div>
 
                 <div className="border border-slate-200 border-dashed rounded-xl p-4 flex flex-col justify-between h-28 w-44 bg-slate-50 text-center">
-                  <span className="text-[10px] text-slate-400 font-mono uppercase font-bold text-center block">Mary Begg Site Officer Stamp</span>
+                  <span className="text-[10px] text-slate-400 font-mono uppercase font-bold text-center block">Site Officer Stamp</span>
                   <div className="border-2 border-slate-100 border-dashed bg-white h-12 w-12 rounded-full mx-auto flex items-center justify-center text-[10px] font-bold text-slate-300">
                     STAMP
                   </div>
