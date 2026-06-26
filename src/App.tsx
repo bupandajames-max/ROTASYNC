@@ -876,7 +876,10 @@ export default function App() {
         
         for (const colName of collectionsToPurge) {
           try {
-            const docs = await dbGetCollection<any>(colName);
+            // Tenant-scoped read: an unscoped collection list here would be
+            // rejected by Firestore rules for any non-super user (these
+            // collections all require a facilityId-matching query).
+            const docs = await dbGetCollectionByFacility<any>(colName, selectedFacilityId);
             for (const d of docs) {
               if (d.id) {
                 await dbDeleteDoc(colName, d.id);
@@ -1584,6 +1587,7 @@ export default function App() {
               setShifts={setShifts}
               onEditShifts={() => handleNavigation('admin')}
               onRolloverCycle={handleRolloverCycle}
+              facilityId={selectedFacilityId}
             />
           )}
 

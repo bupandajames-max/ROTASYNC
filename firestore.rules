@@ -136,7 +136,11 @@ service cloud.firestore {
     // Granting someone a higher tier is a separate write performed by an
     // existing manager-level+ user, targeting that OTHER person's doc.
     match /users/{userId} {
-      allow read: if isSignedIn();
+      // Always allowed to read your own doc (needed before facilityId is even
+      // known, e.g. right after first sign-in). Otherwise scoped to managers
+      // reading within their own facility, or super users reading any.
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility()));
       allow create: if isSignedIn() && request.auth.uid == userId
         && (incoming().accessLevel == 'staff' || isSuperEmail());
       allow update: if isSignedIn() && request.auth.uid == userId
@@ -146,24 +150,25 @@ service cloud.firestore {
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // Facilities (sites): super users only.
+    // Facilities (sites): readable only by members of that facility (or
+    // super users) — not by any signed-in stranger. Writes remain super-only.
     match /facilities/{facilityId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || facilityId == callerFacility();
       allow create, update: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
       allow delete: if isSuper();
     }
 
     // Departments: facility managers and above, only within their own facility.
     match /departments/{departmentId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isFacilityLevel() && isValidId(departmentId) && isValidDepartment(incoming()) && inMyFacility(incoming().facilityId);
       allow delete: if isFacilityLevel() && inMyFacility(existing().facilityId);
     }
 
     // Workspace configuration is keyed by facility id, so the caller may only
-    // write their own facility's config (super users: any).
+    // read/write their own facility's config (super users: any).
     match /workspaceConfigs/{configId} {
-      allow read: if isSignedIn();
+      allow read: if isSuper() || configId == callerFacility();
       allow create, update, delete: if isFacilityLevel() && inMyFacility(configId);
     }
 

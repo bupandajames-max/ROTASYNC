@@ -401,8 +401,13 @@ export function useHydration(deps: HydrationDeps) {
           const configDoc = await dbGetDoc<{ id: string; seeded: boolean }>('systemConfig', 'status');
           const cloudIsAlreadySeeded = configDoc !== null;
 
-          // 1. Facilities
-          let cloudFacs = await dbGetCollection<Facility>('facilities');
+          // 1. Facilities — a facility doc's own id IS its facilityId (there's
+          // no separate field), so the generic where('facilityId',...) scoped
+          // reader doesn't apply here. Non-super users only ever have one
+          // facility anyway, so fetch it directly by id instead of listing.
+          let cloudFacs: Facility[] = scopeReads
+            ? (selectedFacilityId ? [await dbGetDoc<Facility>('facilities', selectedFacilityId)].filter((f): f is Facility => f !== null) : [])
+            : await dbGetCollection<Facility>('facilities');
           cloudFacs = await seedCollectionFromLocalIfEmpty('facilities', cloudFacs, cloudIsAlreadySeeded, loadedFacs);
           if (cloudFacs.length > 0) {
             const { upgraded, changed } = upgradeFacilitiesList(cloudFacs);
@@ -412,7 +417,7 @@ export function useHydration(deps: HydrationDeps) {
           }
 
           // 2. Departments
-          const cloudDepts = await dbGetCollection<Department>('departments');
+          const cloudDepts = await readCol<Department>('departments');
           if (active) setDepartments(cloudDepts);
           localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(cloudDepts));
 

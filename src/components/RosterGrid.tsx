@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RosterCycle, StaffMember, PublicHoliday, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { isWeekend, isPublicHoliday, computeShiftDuration } from '../utils/rosterUtils';
-import { dbGetCollection, dbSetDoc, dbDeleteDoc } from '../firebase';
+import { dbGetCollectionByFacility, dbSetDoc, dbDeleteDoc } from '../firebase';
 import { useConfirm } from './ui/ConfirmProvider';
 import { 
   AlertTriangle, 
@@ -56,6 +56,7 @@ interface RosterGridProps {
   setShifts?: (shifts: { [code: string]: ShiftDef }) => void;
   onEditShifts?: () => void;
   onRolloverCycle?: () => void;
+  facilityId?: string;
 }
 
 export default function RosterGrid({
@@ -75,6 +76,7 @@ export default function RosterGrid({
   setShifts,
   onEditShifts,
   onRolloverCycle,
+  facilityId,
 }: RosterGridProps) {
   const confirm = useConfirm();
   // Use the workspace's editable shift definitions, falling back to the built-in
@@ -257,8 +259,9 @@ export default function RosterGrid({
   const loadHistoryCycles = async () => {
     setIsLoadingHistory(true);
     try {
-      // 1. Fetch from Firestore
-      const cycles = await dbGetCollection<RosterCycle>('cycles');
+      // 1. Fetch from Firestore — tenant-scoped (an unscoped list query is
+      // rejected by Firestore rules for non-super users).
+      const cycles = facilityId ? await dbGetCollectionByFacility<RosterCycle>('cycles', facilityId) : [];
       
       // 2. Also read from facility local storage for safety / sandbox isolator
       const localCycles: RosterCycle[] = [];
