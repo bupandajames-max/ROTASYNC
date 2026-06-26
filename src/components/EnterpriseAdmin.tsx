@@ -90,6 +90,10 @@ interface EnterpriseAdminProps {
   onFullReset?: () => Promise<void>;
   workspaceConfig: WorkspaceConfigBundle;
   accessLevel?: string; // current user's tier — gates role assignment + facility ops
+  onSyncGrantedAccess?: () => Promise<{ synced: number; pending: number }>;
+  platformAdmins?: { id: string; email?: string }[];
+  onGrantPlatformAdmin?: (email: string) => Promise<'granted' | 'not_found' | 'already'>;
+  onRevokePlatformAdmin?: (uid: string) => Promise<void>;
 }
 
 export default function EnterpriseAdmin({
@@ -103,6 +107,10 @@ export default function EnterpriseAdmin({
   onFullReset,
   workspaceConfig,
   accessLevel = 'staff',
+  onSyncGrantedAccess,
+  platformAdmins = [],
+  onGrantPlatformAdmin,
+  onRevokePlatformAdmin,
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
@@ -221,6 +229,9 @@ export default function EnterpriseAdmin({
   // the same form below. The code itself can't be changed during an edit,
   // since cells already on the grid reference it by code.
   const [editingShiftCode, setEditingShiftCode] = useState<string | null>(null);
+
+  // Platform admin grant-by-email form (Settings > Advanced, superuser only)
+  const [grantAdminEmail, setGrantAdminEmail] = useState('');
 
   // New Staff Form State
   const [newStaffName, setNewStaffName] = useState('');
@@ -1915,6 +1926,25 @@ export default function EnterpriseAdmin({
                     <Sparkles className="w-3.5 h-3.5 text-[#E29E25]" /> Onboard Staff Wizard
                   </button>
                 )}
+                {onSyncGrantedAccess && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const { synced, pending } = await onSyncGrantedAccess();
+                      if (synced > 0) {
+                        toast.success(`Synced access for ${synced} ${synced === 1 ? 'person' : 'people'}.`);
+                      } else if (pending > 0) {
+                        toast.error(`${pending} ${pending === 1 ? 'person' : 'people'} granted access but haven't signed in yet — this will apply automatically once they do, or run this again after.`);
+                      } else {
+                        toast.success('Everyone is already in sync.');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold text-[10px] rounded-lg tracking-wider uppercase flex items-center gap-1.5 transition-colors border border-emerald-200/50 cursor-pointer"
+                    title="Apply any access-level changes you've made above to people who've already signed in"
+                  >
+                    <RefreshCcw className="w-3.5 h-3.5" /> Sync Access Grants
+                  </button>
+                )}
                 {staffList.length > 0 && (
                   <button
                     type="button"
@@ -2501,7 +2531,72 @@ export default function EnterpriseAdmin({
 
       {/* SUB-TAB 6: Factory Reset & Purge */}
       {activeSubTab === 'purge' && (
-        <div className="bg-rose-50/20 p-6 rounded-3xl border border-rose-100/60 text-left space-y-6 animate-[fadeIn_0.15s_ease-out]">
+        <div className="space-y-6 animate-[fadeIn_0.15s_ease-out]">
+          {accessLevel === 'superuser' && (
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 text-left space-y-4 max-w-xl">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 mb-1 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-indigo-600" /> Platform admins
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Full access across every workspace, not just this one. Grant only to people who run the platform itself.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="person@example.com"
+                  value={grantAdminEmail}
+                  onChange={(e) => setGrantAdminEmail(e.target.value)}
+                  className="flex-1 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!grantAdminEmail.trim() || !onGrantPlatformAdmin) return;
+                    const result = await onGrantPlatformAdmin(grantAdminEmail.trim());
+                    if (result === 'granted') {
+                      toast.success(`Granted platform admin to ${grantAdminEmail.trim()}.`);
+                      setGrantAdminEmail('');
+                    } else if (result === 'already') {
+                      toast.error('Already a platform admin.');
+                    } else {
+                      toast.error('No account found with that email yet — they need to sign in at least once first.');
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-indigo-950 hover:bg-slate-900 text-white font-bold text-xs rounded-xl cursor-pointer whitespace-nowrap"
+                >
+                  Grant
+                </button>
+              </div>
+
+              <div className="space-y-1.5">
+                {platformAdmins.length === 0 && (
+                  <p className="text-xs text-slate-400 italic">No platform admins yet (besides the built-in bootstrap account).</p>
+                )}
+                {platformAdmins.map(a => (
+                  <div key={a.id} className="flex justify-between items-center bg-slate-50/60 px-3 py-2 rounded-xl text-xs">
+                    <span className="font-semibold text-slate-700">{a.email || a.id}</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (await confirm({ title: `Revoke platform admin access for ${a.email || a.id}?`, danger: true, confirmLabel: 'Revoke' })) {
+                          await onRevokePlatformAdmin?.(a.id);
+                          toast.success('Revoked.');
+                        }
+                      }}
+                      className="text-rose-500 hover:text-rose-700 font-bold cursor-pointer"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-rose-50/20 p-6 rounded-3xl border border-rose-100/60 text-left space-y-6">
           <div>
             <h3 className="text-sm font-black text-rose-850 mb-1 flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-rose-650" /> System Factory Reset
@@ -2559,6 +2654,7 @@ export default function EnterpriseAdmin({
                 <Trash2 className="w-4 h-4" /> Purge Workspace Data & Reset to Blank Slate
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}

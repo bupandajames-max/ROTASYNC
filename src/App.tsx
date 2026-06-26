@@ -52,6 +52,8 @@ import {
   dbDeleteDoc,
   dbGetDoc,
   dbGetCollectionByFacility,
+  dbFindUserInFacilityByEmail,
+  dbFindUserByEmail,
   seedCollectionFromLocalIfEmpty
 } from './firebase';
 import { isSuperuserEmail, resolveAccess } from './config/access';
@@ -360,16 +362,79 @@ export default function App() {
       setAccess({ accessLevel: 'staff', email: '' });
       return;
     }
-    const resolved = resolveAccess(firebaseUser.email, staffList);
-    setAccess(resolved);
-    dbSetDoc('users', firebaseUser.uid, {
-      id: firebaseUser.uid,
-      email: resolved.email,
-      accessLevel: resolved.accessLevel,
-      facilityId: resolved.facilityId || '',
-      departmentId: resolved.departmentId || '',
-    }).catch(() => {});
+    let resolved = resolveAccess(firebaseUser.email, staffList);
+    (async () => {
+      // Durable super-admin grants (see firestore.rules platformAdmins) live
+      // outside the staff/facility model entirely, so resolveAccess can't see
+      // them on its own — check separately and upgrade if granted.
+      if (resolved.accessLevel !== 'superuser') {
+        const grant = await dbGetDoc<{ id: string }>('platformAdmins', firebaseUser.uid);
+        if (grant) {
+          resolved = { ...resolved, accessLevel: 'superuser' };
+        }
+      }
+      setAccess(resolved);
+      dbSetDoc('users', firebaseUser.uid, {
+        id: firebaseUser.uid,
+        email: resolved.email,
+        accessLevel: resolved.accessLevel,
+        facilityId: resolved.facilityId || '',
+        departmentId: resolved.departmentId || '',
+      }).catch(() => {});
+    })();
   }, [firebaseUser, staffList]);
+
+  // Finalizes an access-level grant a manager already made on a staff
+  // record (staff/{id}.accessLevel — always correctly gated). That alone
+  // doesn't take effect in the target's own session: their users/{uid}
+  // mirror only changes via this explicit, separate write, performed by
+  // the manager, once the target has an account to find by email. Run on
+  // demand from Settings > People rather than silently in the background.
+  const handleSyncGrantedAccess = async (): Promise<{ synced: number; pending: number }> => {
+    if (!firebaseUser || !selectedFacilityId) return { synced: 0, pending: 0 };
+    let synced = 0;
+    let pending = 0;
+    for (const s of staffList) {
+      const intended = s.accessLevel || (s.isManager ? 'facility_manager' : 'staff');
+      if (intended === 'staff' || !s.email) continue;
+      const match = await dbFindUserInFacilityByEmail<{ id: string; accessLevel: string }>(s.email, selectedFacilityId);
+      if (!match) { pending++; continue; }
+      if (match.accessLevel !== intended) {
+        await dbSetDoc('users', match.id, {
+          id: match.id,
+          email: s.email,
+          accessLevel: intended,
+          facilityId: selectedFacilityId,
+          departmentId: s.departmentId || '',
+        }).catch(() => {});
+        synced++;
+      }
+    }
+    return { synced, pending };
+  };
+
+  // Durable super-admin management (Settings > Advanced, super users only).
+  // platformAdmins is the in-app replacement for editing SUPERUSER_EMAILS in
+  // source — see firestore.rules for the actual enforcement.
+  const [platformAdmins, setPlatformAdmins] = useState<{ id: string; email?: string }[]>([]);
+  useEffect(() => {
+    if (!firebaseUser || access.accessLevel !== 'superuser') return;
+    dbGetCollection<{ id: string; email?: string }>('platformAdmins').then(setPlatformAdmins).catch(() => {});
+  }, [firebaseUser, access.accessLevel]);
+
+  const handleGrantPlatformAdmin = async (email: string): Promise<'granted' | 'not_found' | 'already'> => {
+    const match = await dbFindUserByEmail<{ id: string; email?: string }>(email.trim().toLowerCase());
+    if (!match) return 'not_found';
+    if (platformAdmins.some(a => a.id === match.id)) return 'already';
+    await dbSetDoc('platformAdmins', match.id, { id: match.id, email: match.email, grantedBy: firebaseUser?.email || '', grantedAt: new Date().toISOString() });
+    setPlatformAdmins([...platformAdmins, { id: match.id, email: match.email }]);
+    return 'granted';
+  };
+
+  const handleRevokePlatformAdmin = async (uid: string) => {
+    await dbDeleteDoc('platformAdmins', uid);
+    setPlatformAdmins(platformAdmins.filter(a => a.id !== uid));
+  };
 
   // Self onboarding profile handler
   const handleSelfOnboard = async (newStaff: StaffMember) => {
@@ -1739,6 +1804,10 @@ export default function App() {
                 regionPresetId, setRegionPresetId,
               }}
               accessLevel={access.accessLevel}
+              onSyncGrantedAccess={handleSyncGrantedAccess}
+              platformAdmins={platformAdmins}
+              onGrantPlatformAdmin={handleGrantPlatformAdmin}
+              onRevokePlatformAdmin={handleRevokePlatformAdmin}
             />
           )}
         </main>

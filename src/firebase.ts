@@ -113,6 +113,35 @@ export async function dbGetCollectionByFacility<T>(path: string, facilityId: str
   }
 }
 
+// Looks up another user's role-mirror doc by email, scoped to the caller's
+// own facility (matches the users/{uid} read rule's manager branch, which
+// requires both conditions present in the query for Firestore to allow it).
+// Used to grant/sync an elevated accessLevel once that person has an account.
+export async function dbFindUserInFacilityByEmail<T>(email: string, facilityId: string): Promise<T | null> {
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('email', '==', email), where('facilityId', '==', facilityId)));
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { ...d.data(), id: d.id } as T;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Unscoped email lookup — only usable by callers the rules already treat as
+// isSuper() (that branch of the users/{uid} read rule has no facility
+// dependency), e.g. for granting platform-admin access by email.
+export async function dbFindUserByEmail<T>(email: string): Promise<T | null> {
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('email', '==', email)));
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { ...d.data(), id: d.id } as T;
+  } catch (err) {
+    return null;
+  }
+}
+
 /**
  * First-run bootstrap: if the cloud collection came back empty and has never
  * been seeded before, push the given local fallback items up to Firestore

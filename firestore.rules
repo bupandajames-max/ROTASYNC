@@ -26,6 +26,11 @@ service cloud.firestore {
     function isSuperEmail() {
       return callerEmail() in ['bupandajames@gmail.com'];
     }
+    // Durable super-admin grants, managed in-app (see platformAdmins below).
+    // isSuperEmail() stays only as the bootstrap path for the very first one.
+    function isPlatformAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
+    }
     function callerLevel() {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid))
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accessLevel
@@ -42,7 +47,7 @@ service cloud.firestore {
       return isSuper() || fid == callerFacility();
     }
     function isSuper() {
-      return isSignedIn() && (isSuperEmail() || callerLevel() == 'superuser');
+      return isSignedIn() && (isSuperEmail() || isPlatformAdmin() || callerLevel() == 'superuser');
     }
     function isFacilityLevel() {
       return isSignedIn() && (isSuper() || callerLevel() == 'facility_manager');
@@ -142,12 +147,21 @@ service cloud.firestore {
       allow read: if isSignedIn() && (request.auth.uid == userId || isSuper()
         || (isManagerLevel() && resource.data.facilityId == callerFacility()));
       allow create: if isSignedIn() && request.auth.uid == userId
-        && (incoming().accessLevel == 'staff' || isSuperEmail());
+        && (incoming().accessLevel == 'staff' || isSuperEmail() || isPlatformAdmin());
       allow update: if isSignedIn() && request.auth.uid == userId
-        && (incoming().accessLevel == 'staff' || incoming().accessLevel == existing().accessLevel || isSuperEmail());
+        && (incoming().accessLevel == 'staff' || incoming().accessLevel == existing().accessLevel || isSuperEmail() || isPlatformAdmin());
       allow update: if isSignedIn() && request.auth.uid != userId
         && isManagerLevel() && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Durable super-admin grants — one doc per platform admin, keyed by their
+    // uid. Only an existing super user (email-bootstrapped or already a
+    // platform admin) can grant/revoke another. This is what lets adding an
+    // admin be an in-app action instead of a source-code change + redeploy.
+    match /platformAdmins/{adminUid} {
+      allow read: if isSuper();
+      allow create, delete: if isSuper();
     }
 
     // Facilities (sites): readable only by members of that facility (or
