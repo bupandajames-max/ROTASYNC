@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { TaskMaster, StaffMember, DailyTask, TaskFieldDef, patternLabel } from '../types';
+import { TaskMaster, StaffMember, DailyTask, TaskFieldDef, ShiftDef, patternLabel } from '../types';
+import { SHIFTS } from '../data/initialData';
 
 type CategorySuggestion = {
   name: string;
@@ -24,6 +25,7 @@ interface TaskRegisterProps {
   onPreGenerate7DaysTasks?: () => { success: boolean; message: string; generatedDates: string[]; skippedDates: string[] };
   taskCategories: string[];
   onAddCategory?: (name: string) => void;
+  shifts?: { [code: string]: ShiftDef };
 }
 
 export default function TaskRegister({
@@ -38,7 +40,10 @@ export default function TaskRegister({
   onPreGenerate7DaysTasks,
   taskCategories,
   onAddCategory,
+  shifts,
 }: TaskRegisterProps) {
+  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const workShiftCodes = Object.entries(shiftDefs).filter(([, d]) => !d.isLeave && !d.isAdHoc);
   const [showAddModal, setShowAddTaskModal] = useState(false);
   const [taskName, setTaskName] = useState('');
   const [category, setCategory] = useState<TaskMaster['category']>(taskCategories[0] || 'General');
@@ -173,7 +178,7 @@ export default function TaskRegister({
       category,
       pattern,
       assignedValue: asgnVal,
-      managerAssignedName: (pattern === 'Manager-assign' || pattern === 'Collab') && mgrNames.length > 0 ? mgrNames.join(', ') : undefined,
+      managerAssignedName: pattern === 'Manager-assign' && mgrNames.length > 0 ? mgrNames.join(', ') : undefined,
       requiredSkills: parsedSkills.length > 0 ? parsedSkills : undefined,
       priority,
       frequency: freq,
@@ -874,21 +879,29 @@ export default function TaskRegister({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Pattern</label>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">How is this assigned?</label>
                   <select
                     value={pattern}
                     onChange={(e) => setPattern(e.target.value as any)}
                     className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                   >
-                    <option value="Auto">Smart auto-assign</option>
-                    <option value="Shift-based">Shift-based</option>
-                    <option value="Role-group">Role-group</option>
-                    <option value="Linked">Linked</option>
-                    <option value="Collab">Collab</option>
-                    <option value="Person-specific">Person-specific</option>
-                    <option value="Manager-assign">Manager-assign</option>
-                    <option value="Dispensing-rotate">Round-robin</option>
+                    <option value="Person-specific">A specific person</option>
+                    <option value="Manager-assign">Specific people (you choose)</option>
+                    <option value="Role-group">Everyone in a role</option>
+                    <option value="Shift-based">Whoever's on a shift</option>
+                    <option value="Auto">Auto-balance by workload</option>
+                    <option value="Dispensing-rotate">Rotate one person per day</option>
+                    <option value="Linked">Same person as another task</option>
                   </select>
+                  <p className="text-[9px] text-gray-400 mt-1">
+                    {pattern === 'Person-specific' && 'Always goes to the one person you pick below.'}
+                    {pattern === 'Manager-assign' && 'Goes to everyone you pick below who\'s working that day.'}
+                    {pattern === 'Role-group' && 'Goes to everyone with that role who\'s working that day.'}
+                    {pattern === 'Shift-based' && 'Goes to everyone scheduled on that shift that day.'}
+                    {pattern === 'Auto' && 'Picks one qualified, working person with the lightest workload.'}
+                    {pattern === 'Dispensing-rotate' && 'Spreads the task across working staff, one person per day.'}
+                    {pattern === 'Linked' && 'Follows whoever is assigned to another task you choose.'}
+                  </p>
                 </div>
 
                 <div>
@@ -917,9 +930,8 @@ export default function TaskRegister({
                     <option value="">Select a person…</option>
                     {staffList.map(s => <option key={s.id} value={s.name}>{s.name} — {s.role}</option>)}
                   </select>
-                  <p className="text-[9px] text-gray-400 mt-1">This task always goes to the chosen person.</p>
                 </div>
-              ) : (pattern === 'Manager-assign' || pattern === 'Collab') ? (
+              ) : pattern === 'Manager-assign' ? (
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Assign to people</label>
                   <div className="mt-1 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-1.5 bg-[#fafbfc] flex flex-wrap gap-1.5">
@@ -938,18 +950,65 @@ export default function TaskRegister({
                       );
                     })}
                   </div>
-                  <p className="text-[9px] text-gray-400 mt-1">Pick everyone responsible for this task.</p>
                 </div>
-              ) : (
+              ) : pattern === 'Role-group' ? (
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Fulfillment Value</label>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Role</label>
                   <input
                     type="text"
                     value={asgnVal}
                     onChange={(e) => setAsgnVal(e.target.value)}
-                    placeholder={pattern === 'Auto' ? 'Optional: restrict to a role (e.g. Nurse)' : 'Shift A, Provide Relief, or Slot index (0,1,2)'}
+                    placeholder="e.g. Operator"
                     className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
                   />
+                </div>
+              ) : pattern === 'Shift-based' ? (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Shift</label>
+                  <select
+                    value={asgnVal}
+                    onChange={(e) => setAsgnVal(e.target.value)}
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  >
+                    <option value="">Select a shift…</option>
+                    {workShiftCodes.map(([code, def]) => <option key={code} value={code}>{code} — {def.name}</option>)}
+                  </select>
+                </div>
+              ) : pattern === 'Auto' ? (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Restrict to a role <span className="text-gray-400 normal-case font-medium">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={asgnVal}
+                    onChange={(e) => setAsgnVal(e.target.value)}
+                    placeholder="Leave blank to consider everyone working"
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  />
+                </div>
+              ) : pattern === 'Dispensing-rotate' ? (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Starting position <span className="text-gray-400 normal-case font-medium">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={asgnVal}
+                    onChange={(e) => setAsgnVal(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  />
+                  <p className="text-[9px] text-gray-400 mt-1">Leave as 0 unless you want the rotation to start partway through the list.</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Linked task</label>
+                  <select
+                    value={asgnVal}
+                    onChange={(e) => setAsgnVal(e.target.value)}
+                    className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                  >
+                    <option value="">Select a task…</option>
+                    {tasks.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  </select>
+                  <p className="text-[9px] text-gray-400 mt-1">Whoever is assigned to that task gets this one too.</p>
                 </div>
               )}
 

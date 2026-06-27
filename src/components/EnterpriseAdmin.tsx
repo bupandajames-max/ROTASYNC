@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel } from '../types';
-import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
+import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet, SHIFTS } from '../data/initialData';
 import { computeShiftDuration } from '../utils/rosterUtils';
 import { LEGACY_FACILITY_ID } from '../utils/storageKeys';
 import { useToast } from './ui/ToastProvider';
@@ -321,7 +321,7 @@ export default function EnterpriseAdmin({
     setAddingTaskCat(false);
   };
   const [newTaskPattern, setNewTaskPattern] = useState<TaskMaster['pattern']>('Shift-based');
-  const [newTaskAssignedVal, setNewTaskAssignedVal] = useState('Shift A');
+  const [newTaskAssignedVal, setNewTaskAssignedVal] = useState('A');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskMaster['priority']>('Standard');
   const [newTaskFreq, setNewTaskFreq] = useState('Daily');
   const [newTaskNotes, setNewTaskNotes] = useState('');
@@ -331,7 +331,7 @@ export default function EnterpriseAdmin({
   const [taskSuggesting, setTaskSuggesting] = useState(false);
   const [taskSuggestErr, setTaskSuggestErr] = useState<string | null>(null);
   const [taskSuggestions, setTaskSuggestions] = useState<{ name: string; pattern: string; priority: string; frequency: string; notes: string }[]>([]);
-  const FORM_PATTERNS = ['Auto', 'Shift-based', 'Dispensing-rotate', 'Person-specific', 'Collab'];
+  const FORM_PATTERNS = ['Auto', 'Shift-based', 'Dispensing-rotate', 'Person-specific'];
 
   const handleSuggestTaskMaster = async () => {
     if (!newTaskCategory && !newTaskName.trim()) return;
@@ -2057,49 +2057,75 @@ export default function EnterpriseAdmin({
               </div>
 
               <div>
-                <label className="text-[9.5px] font-black text-indigo-950 block font-mono">Assignment Processing Workflow Pattern *</label>
+                <label className="text-[9.5px] font-black text-indigo-950 block font-mono">How is this assigned? *</label>
                 <select
                   value={newTaskPattern}
                   onChange={(e) => {
                     setNewTaskPattern(e.target.value as any);
-                    if (e.target.value === 'Shift-based') setNewTaskAssignedVal('Shift A');
+                    if (e.target.value === 'Shift-based') setNewTaskAssignedVal('A');
                     else if (e.target.value === 'Dispensing-rotate') setNewTaskAssignedVal('0');
-                    else if (e.target.value === 'Person-specific') setNewTaskAssignedVal('Jane');
+                    else if (e.target.value === 'Person-specific') setNewTaskAssignedVal('');
                     else setNewTaskAssignedVal('');
                   }}
                   className="w-full text-xs font-extrabold bg-indigo-50/50 border border-indigo-150 rounded-xl p-3 focus:ring-1 focus:ring-indigo-600 outline-none mt-1"
                 >
-                  <option value="Auto">Smart auto-assign (skills + availability + fairness)</option>
-                  <option value="Shift-based">Shift-matched (Auto-assigns rostered member)</option>
-                  <option value="Dispensing-rotate">Round-robin (rotates across available staff)</option>
-                  <option value="Person-specific">Named Anchor specific</option>
-                  <option value="Collab">Collaboration / Open Pool</option>
+                  <option value="Person-specific">A specific person</option>
+                  <option value="Shift-based">Whoever's on a shift</option>
+                  <option value="Auto">Auto-balance by workload</option>
+                  <option value="Dispensing-rotate">Rotate one person per day</option>
                 </select>
                 <p className="text-[9px] text-indigo-900 font-semibold leading-normal mt-1 bg-indigo-50/45 p-2 rounded-lg">
                   {newTaskPattern === 'Auto' && '💡 Picks one qualified person who is on shift today and has the lightest workload — the smartest default.'}
-                  {newTaskPattern === 'Shift-based' && '💡 System evaluates live schedules, matching today\'s duty roster to this check.'}
+                  {newTaskPattern === 'Shift-based' && '💡 Goes to everyone scheduled on that shift each day.'}
                   {newTaskPattern === 'Dispensing-rotate' && '💡 Rotates day-by-day to the least-loaded staffer on shift, skipping anyone off or on leave.'}
-                  {newTaskPattern === 'Person-specific' && '💡 Permanent assignment locked specifically to a designated team member.'}
-                  {newTaskPattern === 'Collab' && '💡 Open pool. Any authorized operator can lock compliance.'}
+                  {newTaskPattern === 'Person-specific' && '💡 Always goes to the one person you name below.'}
                 </p>
+                <p className="text-[9px] text-slate-400 mt-1">Need to assign to several specific people, a whole role, or link to another task? Use <strong>Manage Tasks</strong> instead — it has the full set of options.</p>
               </div>
 
+              {newTaskPattern === 'Person-specific' ? (
+                <div>
+                  <label className="text-[9.5px] font-black text-slate-400 font-mono">Assign to</label>
+                  <select
+                    value={newTaskAssignedVal}
+                    onChange={(e) => setNewTaskAssignedVal(e.target.value)}
+                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  >
+                    <option value="">Select a person…</option>
+                    {staffList.map(s => <option key={s.id} value={s.name}>{s.name} — {s.role}</option>)}
+                  </select>
+                </div>
+              ) : newTaskPattern === 'Shift-based' ? (
+                <div>
+                  <label className="text-[9.5px] font-black text-slate-400 font-mono">Shift</label>
+                  <select
+                    value={newTaskAssignedVal}
+                    onChange={(e) => setNewTaskAssignedVal(e.target.value)}
+                    className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  >
+                    {Object.entries({ ...SHIFTS, ...(shifts || {}) }).filter(([, d]) => !d.isLeave && !d.isAdHoc).map(([code, def]) => (
+                      <option key={code} value={code}>{code} — {def.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 font-mono">Frequency Bounds</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">How often</label>
                 <select
                   value={newTaskFreq}
                   onChange={(e) => setNewTaskFreq(e.target.value)}
                   className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                 >
-                  <option value="Daily">Daily Handover Logs</option>
-                  <option value="Weekly (Sunday)">Weekly Sunday Audit</option>
-                  <option value="Monthly (Continuous)">Continuous Target Process Tracking</option>
+                  <option value="Daily">Every day</option>
+                  <option value="Weekly (Sunday)">Weekly, on Sundays</option>
+                  <option value="Monthly (Continuous)">Ongoing, with a target to reach</option>
                 </select>
               </div>
 
               {newTaskFreq.includes('Continuous') && (
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 font-mono">Continuous Target Units Target</label>
+                  <label className="text-[9.5px] font-black text-slate-400 font-mono">Target</label>
                   <input
                     type="number"
                     placeholder="10"
@@ -2111,9 +2137,9 @@ export default function EnterpriseAdmin({
               )}
 
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 font-mono">Specific SOP Instruction Notes</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">Notes <span className="text-slate-400 normal-case font-medium">(optional)</span></label>
                 <textarea
-                  placeholder="e.g. Ensure physical logs align strictly with digital counts before verifying compliance..."
+                  placeholder="e.g. Check stock counts match the system before signing off..."
                   value={newTaskNotes}
                   onChange={(e) => setNewTaskNotes(e.target.value)}
                   rows={2}
@@ -2125,18 +2151,18 @@ export default function EnterpriseAdmin({
                 type="submit"
                 className="w-full py-2.5 bg-indigo-950 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Save Bespoke task
+                <Plus className="w-4 h-4" /> Save Task
               </button>
             </form>
           </div>
 
           <div className="lg:col-span-2 space-y-4 text-left">
-            <h3 className="text-xs font-black text-slate-600">Dynamic Task Rules Library</h3>
+            <h3 className="text-xs font-black text-slate-600">Task Templates</h3>
 
             <div className="flex bg-indigo-50 p-3.5 rounded-xl border border-indigo-150 gap-2.5 items-start">
               <Info className="text-indigo-950 w-4.5 h-4.5 shrink-0 mt-0.5 animate-pulse" />
               <p className="text-[10px] text-slate-650 leading-normal font-semibold">
-                Allocation algorithms automatically map assignments according to shift occurrences. To edit existing pre-assigned lists, navigate directly to the <strong className="underline">Task Sheet Register</strong> board.
+                Each day's tasks are generated automatically from these templates, based on who's working. To edit an existing one, go to <strong className="underline">Manage Tasks</strong>.
               </p>
             </div>
 

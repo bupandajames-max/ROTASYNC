@@ -1738,6 +1738,7 @@ export default function App() {
               onPreGenerate7DaysTasks={handlePreGenerate7DaysTasks}
               taskCategories={taskCategories}
               onAddCategory={(name) => setTaskCategories([...taskCategories, name])}
+              shifts={shifts}
             />
           )}
 
