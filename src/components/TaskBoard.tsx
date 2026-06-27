@@ -541,7 +541,7 @@ export default function TaskBoard({
         ) : (
         <div className="flex flex-col gap-1.5 pt-3 border-t border-slate-100 select-none">
         <span className="text-[10px] text-slate-400 font-bold">👤 Assigned to Me = just your tasks · the rest = the whole team's</span>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap items-stretch gap-1">
         <button
           onClick={() => setActiveUrgencyTab('MY_TASKS')}
           className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
@@ -553,6 +553,9 @@ export default function TaskBoard({
           👤 Assigned to Me ({pendingTasks.filter(t => t.staffName === activeStaff?.name && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
 
+        <div className="w-px bg-slate-200 my-1 hidden sm:block" />
+
+        <div className="flex flex-1 flex-wrap gap-1">
         <button
           onClick={() => setActiveUrgencyTab('CRITICAL')}
           className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
@@ -585,6 +588,7 @@ export default function TaskBoard({
         >
           ⚙️ Routine Actions ({pendingTasks.filter(t => t.priority === 'Routine' && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
+        </div>
         </div>
         </div>
         )}
