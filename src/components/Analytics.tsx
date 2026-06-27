@@ -51,9 +51,9 @@ export default function Analytics({
   // Task Completion stats
   const totalTasks = dailyTasksLog.length;
   const completedTasks = dailyTasksLog.filter(t => t.status === 'Done').length;
-  const missedTasks = dailyTasksLog.filter(t => t.status === 'Missed').length;
-  const pendingTasks = dailyTasksLog.filter(t => t.status === 'Pending' || t.status === 'In Progress').length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 100;
+  const todayStrForOverdue = new Date().toISOString().split('T')[0];
+  const overdueTasksCount = dailyTasksLog.filter(t => t.date < todayStrForOverdue && t.status !== 'Done').length;
 
   // Overtime trends over successive cycles
   const otThreshold = 20; // 20 hours threshold
@@ -97,14 +97,19 @@ export default function Analytics({
           </div>
         </div>
 
-        {/* Audit status checks */}
+        {/* Task completion */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold block">Daily Tasks Logged</span>
+            <span className="text-[10px] text-gray-400 font-bold block">Tasks Completed</span>
             <span className="text-xl font-extrabold text-[#005c93] mt-1 block">{completedTasks} / {totalTasks}</span>
             <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5 whitespace-nowrap">
-              🎉 {completionRate}% compliance Rate
+              ✓ {completionRate}% completion rate
             </span>
+            {overdueTasksCount > 0 && (
+              <span className="text-[10px] text-rose-600 font-semibold block mt-0.5 whitespace-nowrap">
+                ⏰ {overdueTasksCount} overdue right now
+              </span>
+            )}
           </div>
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl self-start">
             <CheckCircle className="w-5 h-5" />

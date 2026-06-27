@@ -825,6 +825,14 @@ export default function App() {
     handleNavigation('tasks');
   };
 
+  // When a manager clicks the dashboard's Overdue stat, jump to the Task
+  // Board with the Overdue tab already selected.
+  const [taskBoardJumpTab, setTaskBoardJumpTab] = useState<'OVERDUE' | null>(null);
+  const handleViewOverdueTasks = () => {
+    setTaskBoardJumpTab('OVERDUE');
+    handleNavigation('tasks');
+  };
+
   // Generate Daily chores for a specific selected date
   // Switch tabs cleanly and auto-populate today's board if needed
   const handleNavigation = (tabId: string) => {
@@ -1628,6 +1636,7 @@ export default function App() {
                   ruleSet={ruleSet}
                   taxonomy={taxonomy}
                   onFocusStaff={handleFocusStaffInTasks}
+                  onViewOverdue={handleViewOverdueTasks}
                 />
               ) : (!isManagerView && (
                 <EmptyState
@@ -1704,6 +1713,8 @@ export default function App() {
                     taskCategories={taskCategories}
                     focusStaffName={taskBoardFocusStaff}
                     onFocusConsumed={() => setTaskBoardFocusStaff(null)}
+                    jumpToTab={taskBoardJumpTab}
+                    onJumpConsumed={() => setTaskBoardJumpTab(null)}
                   />
                 </div>
 

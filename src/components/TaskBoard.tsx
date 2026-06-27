@@ -55,6 +55,8 @@ interface TaskBoardProps {
   taskCategories?: string[];
   focusStaffName?: string | null;
   onFocusConsumed?: () => void;
+  jumpToTab?: 'OVERDUE' | null;
+  onJumpConsumed?: () => void;
 }
 
 export default function TaskBoard({
@@ -68,6 +70,8 @@ export default function TaskBoard({
   taskCategories = [],
   focusStaffName,
   onFocusConsumed,
+  jumpToTab,
+  onJumpConsumed,
 }: TaskBoardProps) {
   const toast = useToast();
   const [dateScope, setDateScope] = useState<'today' | 'all'>('today');
@@ -155,7 +159,7 @@ export default function TaskBoard({
   };
   
   // Urgency & Assignment Tabs
-  const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE'>('MY_TASKS');
+  const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE' | 'OVERDUE'>('MY_TASKS');
 
   // Category Filter Tabs — driven by this workspace's actual configured
   // categories, not a fixed list, so it works for any kind of business.
@@ -171,6 +175,16 @@ export default function TaskBoard({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusStaffName]);
+
+  // Deep-link from the dashboard's Overdue stat — jump straight to that tab.
+  useEffect(() => {
+    if (jumpToTab) {
+      setActiveUrgencyTab(jumpToTab);
+      setFocusPersonName(null);
+      onJumpConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpToTab]);
 
   const activeStaff = staffList.find(s => s.id === activeStaffId);
 
@@ -208,9 +222,23 @@ export default function TaskBoard({
   const pendingTasks = scopedSource.filter(t => t.status !== 'Done');
   const completedTasks = scopedSource.filter(t => t.status === 'Done');
 
+  // Overdue tasks are unfinished work left over from a previous day. They're
+  // computed independently of dateScope/pendingTasks — under the default
+  // "Today" scope, an overdue task's date never equals today, so it would
+  // otherwise be filtered out before any tab even runs and a manager would
+  // never see it without manually switching to "Whole cycle".
+  const overdueTasks = dailyTasks.filter(t => t.date < todayStr && t.status !== 'Done');
+
   const isTaskInCategory = (task: DailyTask, catTab: typeof activeCategoryTab) => {
     if (catTab === 'ALL') return true;
     return task.category.toLowerCase() === catTab.toLowerCase();
+  };
+
+  // Both sides are plain "YYYY-MM-DD" strings parsed the same way, so the
+  // day difference is correct regardless of the viewer's timezone offset.
+  const daysOverdue = (task: DailyTask) => {
+    const ms = new Date(todayStr).getTime() - new Date(task.date).getTime();
+    return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
   };
 
   // Filter tasks based on current tab selection and category tab
@@ -233,6 +261,10 @@ export default function TaskBoard({
         break;
       case 'ROUTINE':
         baseTasks = pendingTasks.filter(t => t.priority === 'Routine');
+        break;
+      case 'OVERDUE':
+        // Independent of pendingTasks/dateScope — see overdueTasks above.
+        baseTasks = overdueTasks;
         break;
     }
     return baseTasks.filter(t => isTaskInCategory(t, activeCategoryTab));
@@ -588,6 +620,19 @@ export default function TaskBoard({
         >
           ⚙️ Routine Actions ({pendingTasks.filter(t => t.priority === 'Routine' && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
+
+        <button
+          onClick={() => setActiveUrgencyTab('OVERDUE')}
+          className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeUrgencyTab === 'OVERDUE'
+              ? 'bg-rose-700 text-white shadow-md'
+              : overdueTasks.length > 0
+              ? 'text-rose-700 hover:bg-rose-50'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          ⏰ Overdue ({overdueTasks.filter(t => isTaskInCategory(t, activeCategoryTab)).length})
+        </button>
         </div>
         </div>
         </div>
@@ -628,6 +673,16 @@ export default function TaskBoard({
                       }`}>
                         {task.priority} Priority
                       </span>
+                      {task.date < todayStr && task.status !== 'Done' && (
+                        <span className="text-[10px] font-mono font-black border px-2 py-0.5 rounded-full bg-rose-600 border-rose-700 text-white">
+                          ⏰ {daysOverdue(task)} day{daysOverdue(task) === 1 ? '' : 's'} overdue
+                        </span>
+                      )}
+                      {task.status === 'In Progress' && (
+                        <span className="text-[10px] font-mono font-black border px-2 py-0.5 rounded-full bg-sky-50 border-sky-200 text-sky-700">
+                          🔵 In progress
+                        </span>
+                      )}
                       <span className="text-[11px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-md uppercase tracking-tight">
                         Shift {task.shiftCode} · {task.category}
                       </span>
@@ -698,6 +753,26 @@ export default function TaskBoard({
                           </button>
                         )}
                       </div>
+                    )}
+
+                    {task.status === 'Pending' && (
+                      <button
+                        type="button"
+                        onClick={() => onUpdateTask(task.id, 'In Progress')}
+                        className="py-2.5 px-4 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-black rounded-xl border border-sky-150 transition-colors cursor-pointer uppercase tracking-tight"
+                      >
+                        ▶ Start working
+                      </button>
+                    )}
+                    {task.status === 'In Progress' && (
+                      <button
+                        type="button"
+                        onClick={() => onUpdateTask(task.id, 'Pending')}
+                        className="py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-500 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                        title="Move back to pending"
+                      >
+                        ↺ Not started yet
+                      </button>
                     )}
 
                     <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 hover:bg-indigo-50/40 p-2.5 px-4 rounded-xl border border-slate-150/60 shadow-3xs transition-all select-none group">

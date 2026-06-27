@@ -37,6 +37,7 @@ interface DashboardHomeProps {
   dailyTasks: DailyTask[];
   onNavigate: (tab: string) => void;
   onFocusStaff?: (staffName: string) => void;
+  onViewOverdue?: () => void;
   onIncrementTracker: (taskId: string, amount: number) => void;
   onUpdateTask: (taskId: string, status: DailyTask['status'], counterSign?: string) => void;
   selectedFacilityId: string;
@@ -66,6 +67,7 @@ export default function DashboardHome({
   dailyTasks,
   onNavigate,
   onFocusStaff,
+  onViewOverdue,
   onIncrementTracker,
   onUpdateTask,
   selectedFacilityId,
@@ -371,13 +373,28 @@ export default function DashboardHome({
               { label: 'Pending', value: pendingCount, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
               { label: 'In progress', value: inProgressCount, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100' },
               { label: 'Awaiting sign-off', value: reviewCount, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' },
-              { label: 'Overdue', value: overdueCount, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-100' },
             ].map(stat => (
               <div key={stat.label} className={`border rounded-2xl p-4 ${stat.bg}`}>
                 <div className={`text-3xl font-black font-mono ${stat.color}`}>{stat.value}</div>
                 <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">{stat.label}</div>
               </div>
             ))}
+            {onViewOverdue && overdueCount > 0 ? (
+              <button
+                type="button"
+                onClick={onViewOverdue}
+                className="border rounded-2xl p-4 text-left bg-rose-50 border-rose-100 hover:bg-rose-100 transition-colors cursor-pointer"
+                title="Open the Task Board's Overdue tab"
+              >
+                <div className="text-3xl font-black font-mono text-rose-600">{overdueCount}</div>
+                <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">Overdue · view →</div>
+              </button>
+            ) : (
+              <div className="border rounded-2xl p-4 bg-rose-50 border-rose-100">
+                <div className="text-3xl font-black font-mono text-rose-600">{overdueCount}</div>
+                <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">Overdue</div>
+              </div>
+            )}
           </div>
 
           {workloadByPerson.length > 0 && (
