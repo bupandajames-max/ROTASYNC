@@ -11,7 +11,7 @@ type CategorySuggestion = {
   requiredSkills?: string[];
   checked: boolean;
 };
-import { Database, Plus, Trash2, Check, Sparkles, BookOpen, Star, AlertCircle, BarChart, Calendar, Zap, Play, CheckCircle } from 'lucide-react';
+import { Database, Plus, Trash2, Pencil, Check, Sparkles, BookOpen, Star, AlertCircle, BarChart, Calendar, Zap, Play, CheckCircle } from 'lucide-react';
 
 interface TaskRegisterProps {
   tasks: TaskMaster[];
@@ -45,6 +45,7 @@ export default function TaskRegister({
   const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
   const workShiftCodes = Object.entries(shiftDefs).filter(([, d]) => !d.isLeave && !d.isAdHoc);
   const [showAddModal, setShowAddTaskModal] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [taskName, setTaskName] = useState('');
   const [category, setCategory] = useState<TaskMaster['category']>(taskCategories[0] || 'General');
   const [pattern, setPattern] = useState<TaskMaster['pattern']>('Shift-based');
@@ -167,18 +168,86 @@ export default function TaskRegister({
     setBulkFrequency('');
   };
 
+  // Reset the create/edit form and close the modal — shared by Cancel,
+  // successful save, and switching between add/edit so stale field values
+  // from a previous edit never leak into the next time the modal opens.
+  const closeTaskModal = () => {
+    setShowAddTaskModal(false);
+    setEditingTaskId(null);
+    setTaskName('');
+    setCategory(taskCategories[0] || 'General');
+    setPattern('Shift-based');
+    setAsgnVal('');
+    setMgrNames([]);
+    setPriority('Standard');
+    setFreq('Daily');
+    setCompliance(false);
+    setNotes('');
+    setRequiredSkillsInput('');
+    setTrackerTarget(0);
+    setCustomFields([]);
+    setCatSuggestions([]);
+    setCatSuggestError(null);
+    setAddingCategory(false);
+    setNewCategoryInput('');
+  };
+
+  // Prefill the form with an existing task's saved values and open it in edit mode.
+  const handleOpenEditTask = (task: TaskMaster) => {
+    setEditingTaskId(task.id);
+    setTaskName(task.name);
+    setCategory(task.category);
+    setPattern(task.pattern);
+    setAsgnVal(task.assignedValue || '');
+    setMgrNames(task.managerAssignedName ? task.managerAssignedName.split(',').map(n => n.trim()).filter(Boolean) : []);
+    setPriority(task.priority);
+    setFreq(task.frequency);
+    setCompliance(task.compliance);
+    setNotes(task.notes || '');
+    setRequiredSkillsInput((task.requiredSkills || []).join(', '));
+    setTrackerTarget(task.trackerTarget || 0);
+    setCustomFields(task.customFields || []);
+    setShowAddTaskModal(true);
+  };
+
   const handleAddTaskSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskName) return;
 
     const parsedSkills = requiredSkillsInput.split(',').map(s => s.trim()).filter(Boolean);
+    const managerAssignedName = pattern === 'Manager-assign' && mgrNames.length > 0 ? mgrNames.join(', ') : undefined;
+
+    if (editingTaskId) {
+      const existing = tasks.find(t => t.id === editingTaskId);
+      if (!existing) { closeTaskModal(); return; }
+      const updatedTask: TaskMaster = {
+        ...existing,
+        name: taskName,
+        category,
+        pattern,
+        assignedValue: asgnVal,
+        managerAssignedName,
+        requiredSkills: parsedSkills.length > 0 ? parsedSkills : undefined,
+        priority,
+        frequency: freq,
+        compliance,
+        notes,
+        trackerTarget: trackerTarget > 0 ? trackerTarget : undefined,
+        trackerValue: trackerTarget > 0 ? (existing.trackerValue ?? 0) : undefined,
+        customFields: customFields.length > 0 ? customFields : undefined
+      };
+      onUpdateTasksBulk(tasks.map(t => t.id === editingTaskId ? updatedTask : t));
+      closeTaskModal();
+      return;
+    }
+
     const newTask: TaskMaster = {
       id: `task-${Date.now()}`,
       name: taskName,
       category,
       pattern,
       assignedValue: asgnVal,
-      managerAssignedName: pattern === 'Manager-assign' && mgrNames.length > 0 ? mgrNames.join(', ') : undefined,
+      managerAssignedName,
       requiredSkills: parsedSkills.length > 0 ? parsedSkills : undefined,
       priority,
       frequency: freq,
@@ -191,15 +260,7 @@ export default function TaskRegister({
     };
 
     onAddTask(newTask);
-    setShowAddTaskModal(false);
-    // Reset Form
-    setTaskName('');
-    setAsgnVal('');
-    setMgrNames([]);
-    setNotes('');
-    setRequiredSkillsInput('');
-    setTrackerTarget(0);
-    setCustomFields([]);
+    closeTaskModal();
   };
 
   // Add a new task category inline (persists via App), then select it.
@@ -348,6 +409,29 @@ export default function TaskRegister({
       details: candidatesDetails
     });
     setShowAiModal(true);
+  };
+
+  // Plain-language description of who/what a task actually targets, grounded
+  // in the real stored value for every pattern (not just Manager-assign).
+  const describeAssignmentTarget = (t: TaskMaster): string => {
+    switch (t.pattern) {
+      case 'Person-specific':
+        return t.assignedValue || 'No person chosen yet';
+      case 'Role-group':
+        return t.assignedValue ? `Role: ${t.assignedValue}` : 'No role chosen yet';
+      case 'Shift-based': {
+        const def = shiftDefs[t.assignedValue];
+        return t.assignedValue ? `Shift ${t.assignedValue}${def ? ` — ${def.name}` : ''}` : 'No shift chosen yet';
+      }
+      case 'Auto':
+        return t.assignedValue ? `Auto-balanced, role: ${t.assignedValue}` : 'Auto-balanced across everyone working';
+      case 'Dispensing-rotate':
+        return 'Rotates to one person per day';
+      case 'Linked':
+        return t.assignedValue ? `Same as: ${t.assignedValue}` : 'No linked task chosen yet';
+      default:
+        return '';
+    }
   };
 
   const handleApplyAiSuggestion = () => {
@@ -653,7 +737,7 @@ export default function TaskRegister({
                 <th className="p-4 font-extrabold w-36">Category</th>
                 <th className="p-4 font-extrabold w-24 text-center">Priority</th>
                 <th className="p-4 font-extrabold w-32 text-center">Pattern</th>
-                <th className="p-4 font-extrabold w-44 text-center">⭐ Assigned Representative</th>
+                <th className="p-4 font-extrabold w-44 text-center">Who it's for</th>
                 <th className="p-4 font-extrabold w-16 text-center">AI suggestion</th>
                 <th className="p-4 font-extrabold w-24 text-center">Frequency</th>
                 <th className="p-4 font-extrabold w-12 text-center">Actions</th>
@@ -710,22 +794,40 @@ export default function TaskRegister({
                     </td>
                     <td className="p-4 text-center">
                       {isManagerOption ? (
-                        <select
-                          value={t.managerAssignedName || ''}
-                          onChange={(e) => onUpdateTaskAssignee(t.id, e.target.value)}
-                          className={`w-full text-[11px] font-extrabold rounded-lg p-2- outline-none border focus:border-[#1f3864] p-1.5 focus:bg-white select ${
-                            t.managerAssignedName
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                              : 'bg-amber-50 border-amber-250 text-amber-800 animate-pulse'
-                          }`}
-                        >
-                          <option value="">-- Click to Nominate --</option>
-                          {staffList.filter(s => !s.isManager).map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
+                        (() => {
+                          const names = (t.managerAssignedName || '').split(',').map(n => n.trim()).filter(Boolean);
+                          if (names.length > 1) {
+                            // A single dropdown can't safely represent or update a multi-person
+                            // pick without silently dropping everyone else — show read-only instead.
+                            return (
+                              <div className="flex flex-wrap items-center justify-center gap-1">
+                                {names.map(n => (
+                                  <span key={n} className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded-md">
+                                    {n}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          }
+                          return (
+                            <select
+                              value={t.managerAssignedName || ''}
+                              onChange={(e) => onUpdateTaskAssignee(t.id, e.target.value)}
+                              className={`w-full text-[11px] font-extrabold rounded-lg p-2- outline-none border focus:border-[#1f3864] p-1.5 focus:bg-white select ${
+                                t.managerAssignedName
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                  : 'bg-amber-50 border-amber-250 text-amber-800 animate-pulse'
+                              }`}
+                            >
+                              <option value="">-- Click to Nominate --</option>
+                              {staffList.filter(s => !s.isManager).map(s => (
+                                <option key={s.id} value={s.name}>{s.name}</option>
+                              ))}
+                            </select>
+                          );
+                        })()
                       ) : (
-                        <span className="text-[11px] text-gray-400 italic">Auto-managed</span>
+                        <span className="text-[11px] text-slate-500 font-semibold">{describeAssignmentTarget(t)}</span>
                       )}
                     </td>
                     <td className="p-4 text-center">
@@ -743,13 +845,22 @@ export default function TaskRegister({
                     </td>
                     <td className="p-4 text-center font-bold text-gray-500">{t.frequency}</td>
                     <td className="p-4 text-center">
-                      <button
-                        onClick={() => onDeleteTask(t.id)}
-                        className="p-1 px-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50- rounded-lg cursor-pointer"
-                        title="Delete Task"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleOpenEditTask(t)}
+                          className="p-1 px-2.5 text-gray-400 hover:text-[#1f3864] hover:bg-blue-50 rounded-lg cursor-pointer"
+                          title="Edit Task"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteTask(t.id)}
+                          className="p-1 px-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50- rounded-lg cursor-pointer"
+                          title="Delete Task"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -764,7 +875,8 @@ export default function TaskRegister({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-100 relative max-h-[85vh] flex flex-col">
             <h3 className="font-sans font-bold text-base text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-1.5 shrink-0">
-              <BookOpen className="w-5 h-5 text-[#00aeff]" /> Create New Task Master
+              {editingTaskId ? <Pencil className="w-5 h-5 text-[#00aeff]" /> : <BookOpen className="w-5 h-5 text-[#00aeff]" />}
+              {editingTaskId ? 'Edit Task' : 'Create New Task Master'}
             </h3>
 
             <form onSubmit={handleAddTaskSubmit} className="flex flex-col gap-3 flex-1 min-h-0">
@@ -785,15 +897,17 @@ export default function TaskRegister({
               <div>
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Category</label>
-                  <button
-                    type="button"
-                    onClick={handleSuggestCategoryTasks}
-                    disabled={catSuggesting || (!category && !taskName.trim())}
-                    className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-md border border-indigo-200 transition-all cursor-pointer"
-                  >
-                    <Sparkles className={`w-3 h-3 ${catSuggesting ? 'animate-pulse' : ''}`} />
-                    {catSuggesting ? 'Thinking…' : 'Suggest tasks'}
-                  </button>
+                  {!editingTaskId && (
+                    <button
+                      type="button"
+                      onClick={handleSuggestCategoryTasks}
+                      disabled={catSuggesting || (!category && !taskName.trim())}
+                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-md border border-indigo-200 transition-all cursor-pointer"
+                    >
+                      <Sparkles className={`w-3 h-3 ${catSuggesting ? 'animate-pulse' : ''}`} />
+                      {catSuggesting ? 'Thinking…' : 'Suggest tasks'}
+                    </button>
+                  )}
                 </div>
                 {addingCategory ? (
                   <div className="flex gap-1.5 mt-1">
@@ -1251,7 +1365,7 @@ export default function TaskRegister({
               <div className="flex gap-2.5 pt-3 mt-1 shrink-0 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setShowAddTaskModal(false)}
+                  onClick={closeTaskModal}
                   className="flex-1 py-2.5 bg-gray-150 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl cursor-pointer"
                 >
                   Cancel
@@ -1260,7 +1374,7 @@ export default function TaskRegister({
                   type="submit"
                   className="flex-1 py-2.5 bg-[#1f3864] hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow-md border border-blue-500 cursor-pointer text-center"
                 >
-                  Save Task
+                  {editingTaskId ? 'Save Changes' : 'Save Task'}
                 </button>
               </div>
             </form>
