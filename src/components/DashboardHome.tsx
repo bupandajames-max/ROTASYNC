@@ -169,6 +169,22 @@ export default function DashboardHome({
   const reviewCount = todaysTeamTasks.filter(t => t.status === 'Pending Review').length;
   const overdueCount = dailyTasks.filter(t => t.date < todayStr && t.status !== 'Done').length;
 
+  // Workload by person — how many open tasks each person has today, so a
+  // manager can spot who's overloaded at a glance instead of reading every
+  // row in the task list and tallying it themselves. A flat threshold
+  // (rather than a team-average multiple) so it stays meaningful even for
+  // a 2-3 person team, where an average-based bar can never be crossed.
+  const openTodayTasks = todaysTeamTasks.filter(t => t.status !== 'Done');
+  const HEAVY_WORKLOAD_THRESHOLD = 5;
+  const workloadByPerson = Object.entries(
+    openTodayTasks.reduce((acc, t) => {
+      acc[t.staffName] = (acc[t.staffName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  )
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
   // Real roster health (no simulation): validate the active cycle against rules.
   const rosterHealth = validateRoster(activeCycle.shifts, staffList, cycleDates, ruleSet);
   const clopenCount = rosterHealth.issues.filter(i => i.kind === 'clopen').length;
@@ -361,6 +377,28 @@ export default function DashboardHome({
               </div>
             ))}
           </div>
+
+          {workloadByPerson.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Who's busy today</p>
+              <div className="flex flex-wrap gap-1.5">
+                {workloadByPerson.map(({ name, count }) => {
+                  const isHeavy = count >= HEAVY_WORKLOAD_THRESHOLD;
+                  return (
+                    <span
+                      key={name}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                        isHeavy ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-50 text-slate-600 border-slate-200'
+                      }`}
+                      title={isHeavy ? `${name} has more open tasks than most of the team today` : undefined}
+                    >
+                      {isHeavy && '⚠ '}{name} · {count}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex-1">
             {todaysTeamTasks.length === 0 ? (

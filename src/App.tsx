@@ -1699,6 +1699,7 @@ export default function App() {
                     cycleDates={cycleDates}
                     activeStaffId={activeStaffId}
                     taxonomy={taxonomy}
+                    taskCategories={taskCategories}
                   />
                 </div>
 

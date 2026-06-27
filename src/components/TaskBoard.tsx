@@ -24,10 +24,6 @@ import {
   Clock,
   Printer,
   ShieldCheck,
-  Activity,
-  Briefcase,
-  Package,
-  Wrench,
   Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -56,6 +52,7 @@ interface TaskBoardProps {
     taskSingular: string;
     taskPlural: string;
   };
+  taskCategories?: string[];
 }
 
 export default function TaskBoard({
@@ -66,6 +63,7 @@ export default function TaskBoard({
   cycleDates,
   activeStaffId,
   taxonomy,
+  taskCategories = [],
 }: TaskBoardProps) {
   const toast = useToast();
   const [dateScope, setDateScope] = useState<'today' | 'all'>('today');
@@ -155,8 +153,9 @@ export default function TaskBoard({
   // Urgency & Assignment Tabs
   const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE'>('MY_TASKS');
 
-  // Category Filter Tabs
-  const [activeCategoryTab, setActiveCategoryTab] = useState<'ALL' | 'CLINICAL' | 'ADMINISTRATIVE' | 'INVENTORY' | 'MAINTENANCE'>('ALL');
+  // Category Filter Tabs — driven by this workspace's actual configured
+  // categories, not a fixed list, so it works for any kind of business.
+  const [activeCategoryTab, setActiveCategoryTab] = useState<string>('ALL');
 
   const activeStaff = staffList.find(s => s.id === activeStaffId);
 
@@ -195,21 +194,8 @@ export default function TaskBoard({
   const completedTasks = scopedSource.filter(t => t.status === 'Done');
 
   const isTaskInCategory = (task: DailyTask, catTab: typeof activeCategoryTab) => {
-    const cat = task.category.toLowerCase();
     if (catTab === 'ALL') return true;
-    if (catTab === 'CLINICAL') {
-      return cat === 'clinical' || cat === 'operational' || cat.includes('primary') || cat.includes('core');
-    }
-    if (catTab === 'ADMINISTRATIVE') {
-      return cat === 'administrative' || cat.includes('admin') || cat.includes('report') || cat.includes('checklist');
-    }
-    if (catTab === 'INVENTORY') {
-      return cat === 'inventory' || cat.includes('stock') || cat.includes('count') || cat.includes('dda');
-    }
-    if (catTab === 'MAINTENANCE') {
-      return cat === 'maintenance' || cat.includes('maintenance') || cat.includes('repair');
-    }
-    return true;
+    return task.category.toLowerCase() === catTab.toLowerCase();
   };
 
   // Filter tasks based on current tab selection and category tab
@@ -494,28 +480,25 @@ export default function TaskBoard({
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            { id: 'ALL', label: 'All Tasks', icon: Layers, count: pendingTasks.length, color: 'hover:bg-slate-100 text-slate-700 bg-slate-50 border-slate-200', activeColor: 'bg-indigo-950 border-indigo-950 text-white shadow-sm' },
-            { id: 'CLINICAL', label: 'Core Operations', icon: Activity, count: pendingTasks.filter(t => isTaskInCategory(t, 'CLINICAL')).length, color: 'hover:bg-indigo-50 hover:text-indigo-900 text-slate-700 bg-indigo-50/10 border-indigo-100', activeColor: 'bg-indigo-900 border-indigo-950 text-white shadow-sm' },
-            { id: 'ADMINISTRATIVE', label: 'Administrative', icon: Briefcase, count: pendingTasks.filter(t => isTaskInCategory(t, 'ADMINISTRATIVE')).length, color: 'hover:bg-sky-50 hover:text-sky-900 text-slate-700 bg-sky-50/10 border-sky-100', activeColor: 'bg-sky-850 border-sky-900 text-white shadow-sm' },
-            { id: 'INVENTORY', label: 'Inventory & Audits', icon: Package, count: pendingTasks.filter(t => isTaskInCategory(t, 'INVENTORY')).length, color: 'hover:bg-slate-100 text-slate-700 bg-amber-50/10 border-amber-100', activeColor: 'bg-indigo-950 border-indigo-950 text-white shadow-sm' },
-            { id: 'MAINTENANCE', label: 'Facility Tech Support', icon: Wrench, count: pendingTasks.filter(t => isTaskInCategory(t, 'MAINTENANCE')).length, color: 'hover:bg-emerald-50 hover:text-emerald-900 text-slate-700 bg-emerald-50/10 border-emerald-100', activeColor: 'bg-emerald-800 border-emerald-950 text-white shadow-sm' }
+            { id: 'ALL', label: 'All Tasks' },
+            ...taskCategories.map(c => ({ id: c, label: c })),
           ].map(tab => {
-            const IconComponent = tab.icon;
             const isActive = activeCategoryTab === tab.id;
+            const count = tab.id === 'ALL' ? pendingTasks.length : pendingTasks.filter(t => isTaskInCategory(t, tab.id)).length;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveCategoryTab(tab.id as any)}
+                onClick={() => setActiveCategoryTab(tab.id)}
                 className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
-                  isActive ? tab.activeColor : tab.color
+                  isActive ? 'bg-indigo-950 border-indigo-950 text-white shadow-sm' : 'hover:bg-slate-100 text-slate-700 bg-slate-50 border-slate-200'
                 }`}
               >
-                <IconComponent className="w-3.5 h-3.5" />
+                <Tag className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                   isActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
                 }`}>
-                  {tab.count}
+                  {count}
                 </span>
               </button>
             );
