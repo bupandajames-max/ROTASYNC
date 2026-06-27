@@ -39,6 +39,7 @@ interface DashboardHomeProps {
   onFocusStaff?: (staffName: string) => void;
   onViewOverdue?: () => void;
   onViewBlocked?: () => void;
+  onViewReview?: () => void;
   onIncrementTracker: (taskId: string, amount: number) => void;
   onUpdateTask: (taskId: string, status: DailyTask['status'], counterSign?: string) => void;
   selectedFacilityId: string;
@@ -70,6 +71,7 @@ export default function DashboardHome({
   onFocusStaff,
   onViewOverdue,
   onViewBlocked,
+  onViewReview,
   onIncrementTracker,
   onUpdateTask,
   selectedFacilityId,
@@ -176,6 +178,7 @@ export default function DashboardHome({
   // Blocked is a "needs attention" signal like overdue, so it isn't limited
   // to today — a blocker from yesterday still needs a manager's eyes.
   const blockedCount = dailyTasks.filter(t => t.status === 'Blocked').length;
+  const reviewCount = dailyTasks.filter(t => t.status === 'Pending Review').length;
 
   // Workload by person — how many open tasks each person has today, so a
   // manager can spot who's overloaded at a glance instead of reading every
@@ -372,7 +375,7 @@ export default function DashboardHome({
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {[
               { label: 'Pending', value: pendingCount, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
               { label: 'In progress', value: inProgressCount, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100' },
@@ -382,6 +385,22 @@ export default function DashboardHome({
                 <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">{stat.label}</div>
               </div>
             ))}
+            {onViewReview && reviewCount > 0 ? (
+              <button
+                type="button"
+                onClick={onViewReview}
+                className="border rounded-2xl p-4 text-left bg-indigo-50 border-indigo-150 hover:bg-indigo-100 transition-colors cursor-pointer"
+                title="Open the Task Board's Review tab"
+              >
+                <div className="text-3xl font-black font-mono text-indigo-700">{reviewCount}</div>
+                <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">Review · view →</div>
+              </button>
+            ) : (
+              <div className="border rounded-2xl p-4 bg-indigo-50 border-indigo-150">
+                <div className="text-3xl font-black font-mono text-indigo-700">{reviewCount}</div>
+                <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">Review</div>
+              </div>
+            )}
             {onViewBlocked && blockedCount > 0 ? (
               <button
                 type="button"

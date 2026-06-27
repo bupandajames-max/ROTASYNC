@@ -55,6 +55,7 @@ export default function Analytics({
   const todayStrForOverdue = new Date().toISOString().split('T')[0];
   const overdueTasksCount = dailyTasksLog.filter(t => t.date < todayStrForOverdue && t.status !== 'Done').length;
   const blockedTasksCount = dailyTasksLog.filter(t => t.status === 'Blocked').length;
+  const reviewTasksCount = dailyTasksLog.filter(t => t.status === 'Pending Review').length;
 
   // Overtime trends over successive cycles
   const otThreshold = 20; // 20 hours threshold
@@ -114,6 +115,11 @@ export default function Analytics({
             {blockedTasksCount > 0 && (
               <span className="text-[10px] text-amber-700 font-semibold block mt-0.5 whitespace-nowrap">
                 🚧 {blockedTasksCount} blocked right now
+              </span>
+            )}
+            {reviewTasksCount > 0 && (
+              <span className="text-[10px] text-indigo-700 font-semibold block mt-0.5 whitespace-nowrap">
+                📝 {reviewTasksCount} awaiting manager review
               </span>
             )}
           </div>

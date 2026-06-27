@@ -107,6 +107,7 @@ export interface DailyTask {
   trackerTarget?: number;
   trackerValue?: number;
   blockedReason?: string; // why staff marked this task Blocked — cleared on unblock
+  rejectionReason?: string; // why a manager sent a Pending Review task back — cleared on resubmit
   
   // Real-world dynamic checklist parameters recorded during execution
   fridgeTemp?: number;

@@ -825,15 +825,19 @@ export default function App() {
     handleNavigation('tasks');
   };
 
-  // When a manager clicks the dashboard's Overdue or Blocked stat, jump to
-  // the Task Board with that tab already selected.
-  const [taskBoardJumpTab, setTaskBoardJumpTab] = useState<'OVERDUE' | 'BLOCKED' | null>(null);
+  // When a manager clicks the dashboard's Overdue, Blocked, or Review stat,
+  // jump to the Task Board with that tab already selected.
+  const [taskBoardJumpTab, setTaskBoardJumpTab] = useState<'OVERDUE' | 'BLOCKED' | 'REVIEW' | null>(null);
   const handleViewOverdueTasks = () => {
     setTaskBoardJumpTab('OVERDUE');
     handleNavigation('tasks');
   };
   const handleViewBlockedTasks = () => {
     setTaskBoardJumpTab('BLOCKED');
+    handleNavigation('tasks');
+  };
+  const handleViewReviewTasks = () => {
+    setTaskBoardJumpTab('REVIEW');
     handleNavigation('tasks');
   };
 
@@ -1232,7 +1236,7 @@ export default function App() {
         let detailsStr = "";
 
         if (status === 'Done') {
-          actionStr = "Certified Compliant (Completed)";
+          actionStr = t.status === 'Pending Review' ? "Approved by Manager" : "Certified Compliant (Completed)";
           const parts = [];
           if (counterSign) parts.push(`Witness co-sign: ${counterSign}`);
           const mergedMeta = { ...(metadata || {}) };
@@ -1260,14 +1264,21 @@ export default function App() {
           
           detailsStr = parts.join(" | ") || "Operations certified as compliant.";
         } else if (status === 'Pending Review') {
-          actionStr = "Awaiting Final Verification";
-          detailsStr = `Progress reached ${t.trackerValue}/${t.trackerTarget}. Submitted for audit review.`;
+          actionStr = "Submitted for Manager Review";
+          detailsStr = t.trackerTarget
+            ? `Progress reached ${t.trackerValue}/${t.trackerTarget}. Submitted for review.`
+            : counterSign
+              ? `Submitted by ${operatorName}, witness: ${counterSign}.`
+              : `Submitted by ${operatorName} for manager approval.`;
         } else if (status === 'Blocked') {
           actionStr = "Marked as Blocked";
           detailsStr = metadata?.blockedReason ? `Reason: "${metadata.blockedReason}"` : undefined;
         } else if (status === 'In Progress' && t.status === 'Blocked') {
           actionStr = "Unblocked";
           detailsStr = `Resumed work after blocker was resolved.`;
+        } else if (status === 'In Progress' && t.status === 'Pending Review') {
+          actionStr = "Sent Back for Changes";
+          detailsStr = metadata?.rejectionReason ? `Reason: "${metadata.rejectionReason}"` : undefined;
         } else if (status === 'Pending' && t.status !== 'Pending') {
           actionStr = "Reset to Pending";
           detailsStr = `Task re-opened and reset to pending operations.`;
@@ -1648,6 +1659,7 @@ export default function App() {
                   onFocusStaff={handleFocusStaffInTasks}
                   onViewOverdue={handleViewOverdueTasks}
                   onViewBlocked={handleViewBlockedTasks}
+                  onViewReview={handleViewReviewTasks}
                 />
               ) : (!isManagerView && (
                 <EmptyState
@@ -1726,6 +1738,7 @@ export default function App() {
                     onFocusConsumed={() => setTaskBoardFocusStaff(null)}
                     jumpToTab={taskBoardJumpTab}
                     onJumpConsumed={() => setTaskBoardJumpTab(null)}
+                    isManagerView={isManagerView}
                   />
                 </div>
 

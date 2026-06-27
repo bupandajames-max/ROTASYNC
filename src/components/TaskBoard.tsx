@@ -55,8 +55,9 @@ interface TaskBoardProps {
   taskCategories?: string[];
   focusStaffName?: string | null;
   onFocusConsumed?: () => void;
-  jumpToTab?: 'OVERDUE' | 'BLOCKED' | null;
+  jumpToTab?: 'OVERDUE' | 'BLOCKED' | 'REVIEW' | null;
   onJumpConsumed?: () => void;
+  isManagerView?: boolean;
 }
 
 export default function TaskBoard({
@@ -72,6 +73,7 @@ export default function TaskBoard({
   onFocusConsumed,
   jumpToTab,
   onJumpConsumed,
+  isManagerView,
 }: TaskBoardProps) {
   const toast = useToast();
   const [dateScope, setDateScope] = useState<'today' | 'all'>('today');
@@ -98,6 +100,11 @@ export default function TaskBoard({
   // tracker increment form, so we don't need a new modal for one short field.
   const [showBlockForm, setShowBlockForm] = useState<{ [id: string]: boolean }>({});
   const [blockReasonInput, setBlockReasonInput] = useState<{ [id: string]: string }>({});
+
+  // Same lightweight inline-reason pattern, for a manager rejecting a
+  // Pending Review task back to the assignee.
+  const [showRejectForm, setShowRejectForm] = useState<{ [id: string]: boolean }>({});
+  const [rejectReasonInput, setRejectReasonInput] = useState<{ [id: string]: string }>({});
   
   // Dynamic fields state for custom checklist forms
   const [customFieldsData, setCustomFieldsData] = useState<{ [fieldId: string]: any }>({});
@@ -164,7 +171,7 @@ export default function TaskBoard({
   };
   
   // Urgency & Assignment Tabs
-  const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE' | 'OVERDUE' | 'BLOCKED'>('MY_TASKS');
+  const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE' | 'OVERDUE' | 'BLOCKED' | 'REVIEW'>('MY_TASKS');
 
   // Category Filter Tabs — driven by this workspace's actual configured
   // categories, not a fixed list, so it works for any kind of business.
@@ -239,6 +246,10 @@ export default function TaskBoard({
   // and the task happens to be from yesterday, so this also bypasses scope.
   const blockedTasks = dailyTasks.filter(t => t.status === 'Blocked');
 
+  // Awaiting a manager's approval — same "needs attention regardless of
+  // date" reasoning as Overdue/Blocked.
+  const reviewTasks = dailyTasks.filter(t => t.status === 'Pending Review');
+
   const isTaskInCategory = (task: DailyTask, catTab: typeof activeCategoryTab) => {
     if (catTab === 'ALL') return true;
     return task.category.toLowerCase() === catTab.toLowerCase();
@@ -278,6 +289,9 @@ export default function TaskBoard({
         break;
       case 'BLOCKED':
         baseTasks = blockedTasks;
+        break;
+      case 'REVIEW':
+        baseTasks = reviewTasks;
         break;
     }
     return baseTasks.filter(t => isTaskInCategory(t, activeCategoryTab));
@@ -381,9 +395,33 @@ export default function TaskBoard({
 
     metadata.customFields = fields;
 
-    onUpdateTask(selectedTask.id, 'Done', supervisorName || undefined, metadata);
+    // Compliance tasks need a manager's sign-off before they're truly done —
+    // "Dual Signature" was previously just a label with nothing enforcing it.
+    // Everything else completes directly, unchanged from before.
+    if (selectedTask.compliance) {
+      metadata.rejectionReason = undefined;
+      onUpdateTask(selectedTask.id, 'Pending Review', supervisorName || undefined, metadata);
+      toast.success('Submitted for manager review.');
+    } else {
+      onUpdateTask(selectedTask.id, 'Done', supervisorName || undefined, metadata);
+    }
     setShowCounterSignModal(false);
     setSelectedTask(null);
+  };
+
+  const handleApproveReview = (task: DailyTask) => {
+    onUpdateTask(task.id, 'Done', task.counterSign, {});
+  };
+
+  const handleConfirmReject = (task: DailyTask) => {
+    const reason = (rejectReasonInput[task.id] || '').trim();
+    if (!reason) {
+      toast.error('Add a short reason so they know what to fix.');
+      return;
+    }
+    onUpdateTask(task.id, 'In Progress', undefined, { rejectionReason: reason });
+    setShowRejectForm(prev => ({ ...prev, [task.id]: false }));
+    setRejectReasonInput(prev => ({ ...prev, [task.id]: '' }));
   };
 
   const toggleTrackerForm = (id: string) => {
@@ -674,6 +712,19 @@ export default function TaskBoard({
         >
           🚧 Blocked ({blockedTasks.filter(t => isTaskInCategory(t, activeCategoryTab)).length})
         </button>
+
+        <button
+          onClick={() => setActiveUrgencyTab('REVIEW')}
+          className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeUrgencyTab === 'REVIEW'
+              ? 'bg-indigo-700 text-white shadow-md'
+              : reviewTasks.length > 0
+              ? 'text-indigo-700 hover:bg-indigo-50'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          📝 Review ({reviewTasks.filter(t => isTaskInCategory(t, activeCategoryTab)).length})
+        </button>
         </div>
         </div>
         </div>
@@ -729,6 +780,11 @@ export default function TaskBoard({
                           🚧 Blocked
                         </span>
                       )}
+                      {task.status === 'Pending Review' && (
+                        <span className="text-[10px] font-mono font-black border px-2 py-0.5 rounded-full bg-indigo-50 border-indigo-200 text-indigo-700">
+                          📝 Pending Review
+                        </span>
+                      )}
                       <span className="text-[11px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-md uppercase tracking-tight">
                         Shift {task.shiftCode} · {task.category}
                       </span>
@@ -750,6 +806,12 @@ export default function TaskBoard({
                     {task.status === 'Blocked' && task.blockedReason && (
                       <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2 max-w-xl leading-relaxed">
                         🚧 <strong>Blocked:</strong> {task.blockedReason}
+                      </p>
+                    )}
+
+                    {task.status === 'In Progress' && task.rejectionReason && (
+                      <p className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mt-2 max-w-xl leading-relaxed">
+                        ↩ <strong>Sent back by manager:</strong> {task.rejectionReason}
                       </p>
                     )}
 
@@ -833,6 +895,32 @@ export default function TaskBoard({
                           ✕
                         </button>
                       </div>
+                    ) : showRejectForm[task.id] ? (
+                      <div className="flex items-center gap-2 bg-rose-50 p-1.5 rounded-xl border border-rose-200 animate-in fade-in zoom-in-95 duration-150">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={rejectReasonInput[task.id] || ''}
+                          onChange={(e) => setRejectReasonInput(prev => ({ ...prev, [task.id]: e.target.value }))}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirmReject(task); } }}
+                          placeholder="What needs fixing?"
+                          className="text-xs font-semibold bg-white border border-rose-200 rounded-lg p-1.5 w-48 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmReject(task)}
+                          className="p-1 px-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg cursor-pointer"
+                        >
+                          Send back
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowRejectForm(prev => ({ ...prev, [task.id]: false }))}
+                          className="p-1 text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     ) : (
                       <>
                         {task.status === 'Pending' && (
@@ -872,18 +960,43 @@ export default function TaskBoard({
                             ↺ Unblock
                           </button>
                         )}
+                        {task.status === 'Pending Review' && isManagerView && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleApproveReview(task)}
+                              className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl border border-emerald-700 transition-colors cursor-pointer uppercase tracking-tight"
+                            >
+                              ✅ Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowRejectForm(prev => ({ ...prev, [task.id]: true }))}
+                              className="py-2.5 px-4 bg-white hover:bg-rose-50 text-rose-700 text-xs font-black rounded-xl border border-rose-200 transition-colors cursor-pointer"
+                            >
+                              ❌ Reject
+                            </button>
+                          </>
+                        )}
+                        {task.status === 'Pending Review' && !isManagerView && (
+                          <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-4 py-2.5 rounded-xl">
+                            ⏳ Waiting on manager review
+                          </span>
+                        )}
                       </>
                     )}
 
-                    <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 hover:bg-indigo-50/40 p-2.5 px-4 rounded-xl border border-slate-150/60 shadow-3xs transition-all select-none group">
-                      <input
-                        type="checkbox"
-                        checked={task.status === 'Done'}
-                        onChange={(e) => handleCheckboxChange(task, e.target.checked)}
-                        className="w-5 h-5 rounded border-slate-300 text-indigo-650 focus:ring-0 accent-indigo-600 cursor-pointer"
-                      />
-                      <span className="text-xs font-black text-slate-700 group-hover:text-indigo-950 uppercase tracking-tight">Certify Done</span>
-                    </label>
+                    {task.status !== 'Pending Review' && (
+                      <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 hover:bg-indigo-50/40 p-2.5 px-4 rounded-xl border border-slate-150/60 shadow-3xs transition-all select-none group">
+                        <input
+                          type="checkbox"
+                          checked={task.status === 'Done'}
+                          onChange={(e) => handleCheckboxChange(task, e.target.checked)}
+                          className="w-5 h-5 rounded border-slate-300 text-indigo-650 focus:ring-0 accent-indigo-600 cursor-pointer"
+                        />
+                        <span className="text-xs font-black text-slate-700 group-hover:text-indigo-950 uppercase tracking-tight">Certify Done</span>
+                      </label>
+                    )}
                   </div>
 
                 </div>
