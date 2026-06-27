@@ -311,7 +311,7 @@ export default function TaskRegister({
         lastErr = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || `status ${res.status}`);
         if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
       }
-      if (!data) throw new Error(lastErr.includes('high demand') ? 'The AI is busy right now — please try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
+      if (!data) throw new Error(lastErr.includes('high demand') ? 'The suggestion service is busy right now — please try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
       if (Array.isArray(data.tasks)) {
         setCatSuggestions(data.tasks.map((t: any): CategorySuggestion => ({
           name: t.name || '',
@@ -753,7 +753,7 @@ export default function TaskRegister({
                 <th className="p-4 font-extrabold w-24 text-center">Priority</th>
                 <th className="p-4 font-extrabold w-32 text-center">Pattern</th>
                 <th className="p-4 font-extrabold w-44 text-center">Who it's for</th>
-                <th className="p-4 font-extrabold w-16 text-center">AI suggestion</th>
+                <th className="p-4 font-extrabold w-16 text-center">Suggest</th>
                 <th className="p-4 font-extrabold w-24 text-center">Frequency</th>
                 <th className="p-4 font-extrabold w-12 text-center">Actions</th>
               </tr>
@@ -850,7 +850,7 @@ export default function TaskRegister({
                         <button
                           onClick={() => handleTriggerAiSuggest(t)}
                           className="p-2 bg-[#eef5fc] hover:bg-sky-100 text-[#1f3864] rounded-xl border border-[#cbdff0] cursor-pointer transition-colors shadow-xs"
-                          title="Generate AI suggestion report Card"
+                          title="Suggest the fairest person for this task"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-[#00aeff]" />
                         </button>
@@ -1432,10 +1432,10 @@ export default function TaskRegister({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative">
             <h3 className="font-sans font-bold text-base text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#00aeff]" /> AI Assignment Recommendation Card
+              <Sparkles className="w-5 h-5 text-[#00aeff]" /> Suggested Assignment
             </h3>
             <p className="text-xs text-gray-500 leading-relaxed mb-4">
-              Analyzing scheduled shifts, historical completion logs, and active task loads to locate the most equitable eligible and qualified candidate for: <br />
+              Comparing scheduled shifts, past completions, and current workload to find the fairest eligible person for: <br />
               <strong className="text-slate-900 text-sm">{aiTargetTask.name}</strong>
             </p>
 
@@ -1447,7 +1447,7 @@ export default function TaskRegister({
                 </span>
               </div>
               <span className="bg-emerald-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold uppercase shadow-sm">
-                98% Fairness Match
+                Fairest Match
               </span>
             </div>
 

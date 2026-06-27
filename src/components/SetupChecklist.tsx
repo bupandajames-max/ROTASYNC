@@ -55,7 +55,7 @@ export default function SetupChecklist({
       done: steps.tasks,
       icon: ListChecks,
       title: 'Set up your tasks',
-      desc: `What needs doing — ${taxonomy.taskPlural.toLowerCase()} for your ${taxonomy.groupSingular.toLowerCase()} (AI can suggest).`,
+      desc: `What needs doing — ${taxonomy.taskPlural.toLowerCase()} for your ${taxonomy.groupSingular.toLowerCase()} (we can suggest some for you).`,
       action: onSetupTasks,
       cta: 'Set up tasks',
       ready: steps.roster,

@@ -121,6 +121,7 @@ export function buildDefaultRuleSet(): RosterRuleSet {
 // ── Taxonomy default ────────────────────────────────────────────────────────
 export const DEFAULT_TAXONOMY: Taxonomy = {
   appName: 'RotaSync',
+  organizationName: '',
   workspaceSingular: 'Facility',
   workspacePlural: 'Facilities',
   memberSingular: 'Staff Member',

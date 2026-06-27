@@ -47,6 +47,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
 
   // Step: Organization
   const [appName, setAppName] = useState('RotaSync');
+  const [organizationName, setOrganizationName] = useState('');
   const [facName, setFacName] = useState('');
   const [facLocation, setFacLocation] = useState('');
   const [facType, setFacType] = useState('Branch');
@@ -97,6 +98,7 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
 
     const taxonomy: Taxonomy = {
       appName: appName.trim() || 'RotaSync',
+      organizationName: organizationName.trim(),
       workspaceSingular: workspaceSingular.trim() || 'Facility',
       workspacePlural: pluralize(workspaceSingular.trim() || 'Facility'),
       memberSingular: memberSingular.trim() || 'Staff Member',
@@ -228,6 +230,9 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
             <div className="space-y-4">
               <Field label="App / Product name">
                 <input value={appName} onChange={e => setAppName(e.target.value)} className={inputCls} placeholder="e.g. RotaSync" />
+              </Field>
+              <Field label="Organization / Company name">
+                <input value={organizationName} onChange={e => setOrganizationName(e.target.value)} className={inputCls} placeholder="e.g. Acme Logistics Ltd" />
               </Field>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Workspace name *">

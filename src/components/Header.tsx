@@ -37,6 +37,7 @@ interface HeaderProps {
   onSignOut?: () => void;
   taxonomy: {
     appName: string;
+    organizationName?: string;
     workspaceSingular: string;
     workspacePlural: string;
     memberSingular: string;
@@ -162,6 +163,11 @@ export default function Header({
           <h1 className="font-sans font-black tracking-wider text-base md:text-lg flex items-center gap-2 flex-wrap text-white">
             {taxonomy.appName.toUpperCase()} <span className="text-[10px] bg-indigo-500/20 text-indigo-200 border border-indigo-400/35 px-2 py-0.5 rounded-full font-mono font-medium tracking-wide uppercase">ONLINE</span>
           </h1>
+          {taxonomy.organizationName && (
+            <p className="text-[10px] md:text-xs text-white/90 mt-0.5 font-bold tracking-wide">
+              {taxonomy.organizationName}
+            </p>
+          )}
           <p className="text-[10px] md:text-xs text-indigo-200/80 mt-0.5 font-semibold tracking-wide">
             {activeFacility?.name} — {activeFacility?.location} {taxonomy.workspaceSingular}
           </p>

@@ -206,6 +206,10 @@ export interface Department {
 
 export interface Taxonomy {
   appName: string;
+  // The employer/legal-entity name — distinct from appName (the software's
+  // own brand) and from a Facility's name (one site/branch under this
+  // organization). Shown on payroll documents and other org-wide headers.
+  organizationName?: string;
   workspaceSingular: string;
   workspacePlural: string;
   memberSingular: string;

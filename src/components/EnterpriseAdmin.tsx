@@ -352,7 +352,7 @@ export default function EnterpriseAdmin({
         lastErr = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || `status ${res.status}`);
         if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
       }
-      if (!data) throw new Error(lastErr.includes('high demand') ? 'The AI is busy — try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
+      if (!data) throw new Error(lastErr.includes('high demand') ? 'The suggestion service is busy — try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
       if (Array.isArray(data.tasks)) {
         setTaskSuggestions(data.tasks.map((t: any) => ({
           name: t.name || '', pattern: t.pattern || 'Auto', priority: t.priority || 'Standard', frequency: t.frequency || 'Daily', notes: t.notes || '',
@@ -477,7 +477,7 @@ export default function EnterpriseAdmin({
       }
     } catch (err: any) {
       console.error('Failed to fetch AI suggestions:', err);
-      setAiError(err.message || 'An unexpected error occurred while getting AI suggestions.');
+      setAiError(err.message || 'An unexpected error occurred while getting suggestions.');
     } finally {
       setAiSuggesting(false);
     }
@@ -2387,6 +2387,20 @@ export default function EnterpriseAdmin({
                 className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 focus:bg-white mt-1.5"
               />
               <p className="text-[10px] text-slate-400 mt-1 font-semibold">Sets the application brand displayed on headers and onboarding panels.</p>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 font-mono">
+                Organization / Company Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Acme Logistics Ltd"
+                value={taxonomy.organizationName || ''}
+                onChange={(e) => setTaxonomy({ ...taxonomy, organizationName: e.target.value })}
+                className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 focus:bg-white mt-1.5"
+              />
+              <p className="text-[10px] text-slate-400 mt-1 font-semibold">The actual employer name — shown on payroll documents like the printed timesheet, separate from the app name above.</p>
             </div>
 
             <div>

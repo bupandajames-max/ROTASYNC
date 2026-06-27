@@ -180,33 +180,34 @@ export default function TimesheetPortal({
         {/* Regular standard hours */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold">Regular net worked</span>
+            <span className="text-[10px] text-gray-400 font-bold">Regular Hours</span>
             <h3 className="text-slate-800 text-2xl font-black mt-1">{totals.regular} h</h3>
-            <p className="text-[11px] text-slate-500 font-medium mt-1">Capped standard: {activeStaff.contractedHours} h</p>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">Contracted: {activeStaff.contractedHours} h</p>
           </div>
           <div className="p-3.5 bg-slate-50 text-slate-400 rounded-xl">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
         </div>
 
-        {/* sunday worked */}
+        {/* Sunday + Public Holiday premium pay — one payroll concept, since
+            this workspace treats both as premium-rate days a person worked. */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold">Sunday hours worked</span>
-            <h3 className="text-[#005c93] text-2xl font-black mt-1">{totals.sunday} h</h3>
-            <p className="text-[11px] text-[#005c93]/70 font-semibold mt-1">1.5x Premium rate</p>
+            <span className="text-[10px] text-gray-400 font-bold">Premium (Sun/PH)</span>
+            <h3 className="text-[#005c93] text-2xl font-black mt-1">{totals.sunday + totals.holiday} h</h3>
+            <p className="text-[11px] text-[#005c93]/70 font-semibold mt-1">Sunday: {totals.sunday}h (1.5x) · Holiday: {totals.holiday}h (2x)</p>
           </div>
           <div className="p-3.5 bg-sky-50 text-[#005c93] rounded-xl">
             <Clock className="w-5 h-5 animate-[pulse_3s_infinite]" />
           </div>
         </div>
 
-        {/* Approved Overtime & Holiday */}
+        {/* Overtime */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold">OT & Holiday Premium</span>
-            <h3 className="text-amber-600 text-2xl font-black mt-1">+{totals.overtime + totals.holiday} h</h3>
-            <p className="text-[11px] text-slate-500 font-medium mt-1">OT: {totals.overtime}h · Holiday: {totals.holiday}h</p>
+            <span className="text-[10px] text-gray-400 font-bold">Overtime</span>
+            <h3 className="text-amber-600 text-2xl font-black mt-1">+{totals.overtime} h</h3>
+            <p className="text-[11px] text-slate-500 font-medium mt-1">Hours beyond the scheduled shift</p>
           </div>
           <div className="p-3.5 bg-amber-50 text-amber-500 rounded-xl">
             <Clock className="w-5 h-5" />
@@ -271,10 +272,9 @@ export default function TimesheetPortal({
                 <th className="py-3.5 px-3 font-bold">Classification type</th>
                 <th className="py-3.5 px-3 font-bold">Actual Clocks</th>
                 <th className="py-3.5 px-3 font-bold text-center">Unpaid Break</th>
-                <th className="py-3.5 px-3 font-bold text-center">Regular (Std)</th>
-                <th className="py-3.5 px-3 font-bold text-center">Sunday (1.5x)</th>
+                <th className="py-3.5 px-3 font-bold text-center">Regular Hours</th>
+                <th className="py-3.5 px-3 font-bold text-center">Premium (Sun/PH)</th>
                 <th className="py-3.5 px-3 font-bold text-center">Overtime</th>
-                <th className="py-3.5 px-3 font-bold text-center">Holiday (2x)</th>
                 <th className="py-3.5 px-4 font-bold text-center">Record edits</th>
               </tr>
             </thead>
@@ -359,19 +359,14 @@ export default function TimesheetPortal({
                       {day.regularWorkedHours > 0 ? `${day.regularWorkedHours}h` : '-'}
                     </td>
 
-                    {/* sunday worked */}
+                    {/* Sunday/Public Holiday premium — mutually exclusive per day */}
                     <td className="py-3.5 px-3 text-center font-black text-[#005c93] font-mono text-[11.5px]">
-                      {day.sundayWorkedHours > 0 ? `${day.sundayWorkedHours}h` : '-'}
+                      {day.holidayWorkedHours > 0 ? `${day.holidayWorkedHours}h (PH)` : day.sundayWorkedHours > 0 ? `${day.sundayWorkedHours}h (Sun)` : '-'}
                     </td>
 
                     {/* overtime hours */}
                     <td className="py-3.5 px-3 text-center font-black text-amber-600 font-mono text-[11.5px]">
                       {day.overtimeHours > 0 ? `+${day.overtimeHours}h` : '-'}
-                    </td>
-
-                    {/* holiday worked */}
-                    <td className="py-3.5 px-3 text-center font-black text-emerald-600 font-mono text-[11.5px]">
-                      {day.holidayWorkedHours > 0 ? `${day.holidayWorkedHours}h` : '-'}
                     </td>
 
                     {/* Edit control */}
@@ -569,15 +564,19 @@ export default function TimesheetPortal({
         <div className="fixed inset-0 bg-slate-900/85 backdrop-blur-md flex items-start justify-center p-4 z-[100] overflow-y-auto print:bg-white print:p-0 print:static print:block">
           {/* Printing only the dedicated #timesheetPrintable layout below —
               the live page (nav, modal backdrop, action buttons) never goes
-              to paper, and the table gets its own landscape page sized to
-              fit one sheet instead of however the on-screen scroll container
-              happened to clip it. */}
+              to paper. Portrait, not landscape: a full cycle's row count
+              needs page HEIGHT, and landscape A4 is shorter top-to-bottom
+              than portrait, which is what was pushing this to 3 pages.
+              Tight row padding + a repeating header keep it to one page for
+              a typical cycle and a clean break for longer ones. */}
           <style>{`
             @media print {
-              @page { size: A4 landscape; margin: 10mm; }
+              @page { size: A4 portrait; margin: 8mm; }
               body * { visibility: hidden; }
               #timesheetPrintable, #timesheetPrintable * { visibility: visible; }
               #timesheetPrintable { position: absolute; top: 0; left: 0; width: 100%; }
+              #timesheetPrintable thead { display: table-header-group; }
+              #timesheetPrintable tr { break-inside: avoid; }
             }
           `}</style>
           <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl relative my-auto print:shadow-none print:rounded-none print:max-w-none print:p-0 print:my-0">
@@ -603,16 +602,19 @@ export default function TimesheetPortal({
 
             {/* Official Report Container */}
             <div id="timesheetPrintable" className="p-8 border border-gray-200 rounded-2xl bg-white font-sans max-h-[75vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none">
-              
+
               {/* Report Header Logo Section */}
-              <div className="border-b-2 border-[#1f3864] pb-5 mb-5 text-center">
+              <div className="border-b-2 border-[#1f3864] pb-3 mb-3 print:pb-2 print:mb-2 text-center">
+                {taxonomy.organizationName && (
+                  <p className="text-slate-900 font-extrabold text-sm">{taxonomy.organizationName}</p>
+                )}
                 <h2 className="text-[#009EE2] font-extrabold text-base">{activeFacility?.name}</h2>
                 <h3 className="text-gray-800 text-xs font-bold uppercase mt-1">{activeFacility?.location}</h3>
-                <p className="text-[10px] text-gray-500 mt-2 font-black text-rose-800">Official Cycle Timesheet Record</p>
+                <p className="text-[10px] text-gray-500 mt-1 font-black text-rose-800">Official Cycle Timesheet Record</p>
               </div>
 
               {/* Master Data Grid Header */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs tracking-tight border-b border-gray-100 pb-5 mb-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs tracking-tight border-b border-gray-100 pb-3 mb-3 print:pb-2 print:mb-2">
                 <div>
                   <span className="text-[11px] text-slate-400 font-mono font-bold uppercase block">Employee Name</span>
                   <span className="font-bold text-slate-900 uppercase">{activeStaff.fullName}</span>
@@ -636,17 +638,17 @@ export default function TimesheetPortal({
               </div>
 
               {/* Paper table log */}
-              <table className="w-full text-left text-[10px] border border-gray-200 uppercase">
+              <table className="w-full text-left text-[10px] border border-gray-200 uppercase print:text-[8.5px]">
                 <thead>
-                  <tr className="bg-slate-100 border-b border-gray-200 font-mono text-[10px] text-slate-600">
-                    <th className="py-2.5 px-3 border-r border-gray-200 whitespace-nowrap">Date</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center">Scheduled</th>
-                    <th className="py-2.5 px-3 border-r border-gray-200 text-center">Clocked In – Out</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center">Break</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-blue-50/50">Std Net</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-rose-50/50">Premium (Sun/PH)</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center">Overtime</th>
-                    <th className="py-2.5 px-3">Log Audit Comments / Notes</th>
+                  <tr className="bg-slate-100 border-b border-gray-200 font-mono text-[10px] text-slate-600 print:text-[8.5px]">
+                    <th className="py-2.5 px-3 border-r border-gray-200 whitespace-nowrap print:py-1">Date</th>
+                    <th className="py-2.5 px-2 border-r border-gray-200 text-center print:py-1">Scheduled</th>
+                    <th className="py-2.5 px-3 border-r border-gray-200 text-center print:py-1">Clocked In – Out</th>
+                    <th className="py-2.5 px-2 border-r border-gray-200 text-center print:py-1">Break</th>
+                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-blue-50/50 print:py-1">Regular Hours</th>
+                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-rose-50/50 print:py-1">Premium (Sun/PH)</th>
+                    <th className="py-2.5 px-2 border-r border-gray-200 text-center print:py-1">Overtime</th>
+                    <th className="py-2.5 px-3 print:py-1">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-250 font-mono">
@@ -655,30 +657,30 @@ export default function TimesheetPortal({
                     if (!d) return null;
                     return (
                       <tr key={dateStr} className="hover:bg-slate-50 border-b border-gray-200">
-                        <td className="py-2 px-3 border-r border-gray-200 font-bold font-sans">
+                        <td className="py-2 px-3 border-r border-gray-200 font-bold font-sans print:py-0.5">
                           {new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })} ({new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' }).substring(0,2)})
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center font-bold">
+                        <td className="py-2 px-2 border-r border-gray-200 text-center font-bold print:py-0.5">
                           {d.scheduledShift}
                         </td>
-                        <td className="py-2 px-3 border-r border-gray-200 text-center font-bold font-sans">
+                        <td className="py-2 px-3 border-r border-gray-200 text-center font-bold font-sans print:py-0.5">
                           {d.clockIn ? `${d.clockIn} – ${d.clockOut}` : 'ABSENT / OFF'}
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center">
+                        <td className="py-2 px-2 border-r border-gray-200 text-center print:py-0.5">
                           {d.clockIn && d.lunchBreakMinutes > 0 ? `${d.lunchBreakMinutes}m` : '-'}
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-blue-50/20 font-sans font-bold text-slate-900">
+                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-blue-50/20 font-sans font-bold text-slate-900 print:py-0.5">
                           {d.regularWorkedHours > 0 ? `${d.regularWorkedHours}h` : '-'}
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-rose-50/20 font-sans font-bold text-[#7A1230]">
+                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-rose-50/20 font-sans font-bold text-[#7A1230] print:py-0.5">
                           {/* A day is never both Sunday-worked and a public holiday, so
                               one column can safely show whichever premium rate applies. */}
                           {d.holidayWorkedHours > 0 ? `${d.holidayWorkedHours}h (PH 2x)` : d.sundayWorkedHours > 0 ? `${d.sundayWorkedHours}h (Sun 1.5x)` : '-'}
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center font-sans font-bold">
+                        <td className="py-2 px-2 border-r border-gray-200 text-center font-sans font-bold print:py-0.5">
                           {d.overtimeHours > 0 ? `${d.overtimeHours}h` : '-'}
                         </td>
-                        <td className="py-2 px-3 text-slate-500 max-w-xs truncate normal-case font-sans italic text-[11px]">
+                        <td className="py-2 px-3 text-slate-500 max-w-xs truncate normal-case font-sans italic text-[11px] print:py-0.5 print:text-[8.5px]">
                           {d.workType === 'Leave Taken' ? `${d.actualShift} Leave Authorized` : d.deviationReason || '-'}
                         </td>
                       </tr>
@@ -687,43 +689,45 @@ export default function TimesheetPortal({
 
                   {/* Summary row */}
                   <tr className="bg-slate-100 font-sans font-extrabold border-t-2 border-gray-400 text-xs text-slate-800 select-all">
-                    <td colSpan={4} className="py-3 px-3 text-right uppercase font-mono tracking-wider">Payroll totals:</td>
-                    <td className="py-3 px-2 text-center bg-blue-100/70 text-slate-900">{totals.regular} h</td>
-                    <td className="py-3 px-2 text-center bg-rose-100/70 text-[#7A1230] text-[10px]">
+                    <td colSpan={4} className="py-3 px-3 text-right uppercase font-mono tracking-wider print:py-1">Payroll totals:</td>
+                    <td className="py-3 px-2 text-center bg-blue-100/70 text-slate-900 print:py-1">{totals.regular} h</td>
+                    <td className="py-3 px-2 text-center bg-rose-100/70 text-[#7A1230] text-[10px] print:py-1">
                       {/* Unlike the per-day cells, a full cycle can include both
-                          Sunday and holiday work, so the total shows both parts. */}
-                      Sun {totals.sunday}h · PH {totals.holiday}h
+                          Sunday and holiday work, so the total shows both parts —
+                          but only when nonzero, since "0h" in this bold print font
+                          can be misread as the letter combination "0H". */}
+                      {totals.sunday === 0 && totals.holiday === 0
+                        ? '-'
+                        : [totals.sunday > 0 ? `Sun ${totals.sunday}h` : null, totals.holiday > 0 ? `PH ${totals.holiday}h` : null].filter(Boolean).join(' · ')}
                     </td>
-                    <td className="py-3 px-2 text-center bg-amber-100/50 text-slate-950">{totals.overtime} h</td>
-                    <td className="py-3 px-3 italic font-semibold text-[#1f3864]">Aggregate worked: {totals.total} net hrs</td>
+                    <td className="py-3 px-2 text-center bg-amber-100/50 text-slate-950 print:py-1">{totals.overtime} h</td>
+                    <td className="py-3 px-3 italic font-semibold text-[#1f3864] print:py-1">Total: {totals.total} hrs</td>
                   </tr>
                 </tbody>
               </table>
 
               {/* Legal confirmation and Sign-offs slots bottom */}
-              <div className="mt-8 pt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs border-t border-dashed border-gray-200 select-none">
-                <div className="flex flex-col gap-6">
+              <div className="mt-4 pt-3 print:mt-2 print:pt-2 border-t border-dashed border-gray-200 select-none">
+                <p className="text-[10px] text-gray-400 italic mb-4 print:mb-2">
+                  Each signature below confirms the worked hours shown are true, accurate, and approved for payroll.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                   <div>
-                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Employee Signature</span>
-                    <div className="border-b border-gray-300 w-44 mt-6"></div>
-                    <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date Signed: ____/____/2026</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Staff Signature</span>
+                    <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
+                    <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date: ____ / ____ / ____</span>
                   </div>
-                  <p className="text-[11px] text-gray-400 capitalize hover:underline italic">I certify that the above worked clock-hours are true, accurate, and correct.</p>
-                </div>
 
-                <div className="flex flex-col gap-6">
                   <div>
-                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Supervisor Authorization</span>
-                    <div className="border-b border-gray-300 w-44 mt-6"></div>
-                    <span className="text-[10px] text-gray-400 font-mono italic mt-1.5 inline-block">{activeFacility?.leadManager ? `Authorized by: ${activeFacility.leadManager}` : ''}</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Team Leader / Supervisor</span>
+                    <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
+                    <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date: ____ / ____ / ____</span>
                   </div>
-                  <p className="text-[11px] text-gray-400 lowercase italic">authorized pursuant to company guidelines.</p>
-                </div>
 
-                <div className="border border-slate-200 border-dashed rounded-xl p-4 flex flex-col justify-between h-28 w-44 bg-slate-50 text-center">
-                  <span className="text-[10px] text-slate-400 font-mono uppercase font-bold text-center block">Site Officer Stamp</span>
-                  <div className="border-2 border-slate-100 border-dashed bg-white h-12 w-12 rounded-full mx-auto flex items-center justify-center text-[10px] font-bold text-slate-300">
-                    STAMP
+                  <div>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Manager / {taxonomy.workspaceSingular} Manager</span>
+                    <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
+                    <span className="text-[10px] text-gray-400 font-mono italic mt-1.5 inline-block">{activeFacility?.leadManager || ''}</span>
                   </div>
                 </div>
               </div>

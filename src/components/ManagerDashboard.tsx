@@ -332,7 +332,7 @@ export default function ManagerDashboard({
                 <div>
                   <span className="text-[9px] text-[#005c93] font-black tracking-wider block">Reviewing:</span>
                   <h3 className="text-slate-900 font-black text-base mt-0.5">{currentInspectStaff.fullName}</h3>
-                  <p className="text-[10.5px] text-slate-500 font-medium font-sans">Role: {currentInspectStaff.role} · ID: {currentInspectStaff.employeeNo || "EMP-MB01"}</p>
+                  <p className="text-[10.5px] text-slate-500 font-medium font-sans">Role: {currentInspectStaff.role} · ID: {currentInspectStaff.employeeNo || '—'}</p>
                 </div>
                 
                 <span className={`px-2.5 py-1 rounded-full text-[9px] font-black font-mono border ${
@@ -351,16 +351,16 @@ export default function ManagerDashboard({
                   <div className="text-slate-800 font-extrabold text-base mt-0.5">{currentInspectStaff.contractedHours} hrs</div>
                 </div>
                 <div className="p-4 border-r border-gray-100 text-center bg-blue-50/20">
-                  <span className="text-[8.5px] text-slate-400 font-bold">Regular worked</span>
+                  <span className="text-[8.5px] text-slate-400 font-bold">Regular Hours</span>
                   <div className="text-blue-900 font-extrabold text-base mt-0.5">{inspectTotals.regular} hrs</div>
                 </div>
                 <div className="p-4 border-r border-gray-100 text-center bg-sky-50/20">
-                  <span className="text-[8.5px] text-slate-400 font-bold">Sunday (1.5x)</span>
-                  <div className="text-[#005c93] font-extrabold text-base mt-0.5">{inspectTotals.sunday} hrs</div>
+                  <span className="text-[8.5px] text-slate-400 font-bold">Premium (Sun/PH)</span>
+                  <div className="text-[#005c93] font-extrabold text-base mt-0.5">{inspectTotals.sunday + inspectTotals.holiday} hrs</div>
                 </div>
                 <div className="p-4 text-center bg-amber-50/20">
-                  <span className="text-[8.5px] text-slate-400 font-bold">OT & holiday</span>
-                  <div className="text-amber-600 font-extrabold text-base mt-0.5">+{inspectTotals.overtime + inspectTotals.holiday} hrs</div>
+                  <span className="text-[8.5px] text-slate-400 font-bold">Overtime</span>
+                  <div className="text-amber-600 font-extrabold text-base mt-0.5">+{inspectTotals.overtime} hrs</div>
                 </div>
               </div>
 
@@ -392,7 +392,7 @@ export default function ManagerDashboard({
                       let alertTagSelect = null;
                       if (plannedShiftCode === 'OFF' && hasClocks) {
                         alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-100 font-bold">Worked on a day off</span>;
-                      } else if (plannedShiftCode !== 'OFF' && ['AL','SL','CO','MD','TRN','OS'].indexOf(plannedShiftCode) === -1 && !hasClocks && day.workType === 'Absent') {
+                      } else if (plannedShiftCode !== 'OFF' && !plannedDef?.isLeave && !hasClocks && day.workType === 'Absent') {
                         alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200 font-black">Absent</span>;
                       } else if (day.overtimeHours > 0) {
                         alertTagSelect = <span className="text-[8.5px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-150 font-bold">+{day.overtimeHours}h extra</span>;
