@@ -33,6 +33,95 @@ export function calculateElapsedHours(clockIn: string, clockOut: string, lunchBr
   return Number((netMins / 60).toFixed(2));
 }
 
+// Builds a single day's default (un-edited) timesheet entry purely from the
+// roster's scheduled shift code — the one place that turns "what the roster
+// says" into "what the timesheet shows" for a day nobody has touched yet.
+// Shared by generateDefaultTimesheet (new timesheets) and
+// reconcileTimesheetWithRoster (keeping existing ones in sync with later
+// roster edits), so the two can never drift into different logic.
+function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: PublicHoliday[]): TimesheetDay {
+  const shiftDef = SHIFTS[scheduledCode];
+
+  let actualShift = scheduledCode;
+  let clockIn = '';
+  let clockOut = '';
+  let lunchBreakMinutes = 0;
+  let workType: TimesheetDay['workType'] = 'Absent';
+
+  let regularWorkedHours = 0;
+  let sundayWorkedHours = 0;
+  let overtimeHours = 0;
+  let holidayWorkedHours = 0;
+  let leaveHours = 0;
+
+  // Determine defaults based on scheduled shift
+  if (shiftDef && shiftDef.hours > 0) {
+    workType = 'Worked Shift';
+    lunchBreakMinutes = scheduledCode === 'N' ? 0 : 60; // night shift usually is 12h net directly, others get 1hr lunch
+
+    // Seed realistic clock times
+    if (scheduledCode === 'A' || scheduledCode === 'A+') {
+      clockIn = '07:00';
+      clockOut = scheduledCode === 'A' ? '16:00' : '17:00';
+    } else if (scheduledCode === 'B') {
+      clockIn = '10:00';
+      clockOut = '18:00';
+    } else if (scheduledCode === 'C') {
+      clockIn = '11:00';
+      clockOut = '19:00';
+    } else if (scheduledCode === 'D') {
+      clockIn = '15:00';
+      clockOut = '23:00';
+    } else if (scheduledCode === 'E') {
+      clockIn = '08:00';
+      clockOut = '19:00';
+    } else if (scheduledCode === 'SC') {
+      clockIn = '18:00';
+      clockOut = '08:00'; // next day
+    } else if (scheduledCode === 'N') {
+      clockIn = '19:00';
+      clockOut = '07:00'; // next day
+    } else {
+      // Fallback standard work day
+      clockIn = '08:00';
+      clockOut = '17:00';
+    }
+
+    const elapsed = calculateElapsedHours(clockIn, clockOut, lunchBreakMinutes);
+    const isSun = new Date(dateStr).getDay() === 0;
+    const isPH = isPublicHoliday(dateStr, holidays);
+
+    if (isPH) {
+      holidayWorkedHours = elapsed;
+    } else if (isSun) {
+      sundayWorkedHours = elapsed;
+    } else {
+      regularWorkedHours = elapsed;
+    }
+  } else if (['AL', 'SL', 'CO', 'MD', 'TRN', 'OS'].includes(scheduledCode)) {
+    workType = 'Leave Taken';
+    leaveHours = 8; // standard credited hours for statistics
+  } else {
+    // Day off
+    workType = 'Absent'; // defaults to rest, i.e. not worked
+  }
+
+  return {
+    date: dateStr,
+    scheduledShift: scheduledCode,
+    actualShift,
+    clockIn,
+    clockOut,
+    lunchBreakMinutes,
+    workType,
+    regularWorkedHours,
+    sundayWorkedHours,
+    overtimeHours,
+    holidayWorkedHours,
+    leaveHours
+  };
+}
+
 // Initialize a blank/default timesheet for a staff member based on their scheduled shifts in the cycle
 export function generateDefaultTimesheet(
   staff: StaffMember,
@@ -41,91 +130,12 @@ export function generateDefaultTimesheet(
   holidays: PublicHoliday[]
 ): Timesheet {
   const days: { [dateStr: string]: TimesheetDay } = {};
-  
+
   dates.forEach((dateStr, idx) => {
     const scheduledCode = cycle.shifts[staff.id]?.[idx] || 'OFF';
-    const shiftDef = SHIFTS[scheduledCode];
-    
-    let actualShift = scheduledCode;
-    let clockIn = '';
-    let clockOut = '';
-    let lunchBreakMinutes = 0;
-    let workType: TimesheetDay['workType'] = 'Absent';
-    
-    let regularWorkedHours = 0;
-    let sundayWorkedHours = 0;
-    let overtimeHours = 0;
-    let holidayWorkedHours = 0;
-    let leaveHours = 0;
-    
-    // Determine defaults based on scheduled shift
-    if (shiftDef && shiftDef.hours > 0) {
-      workType = 'Worked Shift';
-      lunchBreakMinutes = scheduledCode === 'N' ? 0 : 60; // night shift usually is 12h net directly, others get 1hr lunch
-      
-      // Seed realistic clock times
-      if (scheduledCode === 'A' || scheduledCode === 'A+') {
-        clockIn = '07:00';
-        clockOut = scheduledCode === 'A' ? '16:00' : '17:00';
-      } else if (scheduledCode === 'B') {
-        clockIn = '10:00';
-        clockOut = '18:00';
-      } else if (scheduledCode === 'C') {
-        clockIn = '11:00';
-        clockOut = '19:00';
-      } else if (scheduledCode === 'D') {
-        clockIn = '15:00';
-        clockOut = '23:00';
-      } else if (scheduledCode === 'E') {
-        clockIn = '08:00';
-        clockOut = '19:00';
-      } else if (scheduledCode === 'SC') {
-        clockIn = '18:00';
-        clockOut = '08:00'; // next day
-      } else if (scheduledCode === 'N') {
-        clockIn = '19:00';
-        clockOut = '07:00'; // next day
-      } else {
-        // Fallback standard work day
-        clockIn = '08:00';
-        clockOut = '17:00';
-      }
-      
-      const elapsed = calculateElapsedHours(clockIn, clockOut, lunchBreakMinutes);
-      const isSun = new Date(dateStr).getDay() === 0;
-      const isPH = isPublicHoliday(dateStr, holidays);
-      
-      if (isPH) {
-        holidayWorkedHours = elapsed;
-      } else if (isSun) {
-        sundayWorkedHours = elapsed;
-      } else {
-        regularWorkedHours = elapsed;
-      }
-    } else if (['AL', 'SL', 'CO', 'MD', 'TRN', 'OS'].includes(scheduledCode)) {
-      workType = 'Leave Taken';
-      leaveHours = 8; // standard credited hours for statistics
-    } else {
-      // Day off
-      workType = 'Absent'; // defaults to rest, i.e. not worked
-    }
-    
-    days[dateStr] = {
-      date: dateStr,
-      scheduledShift: scheduledCode,
-      actualShift,
-      clockIn,
-      clockOut,
-      lunchBreakMinutes,
-      workType,
-      regularWorkedHours,
-      sundayWorkedHours,
-      overtimeHours,
-      holidayWorkedHours,
-      leaveHours
-    };
+    days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays);
   });
-  
+
   return {
     id: `ts-${staff.id}-${cycle.id}`,
     staffId: staff.id,
@@ -134,6 +144,43 @@ export function generateDefaultTimesheet(
     days,
     status: 'Draft'
   };
+}
+
+// Keeps an existing timesheet's scheduled shifts in sync with later roster
+// edits. The roster grid is the single source of truth for "what is this
+// person scheduled to work" — a timesheet generated before a manager
+// finishes drafting the roster would otherwise be frozen showing the old
+// (often all-OFF) schedule forever, since nothing else ever re-reads the
+// roster after the timesheet's first creation.
+//
+// Days the staff member has actually logged (`isModified`) are left alone —
+// a real clock-in/out is a fact about what happened, not something a later
+// roster edit should silently overwrite. Submitted/Approved timesheets are
+// also a frozen record and should never be touched here; callers should
+// only reconcile timesheets with status === 'Draft'.
+export function reconcileTimesheetWithRoster(
+  ts: Timesheet,
+  cycle: RosterCycle,
+  staffId: string,
+  dates: string[],
+  holidays: PublicHoliday[]
+): { timesheet: Timesheet; changed: boolean } {
+  let changed = false;
+  const days = { ...ts.days };
+
+  dates.forEach((dateStr, idx) => {
+    const scheduledCode = cycle.shifts[staffId]?.[idx] || 'OFF';
+    const existing = days[dateStr];
+
+    if (existing?.isModified) return; // a real logged entry — never overwrite
+
+    if (!existing || existing.scheduledShift !== scheduledCode) {
+      days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays);
+      changed = true;
+    }
+  });
+
+  return { timesheet: changed ? { ...ts, days } : ts, changed };
 }
 
 // Recalculates all hours for a single timesheet day based on modern clock values and status

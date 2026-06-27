@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateElapsedHours, formatMinutesToTime, parseTimeToMinutes, reevaluateTimesheetDay, sumTimesheetTotals } from './timesheetUtils';
-import { Timesheet, TimesheetDay } from '../types';
+import { calculateElapsedHours, formatMinutesToTime, parseTimeToMinutes, reevaluateTimesheetDay, sumTimesheetTotals, reconcileTimesheetWithRoster } from './timesheetUtils';
+import { Timesheet, TimesheetDay, RosterCycle } from '../types';
 
 const baseDay = (overrides: Partial<TimesheetDay> = {}): TimesheetDay => ({
   date: '2026-06-16', // a Tuesday, not a Sunday
@@ -124,3 +124,77 @@ describe('sumTimesheetTotals', () => {
     expect(totals.activeWorkedDaysCount).toBe(0);
   });
 });
+
+describe('reconcileTimesheetWithRoster', () => {
+  const cycle: RosterCycle = {
+    id: 'c1',
+    startDate: '2026-06-15',
+    endDate: '2026-06-16',
+    shifts: { 's1': ['A', 'OFF'] },
+  };
+  const dates = ['2026-06-15', '2026-06-16'];
+
+  it('picks up a roster shift that was edited after the timesheet was first generated', () => {
+    // Simulates the bug report: timesheet generated while the roster still
+    // said OFF, then the manager assigned a real shift afterward.
+    const stale: Timesheet = {
+      id: 'ts1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft',
+      days: {
+        '2026-06-15': baseDay({ date: '2026-06-15', scheduledShift: 'OFF', actualShift: 'OFF', clockIn: '', clockOut: '', workType: 'Absent' }),
+        '2026-06-16': baseDay({ date: '2026-06-16', scheduledShift: 'OFF', actualShift: 'OFF', clockIn: '', clockOut: '', workType: 'Absent' }),
+      },
+    };
+
+    const { timesheet, changed } = reconcileTimesheetWithRoster(stale, cycle, 's1', dates, []);
+    expect(changed).toBe(true);
+    expect(timesheet.days['2026-06-15'].scheduledShift).toBe('A');
+    expect(timesheet.days['2026-06-15'].workType).toBe('Worked Shift');
+    expect(timesheet.days['2026-06-16'].scheduledShift).toBe('OFF'); // unchanged, still genuinely off
+  });
+
+  it('never overwrites a day the staff member has actually logged', () => {
+    const withRealEntry: Timesheet = {
+      id: 'ts1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft',
+      days: {
+        '2026-06-15': baseDay({ date: '2026-06-15', scheduledShift: 'OFF', clockIn: '09:00', clockOut: '18:00', isModified: true }),
+        // Stale 'A' for a day the roster now says is OFF — unmodified, so should reconcile.
+        '2026-06-16': baseDay({ date: '2026-06-16', scheduledShift: 'A', actualShift: 'A', clockIn: '07:00', clockOut: '16:00', workType: 'Worked Shift' }),
+      },
+    };
+
+    const { timesheet, changed } = reconcileTimesheetWithRoster(withRealEntry, cycle, 's1', dates, []);
+    // Day 1 was modified by the staff member — left untouched even though
+    // the roster now says 'A', not 'OFF'.
+    expect(timesheet.days['2026-06-15'].scheduledShift).toBe('OFF');
+    expect(timesheet.days['2026-06-15'].clockIn).toBe('09:00');
+    // Day 2 still reconciles normally since it wasn't modified.
+    expect(timesheet.days['2026-06-16'].scheduledShift).toBe('OFF');
+    expect(changed).toBe(true);
+  });
+
+  it('reports unchanged when the roster already matches', () => {
+    const inSync: Timesheet = {
+      id: 'ts1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft',
+      days: {
+        '2026-06-15': buildExpectedDay('2026-06-15', 'A'),
+        '2026-06-16': buildExpectedDay('2026-06-16', 'OFF'),
+      },
+    };
+    const { changed } = reconcileTimesheetWithRoster(inSync, cycle, 's1', dates, []);
+    expect(changed).toBe(false);
+  });
+});
+
+// Mirrors what buildScheduledDay would produce, for the "already in sync" test above.
+function buildExpectedDay(date: string, scheduledShift: string): TimesheetDay {
+  return baseDay({
+    date,
+    scheduledShift,
+    actualShift: scheduledShift,
+    clockIn: scheduledShift === 'A' ? '07:00' : '',
+    clockOut: scheduledShift === 'A' ? '16:00' : '',
+    lunchBreakMinutes: scheduledShift === 'A' ? 60 : 0,
+    workType: scheduledShift === 'A' ? 'Worked Shift' : 'Absent',
+    regularWorkedHours: scheduledShift === 'A' ? 8 : 0,
+  });
+}

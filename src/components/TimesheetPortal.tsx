@@ -566,11 +566,24 @@ export default function TimesheetPortal({
 
       {/* Official Zambian Timesheet paperwork printing overlay */}
       {showPrintView && (
-        <div className="fixed inset-0 bg-slate-900/85 backdrop-blur-md flex items-start justify-center p-4 z-[100] overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl relative my-auto">
-            
-            {/* Action buttons on printing screen */}
-            <div className="flex justify-between items-center pb-4 mb-4 border-b border-gray-100 select-none">
+        <div className="fixed inset-0 bg-slate-900/85 backdrop-blur-md flex items-start justify-center p-4 z-[100] overflow-y-auto print:bg-white print:p-0 print:static print:block">
+          {/* Printing only the dedicated #timesheetPrintable layout below —
+              the live page (nav, modal backdrop, action buttons) never goes
+              to paper, and the table gets its own landscape page sized to
+              fit one sheet instead of however the on-screen scroll container
+              happened to clip it. */}
+          <style>{`
+            @media print {
+              @page { size: A4 landscape; margin: 10mm; }
+              body * { visibility: hidden; }
+              #timesheetPrintable, #timesheetPrintable * { visibility: visible; }
+              #timesheetPrintable { position: absolute; top: 0; left: 0; width: 100%; }
+            }
+          `}</style>
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl relative my-auto print:shadow-none print:rounded-none print:max-w-none print:p-0 print:my-0">
+
+            {/* Action buttons on printing screen — never printed */}
+            <div className="flex justify-between items-center pb-4 mb-4 border-b border-gray-100 select-none print:hidden">
               <span className="text-xs text-slate-500 font-mono font-bold uppercase">Official Payroll Stamp Template</span>
               <div className="flex gap-2">
                 <button
@@ -589,7 +602,7 @@ export default function TimesheetPortal({
             </div>
 
             {/* Official Report Container */}
-            <div id="timesheetPrintable" className="p-8 border border-gray-200 rounded-2xl bg-white font-sans max-h-[75vh] overflow-y-auto print:p-0 print:border-none print:shadow-none">
+            <div id="timesheetPrintable" className="p-8 border border-gray-200 rounded-2xl bg-white font-sans max-h-[75vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none">
               
               {/* Report Header Logo Section */}
               <div className="border-b-2 border-[#1f3864] pb-5 mb-5 text-center">
@@ -606,7 +619,7 @@ export default function TimesheetPortal({
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-400 font-mono font-bold uppercase block">Employee Number</span>
-                  <span className="font-mono font-bold text-slate-800">{activeStaff.employeeNo || 'EMP-749'}</span>
+                  <span className="font-mono font-bold text-slate-800">{activeStaff.employeeNo || '—'}</span>
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-400 font-mono font-bold uppercase block">{taxonomy.memberSingular} Role</span>
@@ -614,7 +627,11 @@ export default function TimesheetPortal({
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-400 font-mono font-bold uppercase block">Roster Cycle Period</span>
-                  <span className="font-mono font-semibold text-slate-600">June 15 – July 14, 2026</span>
+                  <span className="font-mono font-semibold text-slate-600">
+                    {cycleDates.length > 0
+                      ? `${new Date(cycleDates[0] + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} – ${new Date(cycleDates[cycleDates.length - 1] + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                      : '—'}
+                  </span>
                 </div>
               </div>
 
@@ -627,9 +644,8 @@ export default function TimesheetPortal({
                     <th className="py-2.5 px-3 border-r border-gray-200 text-center">Clocked In – Out</th>
                     <th className="py-2.5 px-2 border-r border-gray-200 text-center">Break</th>
                     <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-blue-50/50">Std Net</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-rose-50/50">Sunday</th>
+                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-rose-50/50">Premium (Sun/PH)</th>
                     <th className="py-2.5 px-2 border-r border-gray-200 text-center">Overtime</th>
-                    <th className="py-2.5 px-2 border-r border-gray-200 text-center bg-teal-50/50">Holiday</th>
                     <th className="py-2.5 px-3">Log Audit Comments / Notes</th>
                   </tr>
                 </thead>
@@ -655,13 +671,12 @@ export default function TimesheetPortal({
                           {d.regularWorkedHours > 0 ? `${d.regularWorkedHours}h` : '-'}
                         </td>
                         <td className="py-2 px-2 border-r border-gray-200 text-center bg-rose-50/20 font-sans font-bold text-[#7A1230]">
-                          {d.sundayWorkedHours > 0 ? `${d.sundayWorkedHours}h` : '-'}
+                          {/* A day is never both Sunday-worked and a public holiday, so
+                              one column can safely show whichever premium rate applies. */}
+                          {d.holidayWorkedHours > 0 ? `${d.holidayWorkedHours}h (PH 2x)` : d.sundayWorkedHours > 0 ? `${d.sundayWorkedHours}h (Sun 1.5x)` : '-'}
                         </td>
                         <td className="py-2 px-2 border-r border-gray-200 text-center font-sans font-bold">
                           {d.overtimeHours > 0 ? `${d.overtimeHours}h` : '-'}
-                        </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-teal-50/20 font-sans font-extrabold text-teal-800">
-                          {d.holidayWorkedHours > 0 ? `${d.holidayWorkedHours}h` : '-'}
                         </td>
                         <td className="py-2 px-3 text-slate-500 max-w-xs truncate normal-case font-sans italic text-[11px]">
                           {d.workType === 'Leave Taken' ? `${d.actualShift} Leave Authorized` : d.deviationReason || '-'}
@@ -674,9 +689,12 @@ export default function TimesheetPortal({
                   <tr className="bg-slate-100 font-sans font-extrabold border-t-2 border-gray-400 text-xs text-slate-800 select-all">
                     <td colSpan={4} className="py-3 px-3 text-right uppercase font-mono tracking-wider">Payroll totals:</td>
                     <td className="py-3 px-2 text-center bg-blue-100/70 text-slate-900">{totals.regular} h</td>
-                    <td className="py-3 px-2 text-center bg-rose-100/70 text-[#7A1230]">{totals.sunday} h</td>
+                    <td className="py-3 px-2 text-center bg-rose-100/70 text-[#7A1230] text-[10px]">
+                      {/* Unlike the per-day cells, a full cycle can include both
+                          Sunday and holiday work, so the total shows both parts. */}
+                      Sun {totals.sunday}h · PH {totals.holiday}h
+                    </td>
                     <td className="py-3 px-2 text-center bg-amber-100/50 text-slate-950">{totals.overtime} h</td>
-                    <td className="py-3 px-2 text-center bg-teal-100/75 text-teal-900">{totals.holiday} h</td>
                     <td className="py-3 px-3 italic font-semibold text-[#1f3864]">Aggregate worked: {totals.total} net hrs</td>
                   </tr>
                 </tbody>

@@ -26,7 +26,7 @@ import SetupChecklist from './components/SetupChecklist';
 import EmptyState from './components/EmptyState';
 import { useToast } from './components/ui/ToastProvider';
 import { useConfirm } from './components/ui/ConfirmProvider';
-import { generateDefaultTimesheet } from './utils/timesheetUtils';
+import { generateDefaultTimesheet, reconcileTimesheetWithRoster } from './utils/timesheetUtils';
 import { GLOBAL_KEYS, facilityKey, seededFlagKey, setupHiddenKey, welcomedKey, mirrorLegacyFacilityKey } from './utils/storageKeys';
 import firebaseConfig from '../firebase-applet-config.json';
 import Header from './components/Header';
@@ -530,11 +530,26 @@ export default function App() {
       const updatedTimesheets = [...currentTimesheets];
       
       staffList.forEach(staff => {
-        const hasTs = updatedTimesheets.some(t => t.staffId === staff.id && t.cycleId === activeCycle.id);
-        if (!hasTs) {
+        const tsIndex = updatedTimesheets.findIndex(t => t.staffId === staff.id && t.cycleId === activeCycle.id);
+        if (tsIndex === -1) {
           const defaultTs = generateDefaultTimesheet(staff, activeCycle, cycleDates, holidays);
           updatedTimesheets.push(defaultTs);
           timesheetChanged = true;
+          return;
+        }
+
+        // Keep an already-created timesheet's scheduled shifts in sync with
+        // later roster edits — otherwise a shift change made after the
+        // timesheet's first generation would never show up here, and
+        // would look like the roster "lost" it. Submitted/Approved
+        // timesheets are a frozen record and are intentionally left alone.
+        const existing = updatedTimesheets[tsIndex];
+        if (existing.status === 'Draft') {
+          const { timesheet, changed } = reconcileTimesheetWithRoster(existing, activeCycle, staff.id, cycleDates, holidays);
+          if (changed) {
+            updatedTimesheets[tsIndex] = timesheet;
+            timesheetChanged = true;
+          }
         }
       });
       
