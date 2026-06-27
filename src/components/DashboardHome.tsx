@@ -36,6 +36,7 @@ interface DashboardHomeProps {
   cycleDates: string[];
   dailyTasks: DailyTask[];
   onNavigate: (tab: string) => void;
+  onFocusStaff?: (staffName: string) => void;
   onIncrementTracker: (taskId: string, amount: number) => void;
   onUpdateTask: (taskId: string, status: DailyTask['status'], counterSign?: string) => void;
   selectedFacilityId: string;
@@ -64,6 +65,7 @@ export default function DashboardHome({
   cycleDates,
   dailyTasks,
   onNavigate,
+  onFocusStaff,
   onIncrementTracker,
   onUpdateTask,
   selectedFacilityId,
@@ -380,20 +382,22 @@ export default function DashboardHome({
 
           {workloadByPerson.length > 0 && (
             <div className="mt-4 pt-3 border-t border-slate-100">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Who's busy today</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Who's busy today · tap a name to see their tasks</p>
               <div className="flex flex-wrap gap-1.5">
                 {workloadByPerson.map(({ name, count }) => {
                   const isHeavy = count >= HEAVY_WORKLOAD_THRESHOLD;
                   return (
-                    <span
+                    <button
                       key={name}
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                        isHeavy ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-50 text-slate-600 border-slate-200'
+                      type="button"
+                      onClick={() => onFocusStaff?.(name)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                        isHeavy ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                       }`}
-                      title={isHeavy ? `${name} has more open tasks than most of the team today` : undefined}
+                      title={isHeavy ? `${name} has more open tasks than most of the team today — click to view their tasks` : `View ${name}'s tasks`}
                     >
                       {isHeavy && '⚠ '}{name} · {count}
-                    </span>
+                    </button>
                   );
                 })}
               </div>

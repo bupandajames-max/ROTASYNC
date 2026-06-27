@@ -817,6 +817,14 @@ export default function App() {
     }
   };
 
+  // When a manager clicks a person in the dashboard's workload summary,
+  // jump to the Task Board pre-filtered to that person's tasks.
+  const [taskBoardFocusStaff, setTaskBoardFocusStaff] = useState<string | null>(null);
+  const handleFocusStaffInTasks = (staffName: string) => {
+    setTaskBoardFocusStaff(staffName);
+    handleNavigation('tasks');
+  };
+
   // Generate Daily chores for a specific selected date
   // Switch tabs cleanly and auto-populate today's board if needed
   const handleNavigation = (tabId: string) => {
@@ -1619,6 +1627,7 @@ export default function App() {
                   holidays={holidays}
                   ruleSet={ruleSet}
                   taxonomy={taxonomy}
+                  onFocusStaff={handleFocusStaffInTasks}
                 />
               ) : (!isManagerView && (
                 <EmptyState
@@ -1682,13 +1691,6 @@ export default function App() {
           {/* Daily tasks checklists board */}
           {currentTab === 'tasks' && activeCycle && (
             <div className="flex flex-col gap-6">
-              <div className="flex justify-between items-center bg-white py-3 px-5 border border-slate-100 rounded-xl">
-                <span className="text-xs text-gray-500 font-bold uppercase select-none">My tasks</span>
-                <span className="text-xs bg-[#f3ebd3]/40 text-[#c55a11] border border-[#cbdff0] px-3 py-1 rounded-full font-bold">
-                  🔐 Your space
-                </span>
-              </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 align-start">
                 <div className="lg:col-span-2">
                   <TaskBoard
@@ -1700,6 +1702,8 @@ export default function App() {
                     activeStaffId={activeStaffId}
                     taxonomy={taxonomy}
                     taskCategories={taskCategories}
+                    focusStaffName={taskBoardFocusStaff}
+                    onFocusConsumed={() => setTaskBoardFocusStaff(null)}
                   />
                 </div>
 

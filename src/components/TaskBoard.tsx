@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DailyTask, StaffMember, TaskFieldDef } from '../types';
 import { 
   Clipboard, 
@@ -53,6 +53,8 @@ interface TaskBoardProps {
     taskPlural: string;
   };
   taskCategories?: string[];
+  focusStaffName?: string | null;
+  onFocusConsumed?: () => void;
 }
 
 export default function TaskBoard({
@@ -64,6 +66,8 @@ export default function TaskBoard({
   activeStaffId,
   taxonomy,
   taskCategories = [],
+  focusStaffName,
+  onFocusConsumed,
 }: TaskBoardProps) {
   const toast = useToast();
   const [dateScope, setDateScope] = useState<'today' | 'all'>('today');
@@ -157,6 +161,17 @@ export default function TaskBoard({
   // categories, not a fixed list, so it works for any kind of business.
   const [activeCategoryTab, setActiveCategoryTab] = useState<string>('ALL');
 
+  // Drill-down from the dashboard's workload summary: shows just one
+  // person's tasks regardless of the urgency tab, until cleared.
+  const [focusPersonName, setFocusPersonName] = useState<string | null>(null);
+  useEffect(() => {
+    if (focusStaffName) {
+      setFocusPersonName(focusStaffName);
+      onFocusConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusStaffName]);
+
   const activeStaff = staffList.find(s => s.id === activeStaffId);
 
   const getTaskHistory = (task: DailyTask) => {
@@ -200,6 +215,11 @@ export default function TaskBoard({
 
   // Filter tasks based on current tab selection and category tab
   const getFilteredTasks = () => {
+    if (focusPersonName) {
+      return pendingTasks
+        .filter(t => t.staffName === focusPersonName)
+        .filter(t => isTaskInCategory(t, activeCategoryTab));
+    }
     let baseTasks = pendingTasks;
     switch (activeUrgencyTab) {
       case 'MY_TASKS':
@@ -457,8 +477,8 @@ export default function TaskBoard({
         )}
       </AnimatePresence>
 
-      {/* Category Filter Tabs */}
-      <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-3">
+      {/* Filters: area + urgency, grouped in one card */}
+      <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className="text-[10px] text-gray-400 font-extrabold font-mono select-none flex items-center gap-1">
             <Layers className="w-3.5 h-3.5 text-indigo-900" /> Filter by area
@@ -504,17 +524,30 @@ export default function TaskBoard({
             );
           })}
         </div>
-      </div>
 
-      {/* Modern Filter Tabs */}
-      <div className="bg-slate-100 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-200 shadow-inner select-none">
-        
+        {focusPersonName ? (
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+            <span className="text-xs font-bold text-slate-700">
+              👁️ Viewing <strong className="text-indigo-900">{focusPersonName}</strong>'s tasks
+            </span>
+            <button
+              type="button"
+              onClick={() => setFocusPersonName(null)}
+              className="text-[11px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+            >
+              <X className="w-3 h-3" /> Clear, show tabs
+            </button>
+          </div>
+        ) : (
+        <div className="flex flex-col gap-1.5 pt-3 border-t border-slate-100 select-none">
+        <span className="text-[10px] text-slate-400 font-bold">👤 Assigned to Me = just your tasks · the rest = the whole team's</span>
+        <div className="flex flex-wrap gap-1">
         <button
           onClick={() => setActiveUrgencyTab('MY_TASKS')}
           className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
             activeUrgencyTab === 'MY_TASKS'
               ? 'bg-indigo-950 text-white shadow-md'
-              : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           👤 Assigned to Me ({pendingTasks.filter(t => t.staffName === activeStaff?.name && isTaskInCategory(t, activeCategoryTab)).length})
@@ -525,7 +558,7 @@ export default function TaskBoard({
           className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
             activeUrgencyTab === 'CRITICAL'
               ? 'bg-rose-600 text-white shadow-md'
-              : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           🚨 Urgent Audits ({pendingTasks.filter(t => (t.priority === 'Critical' || t.priority === 'High') && isTaskInCategory(t, activeCategoryTab)).length})
@@ -536,7 +569,7 @@ export default function TaskBoard({
           className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
             activeUrgencyTab === 'STANDARD'
               ? 'bg-amber-500 text-slate-950 shadow-md'
-              : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           ⚡ Standard Duty ({pendingTasks.filter(t => t.priority === 'Standard' && isTaskInCategory(t, activeCategoryTab)).length})
@@ -547,11 +580,14 @@ export default function TaskBoard({
           className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
             activeUrgencyTab === 'ROUTINE'
               ? 'bg-slate-800 text-white shadow-md'
-              : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           ⚙️ Routine Actions ({pendingTasks.filter(t => t.priority === 'Routine' && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
+        </div>
+        </div>
+        )}
       </div>
 
       {/* Main Task List */}
