@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TaskMaster, StaffMember, DailyTask, TaskFieldDef, ShiftDef, patternLabel } from '../types';
-import { SHIFTS } from '../data/initialData';
+import { SHIFTS, WEEKDAY_NAMES } from '../data/initialData';
 
 type CategorySuggestion = {
   name: string;
@@ -53,6 +53,21 @@ export default function TaskRegister({
   const [mgrNames, setMgrNames] = useState<string[]>([]); // specific people for Manager-assign / Collab
   const [priority, setPriority] = useState<TaskMaster['priority']>('Standard');
   const [freq, setFreq] = useState('Daily');
+  // Frequency is stored as a single descriptive string (e.g. "Weekly (Monday)",
+  // "Monthly (Day 15)") so the picker below derives its sub-controls from it
+  // rather than tracking separate state that could drift out of sync.
+  const weeklyDayMatch = freq.match(/^Weekly \((\w+)\)$/);
+  const monthlyDayMatch = freq.match(/^Monthly \(Day (\d+)\)$/);
+  const freqBase = freq === 'Daily' || freq === 'Monthly (Continuous)' || freq === 'Last day of month'
+    ? freq
+    : weeklyDayMatch ? 'Weekly'
+    : monthlyDayMatch ? 'Monthly'
+    : 'Daily';
+  const handleFreqBaseChange = (base: string) => {
+    if (base === 'Weekly') setFreq(`Weekly (${weeklyDayMatch?.[1] || 'Sunday'})`);
+    else if (base === 'Monthly') setFreq(`Monthly (Day ${monthlyDayMatch?.[1] || '1'})`);
+    else setFreq(base);
+  };
   const [compliance, setCompliance] = useState(false);
   const [notes, setNotes] = useState('');
   const [requiredSkillsInput, setRequiredSkillsInput] = useState('');
@@ -1142,17 +1157,47 @@ export default function TaskRegister({
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Frequency</label>
                   <select
-                    value={freq}
-                    onChange={(e) => setFreq(e.target.value)}
+                    value={freqBase}
+                    onChange={(e) => handleFreqBaseChange(e.target.value)}
                     className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none animate"
                   >
                     <option value="Daily">Daily</option>
-                    <option value="Weekly (Sunday)">Weekly (Sunday)</option>
-                    <option value="Monthly">Monthly</option>
+                    <option value="Weekly">Weekly, on a chosen day</option>
+                    <option value="Monthly">Monthly, on a chosen day</option>
                     <option value="Monthly (Continuous)">Monthly (Continuous)</option>
                     <option value="Last day of month">Last day of month</option>
                   </select>
                 </div>
+
+                {freqBase === 'Weekly' && (
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">Which day</label>
+                    <select
+                      value={weeklyDayMatch?.[1] || 'Sunday'}
+                      onChange={(e) => setFreq(`Weekly (${e.target.value})`)}
+                      className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                    >
+                      {WEEKDAY_NAMES.map(day => <option key={day} value={day}>{day}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {freqBase === 'Monthly' && (
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">Day of the month</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={monthlyDayMatch?.[1] || '1'}
+                      onChange={(e) => {
+                        const day = Math.min(31, Math.max(1, parseInt(e.target.value) || 1));
+                        setFreq(`Monthly (Day ${day})`);
+                      }}
+                      className="w-full text-xs font-semibold bg-[#fafbfc] border border-gray-200 rounded-lg p-2.5 mt-1 outline-none"
+                    />
+                  </div>
+                )}
 
                 {freq.includes('Continuous') && (
                   <div>

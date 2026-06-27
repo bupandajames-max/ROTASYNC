@@ -10,6 +10,11 @@ import {
   WorkspaceConfig,
 } from '../types';
 
+// Index matches Date#getDay() (0 = Sunday). Shared between the task
+// frequency picker (TaskRegister) and the "is this task due today" matcher
+// (App.tsx) so a saved "Weekly (Monday)" string means the same thing in both.
+export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 // ── Shift presets ───────────────────────────────────────────────────────────
 // A genuinely generic, org-neutral starter vocabulary — 4 work shifts + 4
 // universal leave types. Previously shipped 14 codes modeling one specific

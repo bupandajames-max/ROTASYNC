@@ -17,7 +17,7 @@ import {
   RosterRuleSet,
   WorkspaceConfig
 } from './types';
-import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig } from './data/initialData';
+import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig, WEEKDAY_NAMES } from './data/initialData';
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
 import SetupWizard from './components/SetupWizard';
 import ConfirmIdentity from './components/ConfirmIdentity';
@@ -220,10 +220,17 @@ export default function App() {
 
       // Filter daily vs weekly vs monthly
       let isDue = false;
+      const weeklyDayMatch = task.frequency.match(/^Weekly \((\w+)\)$/);
+      const monthlyDayMatch = task.frequency.match(/^Monthly \(Day (\d+)\)$/);
+
       if (task.frequency === 'Daily') isDue = true;
+      else if (task.frequency.includes('Continuous')) isDue = true; // continuous trackers accumulate every day
+      else if (task.frequency.includes('Last day')) isDue = isLastDOM;
+      else if (weeklyDayMatch) isDue = dow === WEEKDAY_NAMES.indexOf(weeklyDayMatch[1]);
+      else if (monthlyDayMatch) isDue = dateObj.getDate() === parseInt(monthlyDayMatch[1], 10);
+      // Legacy fallbacks for tasks saved before per-day frequency existed.
       else if (task.frequency.includes('Sunday') && dow === 0) isDue = true;
-      else if (task.frequency.includes('Last day') && isLastDOM) isDue = true;
-      else if (task.frequency.includes('Monthly') && (isLastDOM || dow === 4)) isDue = true; // simplify mock simulation
+      else if (task.frequency.includes('Monthly') && (isLastDOM || dow === 4)) isDue = true;
 
       if (!isDue) return;
 
