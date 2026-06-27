@@ -1463,6 +1463,32 @@ export default function App() {
       const updatedLog = [...extraHoursLog, newExtra];
       setExtraHoursLog(updatedLog);
       persistState('extra_hours_log', updatedLog);
+
+      // Also reflect the approved hours on the staff member's actual
+      // timesheet day — extraHoursLog alone only fed roster-equity stats
+      // (Analytics/Manager Dashboard), so an approved request never showed
+      // up on the real payroll document. isModified protects it from being
+      // overwritten by the roster-reconciliation pass.
+      const requester = staffList.find(s => s.name === req.requesterName);
+      if (requester && activeCycle) {
+        const dateKey = req.shiftData || cycleDates[0];
+        const ts = timesheets.find(t => t.staffId === requester.id && t.cycleId === activeCycle.id);
+        const day = ts?.days[dateKey];
+        if (ts && day) {
+          const note = `+${hAmt}h approved extra hours${req.details ? `: ${req.details}` : ''}`;
+          const updatedDay: TimesheetDay = {
+            ...day,
+            overtimeHours: Number(((day.overtimeHours || 0) + hAmt).toFixed(2)),
+            isModified: true,
+            deviationReason: day.deviationReason ? `${day.deviationReason}; ${note}` : note,
+          };
+          const updatedTimesheets = timesheets.map(t => t.id === ts.id ? { ...t, days: { ...t.days, [dateKey]: updatedDay } } : t);
+          setTimesheets(updatedTimesheets);
+          if (selectedFacilityId) {
+            localStorage.setItem(facilityKey(selectedFacilityId, 'timesheets_list'), JSON.stringify(updatedTimesheets));
+          }
+        }
+      }
     }
 
     if (req.type === 'MONTHLY') {

@@ -283,8 +283,8 @@ export default function TimesheetPortal({
                 const day = myTimesheet.days[dateStr];
                 if (!day) return null;
 
-                const originalShift = SHIFTS[day.scheduledShift];
-                const actualShift = SHIFTS[day.actualShift];
+                const originalShift = shiftDefs[day.scheduledShift];
+                const actualShift = shiftDefs[day.actualShift];
                 
                 const isPH = isPublicHoliday(dateStr, holidays);
                 const isSun = new Date(dateStr + 'T00:00:00').getDay() === 0;
@@ -312,12 +312,15 @@ export default function TimesheetPortal({
 
                     {/* Scheduled shift */}
                     <td className="py-3.5 px-3">
-                      <span 
+                      <span
                         style={{ backgroundColor: originalShift?.bg, color: originalShift?.fg }}
                         className="font-mono font-bold text-[11px] uppercase px-2 py-1 rounded inline-block border border-black/5"
                       >
                         {day.scheduledShift}
                       </span>
+                      {originalShift?.name && (
+                        <span className="text-[10px] text-slate-400 font-medium ml-1.5">{originalShift.name}</span>
+                      )}
                     </td>
 
                     {/* Work Type classification */}
@@ -407,7 +410,7 @@ export default function TimesheetPortal({
                   <span>✎</span> Log Actual Clock - {new Date(selectedDay.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                 </h3>
                 <p className="text-[10px] text-slate-400 mt-0.5 font-bold font-mono">
-                  Scheduled block: {selectedDay.scheduledShift} ({SHIFTS[selectedDay.scheduledShift]?.name})
+                  Scheduled block: {selectedDay.scheduledShift} ({shiftDefs[selectedDay.scheduledShift]?.name})
                 </p>
               </div>
               <button
@@ -706,6 +709,21 @@ export default function TimesheetPortal({
                 </tbody>
               </table>
 
+              {/* Legend for the single-letter codes used in the Scheduled
+                  column above — only the ones that actually appear in this
+                  cycle, so it stays short regardless of how many shift
+                  types this workspace has defined. */}
+              {(() => {
+                const usedCodes = Array.from(new Set(cycleDates.map(d => myTimesheet.days[d]?.scheduledShift).filter(Boolean)));
+                if (usedCodes.length === 0) return null;
+                return (
+                  <p className="text-[9px] text-slate-400 mt-2 print:mt-1.5 font-sans normal-case">
+                    <strong className="font-bold">Codes:</strong>{' '}
+                    {usedCodes.map(code => `${code} = ${shiftDefs[code]?.name || code}`).join('  ·  ')}
+                  </p>
+                );
+              })()}
+
               {/* Legal confirmation and Sign-offs slots bottom */}
               <div className="mt-4 pt-3 print:mt-2 print:pt-2 border-t border-dashed border-gray-200 select-none">
                 <p className="text-[10px] text-gray-400 italic mb-4 print:mb-2">
@@ -713,19 +731,19 @@ export default function TimesheetPortal({
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                   <div>
-                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Staff Signature</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">{taxonomy.memberSingular} Signature</span>
                     <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
                     <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date: ____ / ____ / ____</span>
                   </div>
 
                   <div>
-                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Team Leader / Supervisor</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">{taxonomy.supervisorTitle || 'Supervisor'}</span>
                     <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
                     <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date: ____ / ____ / ____</span>
                   </div>
 
                   <div>
-                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Manager / {taxonomy.workspaceSingular} Manager</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">{taxonomy.managerTitle || 'Manager'}</span>
                     <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
                     <span className="text-[10px] text-gray-400 font-mono italic mt-1.5 inline-block">{activeFacility?.leadManager || ''}</span>
                   </div>

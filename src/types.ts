@@ -218,6 +218,12 @@ export interface Taxonomy {
   groupPlural: string;
   taskSingular: string;
   taskPlural: string;
+  // Who signs off on a timesheet, between the staff member and the top-level
+  // manager — e.g. "Team Leader / Supervisor" or just "Supervisor".
+  supervisorTitle?: string;
+  // The top-level sign-off title shown on payroll documents — e.g.
+  // "Manager", "Facility Manager", "Site Manager".
+  managerTitle?: string;
 }
 
 /** A single auto-assignment rule, e.g. "assign shift SC to 3 people on the last day of the cycle". */

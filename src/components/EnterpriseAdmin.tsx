@@ -2405,6 +2405,29 @@ export default function EnterpriseAdmin({
 
             <div>
               <label className="text-[10px] font-black text-slate-400 font-mono">
+                Sign-off Titles (Supervisor / Manager)
+              </label>
+              <div className="grid grid-cols-2 gap-2 mt-1.5">
+                <input
+                  type="text"
+                  placeholder="e.g. Team Leader / Supervisor"
+                  value={taxonomy.supervisorTitle || ''}
+                  onChange={(e) => setTaxonomy({ ...taxonomy, supervisorTitle: e.target.value })}
+                  className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 focus:bg-white"
+                />
+                <input
+                  type="text"
+                  placeholder="e.g. Manager, Facility Manager"
+                  value={taxonomy.managerTitle || ''}
+                  onChange={(e) => setTaxonomy({ ...taxonomy, managerTitle: e.target.value })}
+                  className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 focus:bg-white"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1 font-semibold">Who signs a timesheet between the staff member and final approval — shown on the printed payroll document.</p>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 font-mono">
                 Workspace (Singular / Plural)
               </label>
               <div className="grid grid-cols-2 gap-2 mt-1.5">
