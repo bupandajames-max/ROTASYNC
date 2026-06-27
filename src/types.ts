@@ -100,12 +100,13 @@ export interface DailyTask {
   category: string;
   shiftCode: string;
   priority: 'Critical' | 'High' | 'Standard' | 'Routine';
-  status: 'Pending' | 'In Progress' | 'Done' | 'Missed' | 'Carried Fwd' | 'Pending Review';
+  status: 'Pending' | 'In Progress' | 'Done' | 'Blocked' | 'Missed' | 'Carried Fwd' | 'Pending Review';
   compliance: boolean;
   counterSign?: string;
   isTracker?: boolean;
   trackerTarget?: number;
   trackerValue?: number;
+  blockedReason?: string; // why staff marked this task Blocked — cleared on unblock
   
   // Real-world dynamic checklist parameters recorded during execution
   fridgeTemp?: number;

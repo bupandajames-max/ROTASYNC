@@ -825,11 +825,15 @@ export default function App() {
     handleNavigation('tasks');
   };
 
-  // When a manager clicks the dashboard's Overdue stat, jump to the Task
-  // Board with the Overdue tab already selected.
-  const [taskBoardJumpTab, setTaskBoardJumpTab] = useState<'OVERDUE' | null>(null);
+  // When a manager clicks the dashboard's Overdue or Blocked stat, jump to
+  // the Task Board with that tab already selected.
+  const [taskBoardJumpTab, setTaskBoardJumpTab] = useState<'OVERDUE' | 'BLOCKED' | null>(null);
   const handleViewOverdueTasks = () => {
     setTaskBoardJumpTab('OVERDUE');
+    handleNavigation('tasks');
+  };
+  const handleViewBlockedTasks = () => {
+    setTaskBoardJumpTab('BLOCKED');
     handleNavigation('tasks');
   };
 
@@ -1258,6 +1262,12 @@ export default function App() {
         } else if (status === 'Pending Review') {
           actionStr = "Awaiting Final Verification";
           detailsStr = `Progress reached ${t.trackerValue}/${t.trackerTarget}. Submitted for audit review.`;
+        } else if (status === 'Blocked') {
+          actionStr = "Marked as Blocked";
+          detailsStr = metadata?.blockedReason ? `Reason: "${metadata.blockedReason}"` : undefined;
+        } else if (status === 'In Progress' && t.status === 'Blocked') {
+          actionStr = "Unblocked";
+          detailsStr = `Resumed work after blocker was resolved.`;
         } else if (status === 'Pending' && t.status !== 'Pending') {
           actionStr = "Reset to Pending";
           detailsStr = `Task re-opened and reset to pending operations.`;
@@ -1637,6 +1647,7 @@ export default function App() {
                   taxonomy={taxonomy}
                   onFocusStaff={handleFocusStaffInTasks}
                   onViewOverdue={handleViewOverdueTasks}
+                  onViewBlocked={handleViewBlockedTasks}
                 />
               ) : (!isManagerView && (
                 <EmptyState

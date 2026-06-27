@@ -38,6 +38,7 @@ interface DashboardHomeProps {
   onNavigate: (tab: string) => void;
   onFocusStaff?: (staffName: string) => void;
   onViewOverdue?: () => void;
+  onViewBlocked?: () => void;
   onIncrementTracker: (taskId: string, amount: number) => void;
   onUpdateTask: (taskId: string, status: DailyTask['status'], counterSign?: string) => void;
   selectedFacilityId: string;
@@ -68,6 +69,7 @@ export default function DashboardHome({
   onNavigate,
   onFocusStaff,
   onViewOverdue,
+  onViewBlocked,
   onIncrementTracker,
   onUpdateTask,
   selectedFacilityId,
@@ -170,8 +172,10 @@ export default function DashboardHome({
   const todaysTeamTasks = dailyTasks.filter(t => t.date === todayStr);
   const pendingCount = todaysTeamTasks.filter(t => t.status === 'Pending').length;
   const inProgressCount = todaysTeamTasks.filter(t => t.status === 'In Progress').length;
-  const reviewCount = todaysTeamTasks.filter(t => t.status === 'Pending Review').length;
   const overdueCount = dailyTasks.filter(t => t.date < todayStr && t.status !== 'Done').length;
+  // Blocked is a "needs attention" signal like overdue, so it isn't limited
+  // to today — a blocker from yesterday still needs a manager's eyes.
+  const blockedCount = dailyTasks.filter(t => t.status === 'Blocked').length;
 
   // Workload by person — how many open tasks each person has today, so a
   // manager can spot who's overloaded at a glance instead of reading every
@@ -372,13 +376,28 @@ export default function DashboardHome({
             {[
               { label: 'Pending', value: pendingCount, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
               { label: 'In progress', value: inProgressCount, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100' },
-              { label: 'Awaiting sign-off', value: reviewCount, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' },
             ].map(stat => (
               <div key={stat.label} className={`border rounded-2xl p-4 ${stat.bg}`}>
                 <div className={`text-3xl font-black font-mono ${stat.color}`}>{stat.value}</div>
                 <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">{stat.label}</div>
               </div>
             ))}
+            {onViewBlocked && blockedCount > 0 ? (
+              <button
+                type="button"
+                onClick={onViewBlocked}
+                className="border rounded-2xl p-4 text-left bg-amber-50 border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+                title="Open the Task Board's Blocked tab"
+              >
+                <div className="text-3xl font-black font-mono text-amber-700">{blockedCount}</div>
+                <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">Blocked · view →</div>
+              </button>
+            ) : (
+              <div className="border rounded-2xl p-4 bg-amber-50 border-amber-200">
+                <div className="text-3xl font-black font-mono text-amber-700">{blockedCount}</div>
+                <div className="text-[11px] font-bold text-slate-500 mt-1 leading-tight">Blocked</div>
+              </div>
+            )}
             {onViewOverdue && overdueCount > 0 ? (
               <button
                 type="button"

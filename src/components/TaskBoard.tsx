@@ -55,7 +55,7 @@ interface TaskBoardProps {
   taskCategories?: string[];
   focusStaffName?: string | null;
   onFocusConsumed?: () => void;
-  jumpToTab?: 'OVERDUE' | null;
+  jumpToTab?: 'OVERDUE' | 'BLOCKED' | null;
   onJumpConsumed?: () => void;
 }
 
@@ -93,6 +93,11 @@ export default function TaskBoard({
   const [showTrackerInput, setShowTrackerInput] = useState<{ [id: string]: boolean }>({});
   const [trackerVal, setTrackerVal] = useState<{ [id: string]: number }>({});
   const [showCompletedFolder, setShowCompletedFolder] = useState(false);
+
+  // Inline "mark blocked" reason capture — same lightweight pattern as the
+  // tracker increment form, so we don't need a new modal for one short field.
+  const [showBlockForm, setShowBlockForm] = useState<{ [id: string]: boolean }>({});
+  const [blockReasonInput, setBlockReasonInput] = useState<{ [id: string]: string }>({});
   
   // Dynamic fields state for custom checklist forms
   const [customFieldsData, setCustomFieldsData] = useState<{ [fieldId: string]: any }>({});
@@ -159,7 +164,7 @@ export default function TaskBoard({
   };
   
   // Urgency & Assignment Tabs
-  const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE' | 'OVERDUE'>('MY_TASKS');
+  const [activeUrgencyTab, setActiveUrgencyTab] = useState<'MY_TASKS' | 'CRITICAL' | 'STANDARD' | 'ROUTINE' | 'OVERDUE' | 'BLOCKED'>('MY_TASKS');
 
   // Category Filter Tabs — driven by this workspace's actual configured
   // categories, not a fixed list, so it works for any kind of business.
@@ -229,6 +234,11 @@ export default function TaskBoard({
   // never see it without manually switching to "Whole cycle".
   const overdueTasks = dailyTasks.filter(t => t.date < todayStr && t.status !== 'Done');
 
+  // Blocked tasks are a "needs attention" signal like overdue ones — a
+  // blocker doesn't stop mattering just because dateScope is set to "Today"
+  // and the task happens to be from yesterday, so this also bypasses scope.
+  const blockedTasks = dailyTasks.filter(t => t.status === 'Blocked');
+
   const isTaskInCategory = (task: DailyTask, catTab: typeof activeCategoryTab) => {
     if (catTab === 'ALL') return true;
     return task.category.toLowerCase() === catTab.toLowerCase();
@@ -265,6 +275,9 @@ export default function TaskBoard({
       case 'OVERDUE':
         // Independent of pendingTasks/dateScope — see overdueTasks above.
         baseTasks = overdueTasks;
+        break;
+      case 'BLOCKED':
+        baseTasks = blockedTasks;
         break;
     }
     return baseTasks.filter(t => isTaskInCategory(t, activeCategoryTab));
@@ -382,6 +395,21 @@ export default function TaskBoard({
     const val = trackerVal[task.id] || 1;
     onIncrementTracker(task.id, val);
     setShowTrackerInput(prev => ({ ...prev, [task.id]: false }));
+  };
+
+  const handleConfirmBlocked = (task: DailyTask) => {
+    const reason = (blockReasonInput[task.id] || '').trim();
+    if (!reason) {
+      toast.error('Add a short reason so the manager knows what to unblock.');
+      return;
+    }
+    onUpdateTask(task.id, 'Blocked', undefined, { blockedReason: reason });
+    setShowBlockForm(prev => ({ ...prev, [task.id]: false }));
+    setBlockReasonInput(prev => ({ ...prev, [task.id]: '' }));
+  };
+
+  const handleUnblock = (task: DailyTask) => {
+    onUpdateTask(task.id, 'In Progress', undefined, { blockedReason: undefined });
   };
 
   return (
@@ -633,6 +661,19 @@ export default function TaskBoard({
         >
           ⏰ Overdue ({overdueTasks.filter(t => isTaskInCategory(t, activeCategoryTab)).length})
         </button>
+
+        <button
+          onClick={() => setActiveUrgencyTab('BLOCKED')}
+          className={`flex-1 min-w-[100px] text-center py-2.5 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeUrgencyTab === 'BLOCKED'
+              ? 'bg-amber-600 text-white shadow-md'
+              : blockedTasks.length > 0
+              ? 'text-amber-700 hover:bg-amber-50'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          🚧 Blocked ({blockedTasks.filter(t => isTaskInCategory(t, activeCategoryTab)).length})
+        </button>
         </div>
         </div>
         </div>
@@ -683,6 +724,11 @@ export default function TaskBoard({
                           🔵 In progress
                         </span>
                       )}
+                      {task.status === 'Blocked' && (
+                        <span className="text-[10px] font-mono font-black border px-2 py-0.5 rounded-full bg-amber-100 border-amber-300 text-amber-800">
+                          🚧 Blocked
+                        </span>
+                      )}
                       <span className="text-[11px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-md uppercase tracking-tight">
                         Shift {task.shiftCode} · {task.category}
                       </span>
@@ -700,6 +746,12 @@ export default function TaskBoard({
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed max-w-xl">
                       Owner: <strong className="text-slate-800">{task.staffName}</strong> · Standard Procedure requires double audits mapped before closeout.
                     </p>
+
+                    {task.status === 'Blocked' && task.blockedReason && (
+                      <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2 max-w-xl leading-relaxed">
+                        🚧 <strong>Blocked:</strong> {task.blockedReason}
+                      </p>
+                    )}
 
                     {/* Progress slider bar if a target is active */}
                     {hasTracker && (
@@ -755,24 +807,72 @@ export default function TaskBoard({
                       </div>
                     )}
 
-                    {task.status === 'Pending' && (
-                      <button
-                        type="button"
-                        onClick={() => onUpdateTask(task.id, 'In Progress')}
-                        className="py-2.5 px-4 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-black rounded-xl border border-sky-150 transition-colors cursor-pointer uppercase tracking-tight"
-                      >
-                        ▶ Start working
-                      </button>
-                    )}
-                    {task.status === 'In Progress' && (
-                      <button
-                        type="button"
-                        onClick={() => onUpdateTask(task.id, 'Pending')}
-                        className="py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-500 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
-                        title="Move back to pending"
-                      >
-                        ↺ Not started yet
-                      </button>
+                    {showBlockForm[task.id] ? (
+                      <div className="flex items-center gap-2 bg-amber-50 p-1.5 rounded-xl border border-amber-200 animate-in fade-in zoom-in-95 duration-150">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={blockReasonInput[task.id] || ''}
+                          onChange={(e) => setBlockReasonInput(prev => ({ ...prev, [task.id]: e.target.value }))}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleConfirmBlocked(task); } }}
+                          placeholder="What's blocking this?"
+                          className="text-xs font-semibold bg-white border border-amber-200 rounded-lg p-1.5 w-48 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmBlocked(task)}
+                          className="p-1 px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg cursor-pointer"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowBlockForm(prev => ({ ...prev, [task.id]: false }))}
+                          className="p-1 text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {task.status === 'Pending' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateTask(task.id, 'In Progress')}
+                            className="py-2.5 px-4 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-black rounded-xl border border-sky-150 transition-colors cursor-pointer uppercase tracking-tight"
+                          >
+                            ▶ Start working
+                          </button>
+                        )}
+                        {task.status === 'In Progress' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateTask(task.id, 'Pending')}
+                            className="py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-500 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                            title="Move back to pending"
+                          >
+                            ↺ Not started yet
+                          </button>
+                        )}
+                        {(task.status === 'Pending' || task.status === 'In Progress') && (
+                          <button
+                            type="button"
+                            onClick={() => setShowBlockForm(prev => ({ ...prev, [task.id]: true }))}
+                            className="py-2.5 px-4 bg-white hover:bg-amber-50 text-amber-700 text-xs font-black rounded-xl border border-amber-200 transition-colors cursor-pointer"
+                          >
+                            🚧 Blocked
+                          </button>
+                        )}
+                        {task.status === 'Blocked' && (
+                          <button
+                            type="button"
+                            onClick={() => handleUnblock(task)}
+                            className="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl border border-amber-700 transition-colors cursor-pointer uppercase tracking-tight"
+                          >
+                            ↺ Unblock
+                          </button>
+                        )}
+                      </>
                     )}
 
                     <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 hover:bg-indigo-50/40 p-2.5 px-4 rounded-xl border border-slate-150/60 shadow-3xs transition-all select-none group">
