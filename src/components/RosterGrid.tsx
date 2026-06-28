@@ -1134,9 +1134,39 @@ export default function RosterGrid({
             <>
               <div className="fixed inset-0 z-40" onClick={() => { setEditingCell(null); setCustomTimeMode(false); setShowTaskForm(false); }} />
               <div
-                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-64 max-h-[26rem] overflow-y-auto"
+                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-64 max-h-[28rem] overflow-y-auto"
                 style={{ left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 264)), top: editingCell.y }}
               >
+                {/* Context header — always visible: who, which day, what's
+                    currently scheduled, and whether this day already has
+                    tasks, so neither needs scrolling or hovering to discover. */}
+                {(() => {
+                  const headerStaff = staffList.find(s => s.id === editingCell.staffId);
+                  const headerDate = cycleDates[editingCell.dayIdx];
+                  const headerShiftCode = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
+                  const headerDef = shiftDefs[headerShiftCode];
+                  const headerItems = getActionItemsFor(editingCell.staffId, headerDate);
+                  const headerOpenCount = headerItems.filter(i => !i.done).length;
+                  return (
+                    <div className="px-3 py-2.5 border-b border-slate-100 bg-slate-50/60 rounded-t-xl">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-black text-slate-800 truncate">{headerStaff?.name || 'Staff'}</p>
+                        {headerItems.length > 0 && (
+                          <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${headerOpenCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
+                            <StickyNote className="w-2.5 h-2.5" /> {headerItems.length}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        {parseLocalDate(headerDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {' · '}
+                        Currently: {headerShiftCode === 'OFF' ? 'Off / Rest' : (headerDef?.name || headerShiftCode)}
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="p-1.5">
                 {customTimeMode ? (
                   <div className="p-2 space-y-2">
                     <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-700">
@@ -1187,19 +1217,23 @@ export default function RosterGrid({
                     )}
 
                     {/* Lightweight task/action-item section — a note for this
-                        person on this day, not a full task. Kept inside the
-                        same popover instead of a separate screen. */}
+                        person on this day, not a full task. Visually grouped
+                        as its own module (label + tinted background) so it
+                        reads as a distinct zone from the shift list above,
+                        not a continuation of it. */}
                     {onAddActionItem && (() => {
                       const cellDate = cycleDates[editingCell.dayIdx];
                       const cellStaff = staffList.find(s => s.id === editingCell.staffId);
                       const cellShiftCode = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
                       const items = getActionItemsFor(editingCell.staffId, cellDate);
                       return (
-                        <div className="border-t border-slate-100 mt-1 pt-1.5 px-1">
+                        <div className="border-t border-slate-100 mt-1.5 pt-1.5 -mx-1.5 -mb-1.5 px-2.5 pb-2 bg-slate-50/70 rounded-b-xl">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Tasks for this day</p>
+
                           {items.length > 0 && (
                             <div className="flex flex-col gap-1 mb-1.5">
                               {items.map(item => (
-                                <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded-lg ${item.done ? 'bg-slate-50' : 'bg-amber-50'}`}>
+                                <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded-lg border ${item.done ? 'bg-white border-slate-100' : 'bg-amber-50 border-amber-100'}`}>
                                   <input
                                     type="checkbox"
                                     checked={item.done}
@@ -1223,7 +1257,7 @@ export default function RosterGrid({
                           )}
 
                           {showTaskForm ? (
-                            <div className="flex flex-col gap-1.5 p-1">
+                            <div className="flex flex-col gap-1.5 bg-white p-1.5 rounded-lg border border-slate-200">
                               <input
                                 type="text"
                                 autoFocus
@@ -1247,7 +1281,7 @@ export default function RosterGrid({
                                 className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-indigo-600 resize-none"
                               />
                               <div className="flex gap-1.5">
-                                <button onClick={() => { setShowTaskForm(false); setTaskTitleInput(''); setTaskOwnerInput(''); setTaskNoteInput(''); }} className="flex-1 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer">Cancel</button>
+                                <button onClick={() => { setShowTaskForm(false); setTaskTitleInput(''); setTaskOwnerInput(''); setTaskNoteInput(''); }} className="flex-1 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
                                 <button
                                   onClick={() => handleSubmitTask(editingCell.staffId, cellStaff?.name || '', cellDate, cellShiftCode)}
                                   disabled={!taskTitleInput.trim()}
@@ -1260,10 +1294,10 @@ export default function RosterGrid({
                           ) : (
                             <button
                               onClick={() => setShowTaskForm(true)}
-                              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors hover:bg-amber-50"
+                              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors bg-white hover:bg-amber-50 border border-dashed border-slate-200 hover:border-amber-200"
                             >
                               <StickyNote className="w-3 h-3 text-amber-500 shrink-0" />
-                              <span className="text-xs font-bold text-amber-700">Add a task for {cellStaff?.name || 'this day'}…</span>
+                              <span className="text-xs font-bold text-amber-700">Add a task…</span>
                             </button>
                           )}
                         </div>
@@ -1271,6 +1305,7 @@ export default function RosterGrid({
                     })()}
                   </>
                 )}
+                </div>
               </div>
             </>
           )}
