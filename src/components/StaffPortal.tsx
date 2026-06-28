@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StaffMember, RosterCycle, ApprovalRequest, ExtraHoursEntry, PublicHoliday, DailyTask, Facility } from '../types';
+import { StaffMember, RosterCycle, ApprovalRequest, ExtraHoursEntry, PublicHoliday, DailyTask, Facility, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { isWeekend, isPublicHoliday, calculateStaffStats } from '../utils/rosterUtils';
 import { Calendar, Clock, ArrowRightLeft, FileSpreadsheet, Hourglass, CheckCircle2, XCircle, Printer, Sparkles, UserCheck, ThumbsUp, AlertTriangle, Info } from 'lucide-react';
@@ -17,6 +17,7 @@ interface StaffPortalProps {
   dailyTasks: DailyTask[];
   selectedFacilityId: string;
   facilities: Facility[];
+  shifts?: { [code: string]: ShiftDef };
 }
 
 export default function StaffPortal({
@@ -31,8 +32,10 @@ export default function StaffPortal({
   dailyTasks,
   selectedFacilityId,
   facilities,
+  shifts,
 }: StaffPortalProps) {
   const toast = useToast();
+  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
   const [xhrDate, setXhrDate] = useState(cycleDates[0] || '');
   const [xhrHours, setXhrHours] = useState<number>(2);
   const [xhrNote, setXhrNote] = useState('');
@@ -74,7 +77,7 @@ export default function StaffPortal({
   // --- Smart Swap AI Assistant Recs Engine ---
   const myDayIdx = cycleDates.indexOf(swapMyDate);
   const myShiftCode = myShifts[myDayIdx] || 'OFF';
-  const myShiftHours = SHIFTS[myShiftCode]?.hours || 0;
+  const myShiftHours = shiftDefs[myShiftCode]?.hours || 0;
 
   let smartSwapRecs: Array<{
     colleague: StaffMember;
@@ -93,13 +96,13 @@ export default function StaffPortal({
       .map(colleague => {
         const colleagueShifts = activeCycle.shifts[colleague.id] || [];
         const colleagueShiftCode = colleagueShifts[myDayIdx] || 'OFF';
-        const isLeave = ['AL', 'SL', 'CO', 'MD'].includes(colleagueShiftCode);
+        const isLeave = !!shiftDefs[colleagueShiftCode]?.isLeave && colleagueShiftCode !== 'OFF';
         const isSameShiftCode = colleagueShiftCode === myShiftCode;
 
         // Calculate workload
         let colleagueTotalHours = 0;
         colleagueShifts.forEach(code => {
-          colleagueTotalHours += SHIFTS[code]?.hours || 0;
+          colleagueTotalHours += shiftDefs[code]?.hours || 0;
         });
 
         // A swap candidate needs the same role to actually cover the shift.
@@ -314,7 +317,7 @@ export default function StaffPortal({
               {forecastDates.map((dKey, fIdx) => {
                 const dateIdx = cycleDates.indexOf(dKey);
                 const sCode = myShifts[dateIdx] || 'OFF';
-                const def = SHIFTS[sCode];
+                const def = shiftDefs[sCode];
                 const cleanDate = new Date(dKey + 'T00:00:00');
                 const dayLabel = cleanDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
                 const isPH = isPublicHoliday(dKey, holidays);
@@ -683,7 +686,7 @@ export default function StaffPortal({
                 <tbody className="divide-y divide-gray-100">
                   {cycleDates.map((dKey, dIdx) => {
                     const sc = myShifts[dIdx] || 'OFF';
-                    const sDef = SHIFTS[sc];
+                    const sDef = shiftDefs[sc];
                     const isPH = isPublicHoliday(dKey, holidays);
                     const isSun = new Date(dKey + 'T00:00:00').getDay() === 0;
                     const xHrs = myExtraHoursMap[dKey] || 0;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StaffMember, RosterCycle, ApprovalRequest, ExtraHoursEntry, PublicHoliday, DailyTask, Timesheet, TimesheetDay } from '../types';
+import { StaffMember, RosterCycle, ApprovalRequest, ExtraHoursEntry, PublicHoliday, DailyTask, Timesheet, TimesheetDay, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { isWeekend, isPublicHoliday } from '../utils/rosterUtils';
 import { sumTimesheetTotals } from '../utils/timesheetUtils';
@@ -38,6 +38,7 @@ interface ManagerDashboardProps {
   timesheets: Timesheet[];
   onUpdateTimesheet: (updated: Timesheet) => void;
   approverName: string;
+  shifts?: { [code: string]: ShiftDef };
 }
 
 export default function ManagerDashboard({
@@ -52,7 +53,9 @@ export default function ManagerDashboard({
   timesheets,
   onUpdateTimesheet,
   approverName,
+  shifts,
 }: ManagerDashboardProps) {
+  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
   const toast = useToast();
   const confirm = useConfirm();
   const [selectedInspectStaffId, setSelectedInspectStaffId] = useState('');
@@ -70,8 +73,8 @@ export default function ManagerDashboard({
   if (dayIdx !== -1) {
     staffList.forEach(s => {
       const shift = activeCycle.shifts[s.id]?.[dayIdx] || 'OFF';
-      const def = SHIFTS[shift];
-      if (['AL', 'SL', 'CO', 'MD', 'TRN', 'OS'].includes(shift)) {
+      const def = shiftDefs[shift];
+      if (def?.isLeave && shift !== 'OFF') {
         activeFloorPlan.onLeave.push({ name: s.name, shift });
       } else if (shift !== 'OFF' && def) {
         activeFloorPlan.onShift.push({ name: s.name, shift, bg: def.bg, fg: def.fg });
@@ -386,7 +389,7 @@ export default function ManagerDashboard({
                       const hasClocks = day.clockIn && day.clockOut;
                       
                       const plannedShiftCode = day.scheduledShift;
-                      const plannedDef = SHIFTS[plannedShiftCode];
+                      const plannedDef = shiftDefs[plannedShiftCode];
 
                       // Flags worth a manager's attention
                       let alertTagSelect = null;

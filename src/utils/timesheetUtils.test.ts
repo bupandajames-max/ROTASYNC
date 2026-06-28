@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateElapsedHours, formatMinutesToTime, parseTimeToMinutes, reevaluateTimesheetDay, sumTimesheetTotals, reconcileTimesheetWithRoster } from './timesheetUtils';
-import { Timesheet, TimesheetDay, RosterCycle } from '../types';
+import { calculateElapsedHours, formatMinutesToTime, parseTimeToMinutes, reevaluateTimesheetDay, sumTimesheetTotals, reconcileTimesheetWithRoster, generateDefaultTimesheet } from './timesheetUtils';
+import { Timesheet, TimesheetDay, RosterCycle, StaffMember } from '../types';
 
 const baseDay = (overrides: Partial<TimesheetDay> = {}): TimesheetDay => ({
   date: '2026-06-16', // a Tuesday, not a Sunday
@@ -198,3 +198,39 @@ function buildExpectedDay(date: string, scheduledShift: string): TimesheetDay {
     regularWorkedHours: scheduledShift === 'A' ? 8 : 0,
   });
 }
+
+describe('generateDefaultTimesheet', () => {
+  const staff: StaffMember = { id: 's1', name: 'Test', fullName: 'Test Staff', role: 'Operator', email: '', phone: '', isManager: false, contractedHours: 168, gender: '', employeeNo: '' };
+
+  it('treats a built-in leave code as Leave Taken, not a worked shift', () => {
+    // Regression test: every built-in leave type (AL, SL, CO, MD) is also
+    // configured with hours: 8 (so contracted-hours math counts it as a
+    // normal day) — without an explicit isLeave check, that hours > 0 alone
+    // would wrongly route it into the "Worked Shift" branch with fake
+    // clock-in/out times instead of being credited as leave.
+    const cycle: RosterCycle = { id: 'c1', startDate: '2026-06-16', endDate: '2026-06-16', shifts: { s1: ['AL'] } };
+    const ts = generateDefaultTimesheet(staff, cycle, ['2026-06-16'], []);
+    const day = ts.days['2026-06-16'];
+    expect(day.workType).toBe('Leave Taken');
+    expect(day.leaveHours).toBe(8);
+    expect(day.clockIn).toBe('');
+    expect(day.regularWorkedHours).toBe(0);
+  });
+
+  it('recognizes a workspace-custom leave code via the live shifts map', () => {
+    const cycle: RosterCycle = { id: 'c1', startDate: '2026-06-16', endDate: '2026-06-16', shifts: { s1: ['BL'] } };
+    const customShifts = { BL: { code: 'BL', name: 'Bereavement Leave', time: 'Paid leave', hours: 8, bg: '#fff', fg: '#000', active: true, isLeave: true } };
+    const ts = generateDefaultTimesheet(staff, cycle, ['2026-06-16'], [], customShifts);
+    const day = ts.days['2026-06-16'];
+    expect(day.workType).toBe('Leave Taken');
+    expect(day.leaveHours).toBe(8);
+  });
+
+  it('still treats a normal work shift as Worked Shift', () => {
+    const cycle: RosterCycle = { id: 'c1', startDate: '2026-06-16', endDate: '2026-06-16', shifts: { s1: ['A'] } };
+    const ts = generateDefaultTimesheet(staff, cycle, ['2026-06-16'], []);
+    const day = ts.days['2026-06-16'];
+    expect(day.workType).toBe('Worked Shift');
+    expect(day.regularWorkedHours).toBeGreaterThan(0);
+  });
+});

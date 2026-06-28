@@ -532,7 +532,7 @@ export default function App() {
       staffList.forEach(staff => {
         const tsIndex = updatedTimesheets.findIndex(t => t.staffId === staff.id && t.cycleId === activeCycle.id);
         if (tsIndex === -1) {
-          const defaultTs = generateDefaultTimesheet(staff, activeCycle, cycleDates, holidays);
+          const defaultTs = generateDefaultTimesheet(staff, activeCycle, cycleDates, holidays, shifts);
           updatedTimesheets.push(defaultTs);
           timesheetChanged = true;
           return;
@@ -545,7 +545,7 @@ export default function App() {
         // timesheets are a frozen record and are intentionally left alone.
         const existing = updatedTimesheets[tsIndex];
         if (existing.status === 'Draft') {
-          const { timesheet, changed } = reconcileTimesheetWithRoster(existing, activeCycle, staff.id, cycleDates, holidays);
+          const { timesheet, changed } = reconcileTimesheetWithRoster(existing, activeCycle, staff.id, cycleDates, holidays, shifts);
           if (changed) {
             updatedTimesheets[tsIndex] = timesheet;
             timesheetChanged = true;
@@ -588,7 +588,7 @@ export default function App() {
       }
       return currentTimesheets;
     });
-  }, [staffList, activeCycle, selectedFacilityId, cycleDates, holidays, firebaseUser, isHydrated]);
+  }, [staffList, activeCycle, selectedFacilityId, cycleDates, holidays, firebaseUser, isHydrated, shifts]);
 
   // Sync active user profile back with facility partition
   useEffect(() => {
@@ -1806,6 +1806,7 @@ export default function App() {
                     dailyTasks={displayedDailyTasks}
                     selectedFacilityId={selectedFacilityId}
                     facilities={facilities}
+                    shifts={shifts}
                   />
                 </div>
               </div>
@@ -1844,6 +1845,7 @@ export default function App() {
               timesheets={displayedTimesheets}
               onUpdateTimesheet={handleUpdateTimesheet}
               approverName={staffList.find(s => s.id === activeStaffId)?.fullName || 'Manager'}
+              shifts={shifts}
             />
           )}
 

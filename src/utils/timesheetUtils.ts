@@ -1,6 +1,14 @@
-import { TimesheetDay, Timesheet, StaffMember, RosterCycle, PublicHoliday } from '../types';
+import { TimesheetDay, Timesheet, StaffMember, RosterCycle, PublicHoliday, ShiftDef } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { isPublicHoliday } from './rosterUtils';
+
+// All five functions below accept an optional `shifts` map: the workspace's
+// own configured shifts (Settings → Shift Planner), layered over the
+// built-in defaults. Without it they'd only recognize the small built-in
+// shift/leave codes — a custom code (e.g. a workspace-specific leave type)
+// would silently be misjudged as a plain absence instead of paid leave, or
+// get the wrong standard-hours figure for overtime math.
+const resolveShiftDefs = (shifts?: { [code: string]: ShiftDef }) => ({ ...SHIFTS, ...(shifts || {}) });
 
 // Helper to convert HH:MM string to absolute clock minutes
 export function parseTimeToMinutes(timeStr: string): number {
@@ -39,8 +47,9 @@ export function calculateElapsedHours(clockIn: string, clockOut: string, lunchBr
 // Shared by generateDefaultTimesheet (new timesheets) and
 // reconcileTimesheetWithRoster (keeping existing ones in sync with later
 // roster edits), so the two can never drift into different logic.
-function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: PublicHoliday[]): TimesheetDay {
-  const shiftDef = SHIFTS[scheduledCode];
+function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: PublicHoliday[], shifts?: { [code: string]: ShiftDef }): TimesheetDay {
+  const shiftDefs = resolveShiftDefs(shifts);
+  const shiftDef = shiftDefs[scheduledCode];
 
   let actualShift = scheduledCode;
   let clockIn = '';
@@ -54,8 +63,12 @@ function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: Pub
   let holidayWorkedHours = 0;
   let leaveHours = 0;
 
-  // Determine defaults based on scheduled shift
-  if (shiftDef && shiftDef.hours > 0) {
+  // Determine defaults based on scheduled shift. The isLeave check matters:
+  // every leave type here is also configured with hours: 8 (so contracted-
+  // hours math elsewhere counts a leave day as a normal day), which would
+  // otherwise make this branch wrongly treat a leave day as a worked shift
+  // with fake clock-in/out times.
+  if (shiftDef && shiftDef.hours > 0 && !shiftDef.isLeave) {
     workType = 'Worked Shift';
     lunchBreakMinutes = scheduledCode === 'N' ? 0 : 60; // night shift usually is 12h net directly, others get 1hr lunch
 
@@ -98,9 +111,11 @@ function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: Pub
     } else {
       regularWorkedHours = elapsed;
     }
-  } else if (['AL', 'SL', 'CO', 'MD', 'TRN', 'OS'].includes(scheduledCode)) {
+  } else if (shiftDef?.isLeave) {
     workType = 'Leave Taken';
-    leaveHours = 8; // standard credited hours for statistics
+    // Credit the leave type's own configured hours if it has one (e.g. a
+    // half-day leave type), otherwise the standard 8h full-day credit.
+    leaveHours = shiftDef.hours > 0 ? shiftDef.hours : 8;
   } else {
     // Day off
     workType = 'Absent'; // defaults to rest, i.e. not worked
@@ -127,13 +142,14 @@ export function generateDefaultTimesheet(
   staff: StaffMember,
   cycle: RosterCycle,
   dates: string[],
-  holidays: PublicHoliday[]
+  holidays: PublicHoliday[],
+  shifts?: { [code: string]: ShiftDef }
 ): Timesheet {
   const days: { [dateStr: string]: TimesheetDay } = {};
 
   dates.forEach((dateStr, idx) => {
     const scheduledCode = cycle.shifts[staff.id]?.[idx] || 'OFF';
-    days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays);
+    days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays, shifts);
   });
 
   return {
@@ -163,7 +179,8 @@ export function reconcileTimesheetWithRoster(
   cycle: RosterCycle,
   staffId: string,
   dates: string[],
-  holidays: PublicHoliday[]
+  holidays: PublicHoliday[],
+  shifts?: { [code: string]: ShiftDef }
 ): { timesheet: Timesheet; changed: boolean } {
   let changed = false;
   const days = { ...ts.days };
@@ -175,7 +192,7 @@ export function reconcileTimesheetWithRoster(
     if (existing?.isModified) return; // a real logged entry — never overwrite
 
     if (!existing || existing.scheduledShift !== scheduledCode) {
-      days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays);
+      days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays, shifts);
       changed = true;
     }
   });
@@ -184,10 +201,12 @@ export function reconcileTimesheetWithRoster(
 }
 
 // Recalculates all hours for a single timesheet day based on modern clock values and status
-export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holidays: PublicHoliday[]): TimesheetDay {
+export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holidays: PublicHoliday[], shifts?: { [code: string]: ShiftDef }): TimesheetDay {
   const updated = { ...day };
-  
+  const shiftDefs = resolveShiftDefs(shifts);
+
   if (updated.workType === 'Leave Taken') {
+    const leaveDef = shiftDefs[updated.scheduledShift];
     updated.clockIn = '';
     updated.clockOut = '';
     updated.lunchBreakMinutes = 0;
@@ -195,7 +214,7 @@ export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holid
     updated.sundayWorkedHours = 0;
     updated.overtimeHours = 0;
     updated.holidayWorkedHours = 0;
-    updated.leaveHours = 8;
+    updated.leaveHours = leaveDef && leaveDef.hours > 0 ? leaveDef.hours : 8;
     return updated;
   }
   
@@ -216,8 +235,9 @@ export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holid
   const isSun = new Date(dateStr).getDay() === 0;
   const isPH = isPublicHoliday(dateStr, holidays);
   
-  // Standard Shift Reference
-  const originalShiftDef = SHIFTS[updated.scheduledShift];
+  // Standard Shift Reference — the overtime threshold for this day is
+  // whatever this workspace configured this shift's standard hours to be.
+  const originalShiftDef = shiftDefs[updated.scheduledShift];
   const standardExpectedHours = originalShiftDef ? originalShiftDef.hours : 8;
   
   // Initialize to zero
@@ -227,11 +247,17 @@ export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holid
   updated.overtimeHours = 0;
   updated.leaveHours = 0;
   
+  // Jurisdiction-specific rule, isolated here on purpose: this workspace's
+  // payroll policy treats all public-holiday and Sunday work as premium-rate
+  // hours, tracked separately from regular/overtime. The app only buckets
+  // hours into these categories — it doesn't compute a dollar amount or
+  // apply an actual 1.5x/2x multiplier, since there's no pay-rate field on
+  // staff. If a workspace's policy differs (different premium days, or no
+  // premium concept at all), that's a bigger product decision: which days
+  // count as premium, not just a label change.
   if (isPH) {
-    // Under Zambia guidelines, all public holiday work is premium holidayWorkedHours
     updated.holidayWorkedHours = totalNetHours;
   } else if (isSun) {
-    // Sundays are premium sundayWorkedHours
     updated.sundayWorkedHours = totalNetHours;
   } else {
     // Weekday/Saturday actuals

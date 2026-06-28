@@ -113,8 +113,8 @@ export default function TimesheetPortal({
       isModified: true
     };
 
-    // Reevaluate hours according to Zambian business rules
-    updatedDay = reevaluateTimesheetDay(updatedDay, selectedDay.date, holidays);
+    // Reevaluate hours against this workspace's configured shifts and premium-day rules
+    updatedDay = reevaluateTimesheetDay(updatedDay, selectedDay.date, holidays, shifts);
 
     const updatedDays = { ...myTimesheet.days, [selectedDay.date]: updatedDay };
     const updatedTimesheet: Timesheet = {
@@ -195,7 +195,7 @@ export default function TimesheetPortal({
           <div>
             <span className="text-[10px] text-gray-400 font-bold">Premium (Sun/PH)</span>
             <h3 className="text-[#005c93] text-2xl font-black mt-1">{totals.sunday + totals.holiday} h</h3>
-            <p className="text-[11px] text-[#005c93]/70 font-semibold mt-1">Sunday: {totals.sunday}h (1.5x) · Holiday: {totals.holiday}h (2x)</p>
+            <p className="text-[11px] text-[#005c93]/70 font-semibold mt-1">Sunday: {totals.sunday}h · Public Holiday: {totals.holiday}h</p>
           </div>
           <div className="p-3.5 bg-sky-50 text-[#005c93] rounded-xl">
             <Clock className="w-5 h-5 animate-[pulse_3s_infinite]" />
@@ -677,8 +677,10 @@ export default function TimesheetPortal({
                         </td>
                         <td className="py-2 px-2 border-r border-gray-200 text-center bg-rose-50/20 font-sans font-bold text-[#7A1230] print:py-0.5">
                           {/* A day is never both Sunday-worked and a public holiday, so
-                              one column can safely show whichever premium rate applies. */}
-                          {d.holidayWorkedHours > 0 ? `${d.holidayWorkedHours}h (PH 2x)` : d.sundayWorkedHours > 0 ? `${d.sundayWorkedHours}h (Sun 1.5x)` : '-'}
+                              one column can safely show whichever premium type applies.
+                              No specific multiplier is asserted here — this app tracks
+                              which hours are premium, not what rate payroll pays for them. */}
+                          {d.holidayWorkedHours > 0 ? `${d.holidayWorkedHours}h (PH)` : d.sundayWorkedHours > 0 ? `${d.sundayWorkedHours}h (Sun)` : '-'}
                         </td>
                         <td className="py-2 px-2 border-r border-gray-200 text-center font-sans font-bold print:py-0.5">
                           {d.overtimeHours > 0 ? `${d.overtimeHours}h` : '-'}
