@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RosterCycle, StaffMember, PublicHoliday, ShiftDef } from '../types';
+import { RosterCycle, StaffMember, PublicHoliday, ShiftDef, RosterActionItem } from '../types';
 import { SHIFTS } from '../data/initialData';
 import { isWeekend, isPublicHoliday, computeShiftDuration } from '../utils/rosterUtils';
 import { dbGetCollectionByFacility, dbSetDoc, dbDeleteDoc } from '../firebase';
@@ -21,7 +21,9 @@ import {
   GripVertical,
   UserPlus,
   Clock,
-  Plus
+  Plus,
+  StickyNote,
+  X
 } from 'lucide-react';
 
 export const parseLocalDate = (dateStr: string | Date | undefined): Date => {
@@ -57,6 +59,10 @@ interface RosterGridProps {
   onEditShifts?: () => void;
   onRolloverCycle?: () => void;
   facilityId?: string;
+  actionItems?: RosterActionItem[];
+  onAddActionItem?: (item: Omit<RosterActionItem, 'id' | 'createdAt' | 'createdBy' | 'done'>) => void;
+  onToggleActionItem?: (id: string) => void;
+  onDeleteActionItem?: (id: string) => void;
 }
 
 export default function RosterGrid({
@@ -77,6 +83,10 @@ export default function RosterGrid({
   onEditShifts,
   onRolloverCycle,
   facilityId,
+  actionItems = [],
+  onAddActionItem,
+  onToggleActionItem,
+  onDeleteActionItem,
 }: RosterGridProps) {
   const confirm = useConfirm();
   // Use the workspace's editable shift definitions, falling back to the built-in
@@ -170,6 +180,33 @@ export default function RosterGrid({
   const [customTimeMode, setCustomTimeMode] = useState(false);
   const [customTimeStart, setCustomTimeStart] = useState('08:00');
   const [customTimeEnd, setCustomTimeEnd] = useState('17:00');
+
+  // Lightweight task/action-item form shown inline in the cell popover —
+  // not a separate screen, just a collapsible section of the same menu.
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskTitleInput, setTaskTitleInput] = useState('');
+  const [taskOwnerInput, setTaskOwnerInput] = useState('');
+  const [taskNoteInput, setTaskNoteInput] = useState('');
+
+  const getActionItemsFor = (staffId: string, dateStr: string) =>
+    actionItems.filter(a => a.staffId === staffId && a.date === dateStr);
+
+  const handleSubmitTask = (staffId: string, staffName: string, dateStr: string, shiftCode: string) => {
+    if (!taskTitleInput.trim() || !onAddActionItem) return;
+    onAddActionItem({
+      date: dateStr,
+      staffId,
+      staffName,
+      shiftCode,
+      title: taskTitleInput.trim(),
+      owner: taskOwnerInput.trim() || undefined,
+      note: taskNoteInput.trim() || undefined,
+    });
+    setTaskTitleInput('');
+    setTaskOwnerInput('');
+    setTaskNoteInput('');
+    setShowTaskForm(false);
+  };
 
   // Ad hoc, one-off shift time — assigns a custom start/end directly to a
   // single cell without first having to define a permanent named shift in
@@ -1040,6 +1077,16 @@ export default function RosterGrid({
                                 </div>
                               )}
 
+                              {/* Task/action-item badge — only shown when this cell has one */}
+                              {getActionItemsFor(staff.id, cycleDates[dIdx]).length > 0 && (
+                                <div
+                                  className="absolute top-0.5 left-0.5 z-10 select-none"
+                                  title={`${getActionItemsFor(staff.id, cycleDates[dIdx]).filter(a => !a.done).length} open task(s) on this day`}
+                                >
+                                  <StickyNote className={`w-2.5 h-2.5 ${getActionItemsFor(staff.id, cycleDates[dIdx]).some(a => !a.done) ? 'text-amber-500' : 'text-slate-300'}`} />
+                                </div>
+                              )}
+
                               {isGridLocked ? (
                                 <div className="w-full h-full flex flex-col justify-center items-center py-1 select-none">
                                   <span className={`inline-flex items-center gap-0.5 justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs tracking-wider ${isUnknownShift ? 'border border-dashed border-rose-300 bg-rose-50' : 'border border-black/5 bg-white/40'}`} style={{ color: isUnknownShift ? '#991B1B' : def?.fg }}>
@@ -1085,10 +1132,10 @@ export default function RosterGrid({
           {/* Shift picker popover — colour swatch + name, fixed so the grid scroll can't clip it */}
           {editingCell && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => { setEditingCell(null); setCustomTimeMode(false); }} />
+              <div className="fixed inset-0 z-40" onClick={() => { setEditingCell(null); setCustomTimeMode(false); setShowTaskForm(false); }} />
               <div
-                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-56 max-h-80 overflow-y-auto"
-                style={{ left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 232)), top: editingCell.y }}
+                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 p-1.5 w-64 max-h-[26rem] overflow-y-auto"
+                style={{ left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 264)), top: editingCell.y }}
               >
                 {customTimeMode ? (
                   <div className="p-2 space-y-2">
@@ -1138,6 +1185,90 @@ export default function RosterGrid({
                         <span className="text-xs font-bold text-indigo-600">Custom time…</span>
                       </button>
                     )}
+
+                    {/* Lightweight task/action-item section — a note for this
+                        person on this day, not a full task. Kept inside the
+                        same popover instead of a separate screen. */}
+                    {onAddActionItem && (() => {
+                      const cellDate = cycleDates[editingCell.dayIdx];
+                      const cellStaff = staffList.find(s => s.id === editingCell.staffId);
+                      const cellShiftCode = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
+                      const items = getActionItemsFor(editingCell.staffId, cellDate);
+                      return (
+                        <div className="border-t border-slate-100 mt-1 pt-1.5 px-1">
+                          {items.length > 0 && (
+                            <div className="flex flex-col gap-1 mb-1.5">
+                              {items.map(item => (
+                                <div key={item.id} className={`flex items-start gap-1.5 p-1.5 rounded-lg ${item.done ? 'bg-slate-50' : 'bg-amber-50'}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={item.done}
+                                    onChange={() => onToggleActionItem?.(item.id)}
+                                    className="mt-0.5 w-3 h-3 accent-amber-600 cursor-pointer shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-[11px] font-bold leading-tight ${item.done ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{item.title}</p>
+                                    {item.owner && <p className="text-[10px] text-slate-400">Owner: {item.owner}</p>}
+                                  </div>
+                                  <button
+                                    onClick={() => onDeleteActionItem?.(item.id)}
+                                    className="text-slate-300 hover:text-rose-500 cursor-pointer shrink-0"
+                                    title="Remove"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {showTaskForm ? (
+                            <div className="flex flex-col gap-1.5 p-1">
+                              <input
+                                type="text"
+                                autoFocus
+                                value={taskTitleInput}
+                                onChange={e => setTaskTitleInput(e.target.value)}
+                                placeholder="Short title — e.g. Restock shelf"
+                                className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-indigo-600"
+                              />
+                              <input
+                                type="text"
+                                value={taskOwnerInput}
+                                onChange={e => setTaskOwnerInput(e.target.value)}
+                                placeholder="Owner (optional)"
+                                className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-indigo-600"
+                              />
+                              <textarea
+                                value={taskNoteInput}
+                                onChange={e => setTaskNoteInput(e.target.value)}
+                                placeholder="Note (optional)"
+                                rows={2}
+                                className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-indigo-600 resize-none"
+                              />
+                              <div className="flex gap-1.5">
+                                <button onClick={() => { setShowTaskForm(false); setTaskTitleInput(''); setTaskOwnerInput(''); setTaskNoteInput(''); }} className="flex-1 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer">Cancel</button>
+                                <button
+                                  onClick={() => handleSubmitTask(editingCell.staffId, cellStaff?.name || '', cellDate, cellShiftCode)}
+                                  disabled={!taskTitleInput.trim()}
+                                  className="flex-1 py-1.5 text-[11px] font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-40 rounded-lg cursor-pointer"
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setShowTaskForm(true)}
+                              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left cursor-pointer transition-colors hover:bg-amber-50"
+                            >
+                              <StickyNote className="w-3 h-3 text-amber-500 shrink-0" />
+                              <span className="text-xs font-bold text-amber-700">Add a task for {cellStaff?.name || 'this day'}…</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </div>

@@ -125,6 +125,24 @@ export interface DailyTask {
   history?: TaskHistoryEntry[];
 }
 
+// A lightweight, ad hoc note attached directly to a roster cell — deliberately
+// not part of the TaskMaster/DailyTask engine (no recurrence, pattern, or
+// priority). For "remind whoever's on shift Tuesday to do X," not for
+// anything that needs the full task system.
+export interface RosterActionItem {
+  id: string;
+  date: string; // YYYY-MM-DD — which day this is attached to
+  staffId?: string; // which person's row, if any — omitted means it's a day-level note
+  staffName?: string;
+  shiftCode?: string; // the shift code at the time it was created, for context only
+  title: string;
+  owner?: string; // who's responsible, if different from the staff member above
+  note?: string;
+  done: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface TimesheetDay {
   date: string; // YYYY-MM-DD
   scheduledShift: string; // e.g., 'A', 'N', 'OFF'

@@ -15,7 +15,8 @@ import {
   Department,
   TaskHistoryEntry,
   RosterRuleSet,
-  WorkspaceConfig
+  WorkspaceConfig,
+  RosterActionItem
 } from './types';
 import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig, WEEKDAY_NAMES } from './data/initialData';
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
@@ -93,6 +94,12 @@ export default function App() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [setupHidden, setSetupHidden] = useState(false);
+
+  // Lightweight roster action items — ad hoc notes attached to a roster
+  // cell, deliberately kept outside the TaskMaster/DailyTask engine.
+  // Local-only persistence for now (no Firestore cloud sync yet); see the
+  // roster task implementation notes for why that's a separate decision.
+  const [rosterActionItems, setRosterActionItems] = useState<RosterActionItem[]>([]);
 
   // Identity, sign-in, RBAC access tier, and "are they let in" gating — see useAuthGate.
   // (isRegisteredStaff/needsOnboarding/access-resolution need staffList, which
@@ -642,6 +649,43 @@ export default function App() {
       setSetupHidden(false);
     }
   }, [selectedFacilityId]);
+
+  // Load this workspace's roster action items on facility switch.
+  useEffect(() => {
+    if (!selectedFacilityId) { setRosterActionItems([]); return; }
+    try {
+      const stored = localStorage.getItem(facilityKey(selectedFacilityId, 'roster_action_items'));
+      setRosterActionItems(stored ? JSON.parse(stored) : []);
+    } catch {
+      setRosterActionItems([]);
+    }
+  }, [selectedFacilityId]);
+
+  const handleAddRosterActionItem = (item: Omit<RosterActionItem, 'id' | 'createdAt' | 'createdBy' | 'done'>) => {
+    const creator = staffList.find(s => s.id === activeStaffId)?.fullName || 'Manager';
+    const newItem: RosterActionItem = {
+      ...item,
+      id: `rai-${Date.now()}`,
+      done: false,
+      createdBy: creator,
+      createdAt: new Date().toISOString().substring(0, 16).replace('T', ' '),
+    };
+    const updated = [...rosterActionItems, newItem];
+    setRosterActionItems(updated);
+    if (selectedFacilityId) localStorage.setItem(facilityKey(selectedFacilityId, 'roster_action_items'), JSON.stringify(updated));
+  };
+
+  const handleToggleRosterActionItem = (id: string) => {
+    const updated = rosterActionItems.map(a => a.id === id ? { ...a, done: !a.done } : a);
+    setRosterActionItems(updated);
+    if (selectedFacilityId) localStorage.setItem(facilityKey(selectedFacilityId, 'roster_action_items'), JSON.stringify(updated));
+  };
+
+  const handleDeleteRosterActionItem = (id: string) => {
+    const updated = rosterActionItems.filter(a => a.id !== id);
+    setRosterActionItems(updated);
+    if (selectedFacilityId) localStorage.setItem(facilityKey(selectedFacilityId, 'roster_action_items'), JSON.stringify(updated));
+  };
 
   // One-time friendly welcome that points a manager at the Get started checklist.
   useEffect(() => {
@@ -1748,6 +1792,10 @@ export default function App() {
               onEditShifts={() => handleNavigation('admin')}
               onRolloverCycle={handleRolloverCycle}
               facilityId={selectedFacilityId}
+              actionItems={rosterActionItems}
+              onAddActionItem={handleAddRosterActionItem}
+              onToggleActionItem={handleToggleRosterActionItem}
+              onDeleteActionItem={handleDeleteRosterActionItem}
             />
           )}
 

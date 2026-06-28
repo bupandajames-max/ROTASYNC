@@ -34,7 +34,8 @@ export type FacilitySuffix =
   | 'extra_hours_log'
   | 'daily_tasks'
   | 'timesheets_list'
-  | 'taxonomy';
+  | 'taxonomy'
+  | 'roster_action_items';
 
 /** `facility_{facilityId}_{suffix}` — the standard per-facility cache key. */
 export const facilityKey = (facilityId: string, suffix: FacilitySuffix): string =>
