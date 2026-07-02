@@ -57,6 +57,24 @@
   --color-sky-450: #23b1f1;
 }
 
+/*
+ * Tailwind's Preflight reset deliberately sets `cursor: default` on
+ * <button> — it assumes each component opts back into `cursor-pointer`
+ * individually. Some already do (inconsistently), most don't, which is
+ * why the pointer/hand cursor was missing on some clickable buttons but
+ * not others. Setting it once globally here is more reliable than
+ * auditing every button across the app.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* Print formatting for official timesheets */
 @media print {
   /* 1. Hide interactive elements, navigation menu sidebar, and headers from paper prints */
