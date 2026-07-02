@@ -1167,7 +1167,12 @@ export default function App() {
           'extraHours',
           'timesheets',
           'departments',
-          'rosterActionItems'
+          'rosterActionItems',
+          // Without this, a stale pending invite survives the reset and
+          // still lets someone self-onboard into the rebuilt facility
+          // afterward — possibly with a departmentId now pointing at a
+          // department the reset just deleted.
+          'invites'
         ];
 
         for (const colName of collectionsToPurge) {

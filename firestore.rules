@@ -122,7 +122,10 @@ service cloud.firestore {
     // by (facilityId, email) with get()/exists() instead of a query, and so
     // the ID itself can be checked against its own content at creation time.
     function isValidInviteId(id) {
-      return id is string && id.size() <= 300 && id.matches('^[a-zA-Z0-9_@.\\-]+$');
+      // Includes '+' since it's a real, common character in email local
+      // parts (plus-addressing, e.g. alice+test@gmail.com) — without it,
+      // inviting any such address would be silently rejected here.
+      return id is string && id.size() <= 300 && id.matches('^[a-zA-Z0-9_@.+\\-]+$');
     }
 
     function isValidInvite(data) {
@@ -368,6 +371,20 @@ service cloud.firestore {
         && incoming().role == resource.data.role;
       allow update: if isManagerLevel() && inMyFacility(resource.data.facilityId)
         && incoming().status == 'revoked';
+      // Re-issuing an invite (same email/facility invited again — e.g. after
+      // a revoke, or by mistake) is a write to an ALREADY-EXISTING doc, so
+      // Firestore evaluates it as an update, not a create — the create rule
+      // above never applies here no matter which client API is used. Same
+      // validation as create, so a manager can freely re-invite regardless
+      // of the existing doc's prior status.
+      allow update: if isManagerLevel()
+        && isValidInvite(incoming())
+        && inMyFacility(incoming().facilityId)
+        && incoming().organizationId == callerOrganization()
+        && incoming().invitedBy == callerEmail()
+        && incoming().status == 'pending'
+        && canGrantRole(incoming().role)
+        && inviteId == (incoming().facilityId + '--' + incoming().email);
       allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
 

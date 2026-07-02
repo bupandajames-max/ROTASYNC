@@ -481,6 +481,40 @@ describe('invites/{inviteId}', () => {
       })
     );
   });
+
+  it('lets a facility manager re-issue an invite after revoking it (regression: writes to an existing doc are updates, not creates)', async () => {
+    await seedManager('facility_manager');
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'invites/fac-1--carol@example.com'), {
+        id: 'fac-1--carol@example.com', email: 'carol@example.com', organizationId: 'org-1', facilityId: 'fac-1',
+        role: 'staff', invitedBy: 'mgr@example.com', status: 'revoked', createdAt: '2026-01-01T00:00:00.000Z',
+      });
+    });
+    const mgr = testEnv.authenticatedContext('mgr-uid', { email: 'mgr@example.com' });
+    await assertSucceeds(
+      setDoc(doc(mgr.firestore(), 'invites/fac-1--carol@example.com'), {
+        id: 'fac-1--carol@example.com', email: 'carol@example.com', organizationId: 'org-1', facilityId: 'fac-1',
+        role: 'dept_head', invitedBy: 'mgr@example.com', status: 'pending', createdAt: '2026-01-02T00:00:00.000Z',
+      })
+    );
+  });
+
+  it('blocks a dept_head from re-issuing an invite at facility_manager (role cap applies to re-issue too)', async () => {
+    await seedManager('dept_head');
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'invites/fac-1--carol@example.com'), {
+        id: 'fac-1--carol@example.com', email: 'carol@example.com', organizationId: 'org-1', facilityId: 'fac-1',
+        role: 'staff', invitedBy: 'mgr@example.com', status: 'revoked', createdAt: '2026-01-01T00:00:00.000Z',
+      });
+    });
+    const mgr = testEnv.authenticatedContext('mgr-uid', { email: 'mgr@example.com' });
+    await assertFails(
+      setDoc(doc(mgr.firestore(), 'invites/fac-1--carol@example.com'), {
+        id: 'fac-1--carol@example.com', email: 'carol@example.com', organizationId: 'org-1', facilityId: 'fac-1',
+        role: 'facility_manager', invitedBy: 'mgr@example.com', status: 'pending', createdAt: '2026-01-02T00:00:00.000Z',
+      })
+    );
+  });
 });
 
 describe('staff/{staffId} self-onboarding (invite-gated join)', () => {
