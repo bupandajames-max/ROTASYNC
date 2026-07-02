@@ -10,7 +10,5 @@ services:
         value: production
       # Set manually in the Render dashboard (Secret), not committed here:
       # GEMINI_API_KEY
-      # Once Firebase Auth/Firestore are still in use during the transition
-      # window, the client-side firebase-applet-config.json values stay as
-      # they are — this only affects where the Express/Gemini server runs,
-      # not Firebase itself.
+      # Firebase/Firestore are still the data layer as of this deploy — this
+      # only affects where the Express/Gemini server runs.
