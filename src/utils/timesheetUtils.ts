@@ -101,7 +101,7 @@ function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: Pub
     }
 
     const elapsed = calculateElapsedHours(clockIn, clockOut, lunchBreakMinutes);
-    const isSun = new Date(dateStr).getDay() === 0;
+    const isSun = new Date(dateStr + 'T00:00:00').getDay() === 0; // local parse — bare YYYY-MM-DD is UTC midnight, off by a day west of UTC
     const isPH = isPublicHoliday(dateStr, holidays);
 
     if (isPH) {
@@ -232,7 +232,7 @@ export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holid
   
   // Handled Worked Shift, Overtime Active Duty, or On-Call active hours
   const totalNetHours = calculateElapsedHours(updated.clockIn, updated.clockOut, updated.lunchBreakMinutes);
-  const isSun = new Date(dateStr).getDay() === 0;
+  const isSun = new Date(dateStr + 'T00:00:00').getDay() === 0; // local parse — bare YYYY-MM-DD is UTC midnight, off by a day west of UTC
   const isPH = isPublicHoliday(dateStr, holidays);
   
   // Standard Shift Reference — the overtime threshold for this day is

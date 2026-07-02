@@ -237,7 +237,10 @@ export default function App() {
       else if (monthlyDayMatch) isDue = dateObj.getDate() === parseInt(monthlyDayMatch[1], 10);
       // Legacy fallbacks for tasks saved before per-day frequency existed.
       else if (task.frequency.includes('Sunday') && dow === 0) isDue = true;
-      else if (task.frequency.includes('Monthly') && (isLastDOM || dow === 4)) isDue = true;
+      // Bare legacy "Monthly" (no day chosen — the old picker offered it)
+      // means once a month: the last day. The old matcher also fired every
+      // Thursday, an explicit "mock simulation" leftover, dropped here.
+      else if (task.frequency.includes('Monthly')) isDue = isLastDOM;
 
       if (!isDue) return;
 
@@ -550,8 +553,11 @@ export default function App() {
         // timesheet's first generation would never show up here, and
         // would look like the roster "lost" it. Submitted/Approved
         // timesheets are a frozen record and are intentionally left alone.
+        // Rejected ones are back in the staff member's hands for corrections
+        // (the editor treats them as unlocked), so they reconcile too —
+        // isModified still protects any day the person actually logged.
         const existing = updatedTimesheets[tsIndex];
-        if (existing.status === 'Draft') {
+        if (existing.status === 'Draft' || existing.status === 'Rejected') {
           const { timesheet, changed } = reconcileTimesheetWithRoster(existing, activeCycle, staff.id, cycleDates, holidays, shifts);
           if (changed) {
             updatedTimesheets[tsIndex] = timesheet;
@@ -1526,11 +1532,16 @@ export default function App() {
             isModified: true,
             deviationReason: day.deviationReason ? `${day.deviationReason}; ${note}` : note,
           };
-          const updatedTimesheets = timesheets.map(t => t.id === ts.id ? { ...t, days: { ...t.days, [dateKey]: updatedDay } } : t);
-          setTimesheets(updatedTimesheets);
-          if (selectedFacilityId) {
-            localStorage.setItem(facilityKey(selectedFacilityId, 'timesheets_list'), JSON.stringify(updatedTimesheets));
-          }
+          // Route through the canonical update handler so this write also
+          // syncs to Firestore — a state+localStorage-only write here would
+          // be silently reverted by the next cloud hydration.
+          handleUpdateTimesheet({ ...ts, days: { ...ts.days, [dateKey]: updatedDay } });
+        } else {
+          // The requested date isn't on this cycle's timesheet (e.g. the
+          // request predates a cycle rollover). The hours are still recorded
+          // in the extra-hours log, but a silent no-op here would let the
+          // manager believe the payroll record was updated when it wasn't.
+          toast.error(`Approved and logged, but ${dateKey} isn't on ${req.requesterName}'s current timesheet — add it there manually if it should count for this cycle's payroll.`);
         }
       }
     }
