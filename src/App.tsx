@@ -390,7 +390,14 @@ export default function App() {
   // here rather than inside either hook, since each hook's inputs can't
   // depend on the other's outputs.
   const isRegisteredStaff = staffList.some(s => s.email?.toLowerCase().trim() === firebaseUser?.email?.toLowerCase().trim());
-  const needsOnboarding = !!(firebaseUser && !isRegisteredStaff);
+  // The bootstrap superuser is never "staff" of any facility by design
+  // (resolveAccess's superuser branch returns no facilityId/staffId at all)
+  // and there's no admin above them to invite them — so without this check
+  // the invite-only onboarding gate below locks the platform owner's own
+  // account out permanently. This is a synchronous email-allowlist check
+  // (no Firestore read), so it can't race the async accessLevel resolution
+  // in the effect below the way a check against `access.accessLevel` would.
+  const needsOnboarding = !!(firebaseUser && !isRegisteredStaff && !isSuperuserEmail(firebaseUser.email));
 
   useEffect(() => {
     if (!firebaseUser) {
