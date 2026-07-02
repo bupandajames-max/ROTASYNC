@@ -91,8 +91,12 @@ export default function ManagerDashboard({
   // Pending Peer requests (Swaps & Extra hours)
   const pendingRequests = approvals.filter(a => a.status === 'Pending');
 
-  // Active inspect timesheet
-  const currentInspectTimesheet = timesheets.find(t => t.staffId === selectedInspectStaffId);
+  // Active inspect timesheet — matched on cycleId too, not just staffId:
+  // staffId alone returns the FIRST sheet in the list, which after a cycle
+  // rollover is the oldest cycle's record, not the one being reviewed now
+  // (same bug/fix as TimesheetPortal's myTimesheet selection).
+  const currentInspectTimesheet = timesheets.find(t => t.staffId === selectedInspectStaffId && t.cycleId === activeCycle?.id)
+    || timesheets.find(t => t.staffId === selectedInspectStaffId);
   const currentInspectStaff = staffList.find(s => s.id === selectedInspectStaffId);
 
   // Re-sum totals
@@ -275,7 +279,9 @@ export default function ManagerDashboard({
 
           <div className="flex flex-col gap-2.5">
             {staffList.map(s => {
-              const ts = timesheets.find(t => t.staffId === s.id);
+              // Same cycleId-first selection as currentInspectTimesheet above.
+              const ts = timesheets.find(t => t.staffId === s.id && t.cycleId === activeCycle?.id)
+                || timesheets.find(t => t.staffId === s.id);
               if (!ts) return null;
 
               const tsTotals = sumTimesheetTotals(ts);

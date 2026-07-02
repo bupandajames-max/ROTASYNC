@@ -58,10 +58,21 @@ export default function TimesheetPortal({
   // list — so this always matches what Settings > Shift Planner defines,
   // instead of drifting out of sync with names/codes that change or get removed.
   const shiftDefs = useShiftDefs(shifts);
-  const activeLeaveTypes = Object.entries(shiftDefs).filter(([, d]) => d.isLeave && d.active !== false);
+  // OFF is isLeave: true only so the roster UI groups it with non-working
+  // chips — it's a rest day, not a creditable paid-leave type, and must not
+  // be offered in the "Credited Leave Type" picker (same OFF-vs-isLeave
+  // distinction as timesheetUtils' classifier and 5 other call sites).
+  const activeLeaveTypes = Object.entries(shiftDefs).filter(([code, d]) => d.isLeave && d.active !== false && code !== 'OFF');
 
-  // Find or auto-initialize timesheet
-  const myTimesheet = timesheets.find(t => t.staffId === activeStaffId);
+  // Find the timesheet for THIS cycle specifically. Matching on staffId
+  // alone returned the FIRST sheet in the list, which after a cycle
+  // rollover (or any leftover sheet from an earlier cycle) is the OLDEST
+  // one — permanently showing last cycle's record here while the current
+  // cycle's sheet sat unused behind it. The staffId-only fallback stays
+  // for the brief window where a sheet exists but the cycle id hasn't
+  // been stamped/synced yet.
+  const myTimesheet = timesheets.find(t => t.staffId === activeStaffId && t.cycleId === activeCycle?.id)
+    || timesheets.find(t => t.staffId === activeStaffId);
 
   const [selectedDay, setSelectedDay] = useState<TimesheetDay | null>(null);
   const [editWorkType, setEditWorkType] = useState<TimesheetDay['workType']>('Worked Shift');

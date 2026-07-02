@@ -183,6 +183,39 @@ describe('reconcileTimesheetWithRoster', () => {
     const { changed } = reconcileTimesheetWithRoster(inSync, cycle, 's1', dates, []);
     expect(changed).toBe(false);
   });
+
+  it('self-heals an OFF day corrupted by the old OFF-as-leave classifier bug', () => {
+    // Timesheets generated before the fix stored every rest day as
+    // 'Leave Taken' with 8 phantom leave hours. Their scheduledShift still
+    // matches the roster ('OFF' === 'OFF'), so the shift-changed check alone
+    // would never rebuild them — the heal condition has to catch them.
+    const corrupted: Timesheet = {
+      id: 'ts1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft',
+      days: {
+        '2026-06-15': buildExpectedDay('2026-06-15', 'A'),
+        '2026-06-16': baseDay({ date: '2026-06-16', scheduledShift: 'OFF', actualShift: 'OFF', clockIn: '', clockOut: '', workType: 'Leave Taken', leaveHours: 8, regularWorkedHours: 0 }),
+      },
+    };
+    const { timesheet, changed } = reconcileTimesheetWithRoster(corrupted, cycle, 's1', dates, []);
+    expect(changed).toBe(true);
+    expect(timesheet.days['2026-06-16'].workType).toBe('Absent');
+    expect(timesheet.days['2026-06-16'].leaveHours).toBe(0);
+  });
+
+  it('leaves a human-modified OFF day alone even if it says Leave Taken', () => {
+    // isModified means someone deliberately edited this day (e.g. recording
+    // unplanned leave on a rostered day off) — the heal must not undo that.
+    const humanEdited: Timesheet = {
+      id: 'ts1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft',
+      days: {
+        '2026-06-15': buildExpectedDay('2026-06-15', 'A'),
+        '2026-06-16': baseDay({ date: '2026-06-16', scheduledShift: 'OFF', actualShift: 'AL', clockIn: '', clockOut: '', workType: 'Leave Taken', leaveHours: 8, regularWorkedHours: 0, isModified: true }),
+      },
+    };
+    const { timesheet, changed } = reconcileTimesheetWithRoster(humanEdited, cycle, 's1', dates, []);
+    expect(changed).toBe(false);
+    expect(timesheet.days['2026-06-16'].workType).toBe('Leave Taken');
+  });
 });
 
 // Mirrors what buildScheduledDay would produce, for the "already in sync" test above.
@@ -201,6 +234,20 @@ function buildExpectedDay(date: string, scheduledShift: string): TimesheetDay {
 
 describe('generateDefaultTimesheet', () => {
   const staff: StaffMember = { id: 's1', name: 'Test', fullName: 'Test Staff', role: 'Operator', email: '', phone: '', isManager: false, contractedHours: 168, gender: '', employeeNo: '' };
+
+  it('treats an OFF rest day as Absent with zero leave credit, not Leave Taken', () => {
+    // Regression test for the payroll bug found in E2E review: OFF carries
+    // isLeave: true (for roster-UI chip grouping only), which routed rest
+    // days into the leave branch — and because OFF has hours: 0, the 8h
+    // full-day fallback credited 8 phantom leave hours per rest day
+    // (~a full contracted month of fake paid leave on an empty roster).
+    const cycle: RosterCycle = { id: 'c1', startDate: '2026-06-16', endDate: '2026-06-16', shifts: { s1: ['OFF'] } };
+    const ts = generateDefaultTimesheet(staff, cycle, ['2026-06-16'], []);
+    const day = ts.days['2026-06-16'];
+    expect(day.workType).toBe('Absent');
+    expect(day.leaveHours).toBe(0);
+    expect(day.clockIn).toBe('');
+  });
 
   it('treats a built-in leave code as Leave Taken, not a worked shift', () => {
     // Regression test: every built-in leave type (AL, SL, CO, MD) is also

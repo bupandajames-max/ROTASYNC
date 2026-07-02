@@ -110,7 +110,16 @@ function buildScheduledDay(dateStr: string, scheduledCode: string, holidays: Pub
     } else {
       regularWorkedHours = elapsed;
     }
-  } else if (shiftDef?.isLeave) {
+  } else if (shiftDef?.isLeave && scheduledCode !== 'OFF') {
+    // The 'OFF' exclusion matters: the built-in OFF (rest day) def carries
+    // isLeave: true so the roster UI groups it with the non-working chips,
+    // but a rest day is NOT paid leave — without this check every OFF day
+    // in every timesheet was classified 'Leave Taken' and, because OFF has
+    // hours: 0, fell into the 8h fallback below, crediting 8h of paid leave
+    // per rest day (~a full contracted month of phantom leave on an empty
+    // roster). Five other call sites already special-case OFF alongside
+    // isLeave (RosterGrid, ManagerDashboard, StaffPortal) — this payroll
+    // classifier was the one place that didn't.
     workType = 'Leave Taken';
     // Credit the leave type's own configured hours if it has one (e.g. a
     // half-day leave type), otherwise the standard 8h full-day credit.
@@ -190,7 +199,14 @@ export function reconcileTimesheetWithRoster(
 
     if (existing?.isModified) return; // a real logged entry — never overwrite
 
-    if (!existing || existing.scheduledShift !== scheduledCode) {
+    // Second condition: self-heal rows corrupted by the old OFF-as-leave
+    // classifier bug (rest days stored as 'Leave Taken' + 8h credited).
+    // Those rows still have scheduledShift === 'OFF' matching the roster,
+    // so the shift-changed check alone would never rebuild them and the
+    // phantom leave credits would persist forever in every Draft timesheet
+    // generated before the fix. isModified rows are already excluded above.
+    if (!existing || existing.scheduledShift !== scheduledCode
+        || (scheduledCode === 'OFF' && existing.workType === 'Leave Taken')) {
       days[dateStr] = buildScheduledDay(dateStr, scheduledCode, holidays, shifts);
       changed = true;
     }
