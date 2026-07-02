@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  User, 
-  Building2, 
-  MapPin, 
-  Fingerprint, 
-  HeartHandshake, 
-  UserPlus, 
-  Lock, 
-  Sparkles, 
-  Plus, 
-  ChevronRight, 
-  ArrowRight, 
-  CheckCircle2, 
+import {
+  User,
+  Building2,
+  Fingerprint,
+  UserPlus,
+  Lock,
+  ChevronRight,
+  ArrowRight,
   Network,
-  Users
 } from 'lucide-react';
 import { StaffMember, Facility, Department } from '../types';
 import { useToast } from './ui/ToastProvider';
@@ -161,183 +154,112 @@ export default function PortalGateway({
   // Rendering Standard Entrance View (Unauthenticated)
   if (!firebaseUser && !isSandboxBypassActive) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden relative selection:bg-indigo-500/30 selection:text-white">
-        
-        {/* Abstract Ambient Glow Blobs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10 animate-pulse duration-[6000ms]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-slate-800/20 rounded-full blur-3xl -z-10 animate-pulse duration-[8000ms]"></div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 flex flex-col items-center justify-center p-4 md:p-8 selection:bg-indigo-100">
+        <div className="w-full max-w-sm">
 
-        <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 bg-slate-950/40 border border-slate-800/80 rounded-[2.5rem] shadow-2xl overflow-hidden backdrop-blur-xl animate-in fade-in duration-500">
-          
-          {/* Left Panel: High impact brand showcase */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-8 md:p-12 flex flex-col justify-between text-white relative">
-            <div className="absolute inset-0 bg-radial-gradient(from_center,_rgba(0,0,0,0)_60%,_rgba(0,0,0,0.5))"></div>
-            
-            <div className="relative z-10">
-              {/* Custom Medical Cross / Network Icon */}
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg shadow-indigo-500/10">
-                <Network className="w-6 h-6 text-indigo-300" />
-              </div>
-              
-              <div className="mt-8">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-indigo-300 uppercase block">Team Rostering</span>
-                <h1 className="text-3xl font-black tracking-tight leading-none text-white mt-1">
-                  {taxonomy.appName} <br />
-                  Connected Workspace
-                </h1>
-                <p className="text-sm p-0 m-0 text-slate-300 mt-4 leading-relaxed font-semibold">
-                  Plan rosters, track hours, set work rules, and manage your team's daily tasks — all in one place.
-                </p>
-              </div>
+          {/* Brand */}
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
+              <Network className="w-6 h-6 text-indigo-500" />
             </div>
-
-            <div className="relative z-10 space-y-4 pt-10 border-t border-white/10 mt-12 lg:mt-0">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                <div className="text-xs">
-                  <strong className="block text-white font-bold font-sans">Private by default</strong>
-                  <span className="text-slate-300">Each team only sees its own schedules and tasks.</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Network className="w-4 h-4 text-sky-400 mt-0.5 shrink-0" />
-                <div className="text-xs">
-                  <strong className="block text-white font-bold font-sans">Built-in work rules</strong>
-                  <span className="text-slate-300">Set hour limits, leave, and rest periods in a few clicks.</span>
-                </div>
-              </div>
-            </div>
+            <h1 className="text-xl font-extrabold text-slate-800 mt-4">{taxonomy.appName}</h1>
+            <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">
+              Plan rosters, track hours, and manage your team's daily tasks.
+            </p>
           </div>
 
-          {/* Right Panel: Interactive Form Auth options */}
-          <div className="lg:col-span-7 p-8 md:p-12 bg-[#090d16] flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-slate-800/80">
-            <div className="max-w-md w-full mx-auto space-y-8">
-              
-              <div>
-                <span className="px-2.5 py-1 bg-indigo-500/10 border border-indigo-400/20 text-indigo-400 text-[10px] font-bold uppercase rounded-full tracking-wider inline-block">
-                  🔒 CONTROL GATEWAY
+          {/* Main card */}
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
+            <button
+              onClick={onGoogleSignIn}
+              className="w-full py-3.5 px-5 bg-white text-slate-700 rounded-xl hover:bg-slate-50 font-bold flex items-center justify-center gap-3 active:scale-[0.99] transition-all cursor-pointer border border-slate-200 shadow-xs"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              <span className="text-sm">Sign in with Google</span>
+            </button>
+
+            <p className="text-center text-[11px] text-slate-400 mt-3">Your sign-in is secured by Google.</p>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-slate-100"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-white px-3 text-[11px] font-semibold text-slate-400">or just exploring?</span>
+              </div>
+            </div>
+
+            {/* Secondary: demo / preview access — visually quieter than sign-in */}
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  const supervisor = staffList.find(s => s.isManager) || staffList[0];
+                  if (supervisor) {
+                    onSelectSandboxBypass(supervisor.id);
+                  } else {
+                    onBypassAsGuestManager();
+                  }
+                }}
+                className="w-full py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-left border border-slate-100 flex items-center justify-between transition-colors cursor-pointer group"
+              >
+                <span>
+                  <strong className="text-xs font-bold text-slate-700 block">{staffList.find(s => s.isManager)?.name || "Sample manager"}</strong>
+                  <span className="text-[11px] text-slate-400">Preview as a manager</span>
                 </span>
-                <h2 className="text-2xl font-black text-white mt-3">Welcome to your Portal</h2>
-                <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                  Sign in with your Google account to see your roster and log your tasks.
-                </p>
-              </div>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+              </button>
 
-              {/* AUTH GATEWAY BUTTONS */}
-              <div className="space-y-4 pt-2">
-                
-                {/* Real Google Auth */}
-                <button
-                  onClick={onGoogleSignIn}
-                  className="w-full py-4 px-5 bg-white text-slate-900 rounded-2xl hover:bg-slate-100 font-extrabold flex items-center justify-center gap-3 active:scale-[0.99] transition-all cursor-pointer shadow-lg shadow-white/5 group border border-transparent"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  <span className="text-sm">Sign In with Google SSO</span>
-                  <ArrowRight className="w-4 h-4 ml-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                </button>
+              <button
+                onClick={() => {
+                  const staffMember = staffList.find(s => !s.isManager) || staffList[1] || staffList[0];
+                  if (staffMember) {
+                    onSelectSandboxBypass(staffMember.id);
+                  } else {
+                    onSelectSandboxBypass('demo-member');
+                  }
+                }}
+                className="w-full py-2.5 px-3.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-left border border-slate-100 flex items-center justify-between transition-colors cursor-pointer group"
+              >
+                <span>
+                  <strong className="text-xs font-bold text-slate-700 block">{staffList.find(s => !s.isManager)?.name || "Sample team member"}</strong>
+                  <span className="text-[11px] text-slate-400">Preview as a team member</span>
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+              </button>
 
-                {/* DEMO / REVIEWER GATEWAY BYPASS */}
-                <div className="relative pt-4 text-center">
-                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className="w-full border-t border-slate-800"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[#090d16] px-3 font-semibold text-slate-500 font-mono tracking-widest">quick simulator bypass</span>
-                  </div>
+              <button
+                onClick={() => setIsDemoUserSelectOpen(!isDemoUserSelectOpen)}
+                className="w-full text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-1 pt-1 cursor-pointer"
+              >
+                <span>Show all {staffList.length} preview profiles</span>
+                <ChevronRight className={`w-3 h-3 transition-transform ${isDemoUserSelectOpen ? 'rotate-90' : ''}`} />
+              </button>
+
+              {isDemoUserSelectOpen && (
+                <div className="bg-slate-50 border border-slate-100 p-2 rounded-xl max-h-40 overflow-y-auto space-y-1 scrollbar-thin">
+                  {staffList.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => onSelectSandboxBypass(s.id)}
+                      className="w-full text-left p-2 rounded-lg hover:bg-white transition-colors flex items-center justify-between gap-2 border border-transparent hover:border-slate-200 cursor-pointer"
+                    >
+                      <span className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-700">{s.fullName || s.name}</span>
+                        <span className="text-[10px] text-slate-400">{s.role} · {s.isManager ? 'Manager' : 'Team member'}</span>
+                      </span>
+                      <span className="text-[9px] font-bold text-indigo-500 uppercase shrink-0">Preview</span>
+                    </button>
+                  ))}
                 </div>
-
-                <div className="bg-slate-900/45 border border-slate-800 p-5 rounded-2xl space-y-4">
-                  <div className="flex items-start gap-2.5">
-                    <Sparkles className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                      <strong>Just exploring?</strong> Try the app without signing in — preview it as a sample manager or team member.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Supervisor bypass */}
-                    <button
-                      onClick={() => {
-                        const supervisor = staffList.find(s => s.isManager) || staffList[0];
-                        if (supervisor) {
-                          onSelectSandboxBypass(supervisor.id);
-                        } else {
-                          onBypassAsGuestManager();
-                        }
-                      }}
-                      className="py-2.5 px-3 bg-slate-800/80 hover:bg-slate-700/80 rounded-xl text-left text-xs border border-slate-700/50 flex flex-col justify-between hover:border-indigo-500/40 transition-all cursor-pointer group"
-                    >
-                      <span className="text-[9px] text-indigo-400 uppercase font-mono tracking-wider block mb-1">Manager Access</span>
-                      <strong className="text-slate-100 block truncate group-hover:text-indigo-300">
-                        {staffList.find(s => s.isManager)?.name || "Default Manager"}
-                      </strong>
-                      <span className="text-[10px] text-slate-400 truncate">Create rosters & edit rules</span>
-                    </button>
-
-                    {/* General Staff member bypass */}
-                    <button
-                      onClick={() => {
-                        const staffMember = staffList.find(s => !s.isManager) || staffList[1] || staffList[0];
-                        if (staffMember) {
-                          onSelectSandboxBypass(staffMember.id);
-                        } else {
-                          onSelectSandboxBypass('demo-member');
-                        }
-                      }}
-                      className="py-2.5 px-3 bg-slate-800/80 hover:bg-slate-700/80 rounded-xl text-left text-xs border border-slate-700/50 flex flex-col justify-between hover:border-sky-500/40 transition-all cursor-pointer group"
-                    >
-                      <span className="text-[9px] text-sky-400 uppercase font-mono tracking-wider block mb-1">Standard member</span>
-                      <strong className="text-slate-100 block truncate group-hover:text-sky-300">
-                        {staffList.find(s => !s.isManager)?.name || "Default Operator"}
-                      </strong>
-                      <span className="text-[10px] text-slate-400 truncate">Personal task list</span>
-                    </button>
-                  </div>
-
-                  <div className="pt-2 text-center">
-                    <button
-                      onClick={() => setIsDemoUserSelectOpen(!isDemoUserSelectOpen)}
-                      className="text-[11px] font-black text-indigo-300 hover:text-white transition-colors flex items-center gap-1 mx-auto"
-                    >
-                      <span>Show all ({staffList.length}) preconfigured members</span>
-                      <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isDemoUserSelectOpen ? 'rotate-90' : ''}`} />
-                    </button>
-
-                    {isDemoUserSelectOpen && (
-                      <div className="mt-3 bg-slate-950 border border-slate-800 p-2.5 rounded-xl max-h-40 overflow-y-auto space-y-1 text-left scrollbar-thin">
-                        {staffList.map(s => (
-                          <button
-                            key={s.id}
-                            onClick={() => onSelectSandboxBypass(s.id)}
-                            className="w-full text-left p-2 rounded-lg hover:bg-slate-900 transition-colors flex items-center justify-between gap-2 border border-transparent hover:border-slate-800/60"
-                          >
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-slate-200">{s.fullName || s.name}</span>
-                              <span className="text-[10px] text-slate-500">{s.role} • {s.isManager ? 'Manager' : 'Team member'}</span>
-                            </div>
-                            <span className="text-[9px] font-mono font-black text-[#009EE2] uppercase">Preview</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-
+              )}
             </div>
           </div>
 
-        </div>
-
-        {/* Footer info banner */}
-        <div className="mt-8 text-center text-slate-500 text-[11px] font-semibold max-w-sm tracking-wide">
-          Your sign-in is secured by Google.
         </div>
       </div>
     );

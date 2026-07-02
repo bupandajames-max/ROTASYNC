@@ -1227,7 +1227,7 @@ export default function RosterGrid({
                       const cellShiftCode = activeCycle.shifts[editingCell.staffId]?.[editingCell.dayIdx] || 'OFF';
                       const items = getActionItemsFor(editingCell.staffId, cellDate);
                       return (
-                        <div className="border-t border-slate-100 mt-1.5 pt-1.5 -mx-1.5 -mb-1.5 px-2.5 pb-2 bg-slate-50/70 rounded-b-xl">
+                        <div className="border border-slate-100 mt-1.5 p-2 bg-slate-50/70 rounded-lg">
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1.5">Tasks for this day</p>
 
                           {items.length > 0 && (
