@@ -993,6 +993,14 @@ export default function App() {
         facilityKey(selectedFacilityId, 'cycle_dates'),
         facilityKey(selectedFacilityId, 'taxonomy'),
         facilityKey(selectedFacilityId, 'custom_shifts'),
+        // These two were previously left behind: useHydration reads both
+        // straight back in on the very next load (config → ruleSet/task
+        // categories/facility types/timezone; holidays → the regional preset),
+        // so without clearing them a "factory reset" silently un-resets
+        // itself the moment the page reloads two lines below.
+        facilityKey(selectedFacilityId, 'config'),
+        facilityKey(selectedFacilityId, 'holidays'),
+        facilityKey(selectedFacilityId, 'roster_action_items'),
         'kmh_staff_list',
         'kmh_active_cycle',
         'kmh_task_master',
@@ -1015,9 +1023,10 @@ export default function App() {
           'approvals',
           'extraHours',
           'timesheets',
-          'departments'
+          'departments',
+          'rosterActionItems'
         ];
-        
+
         for (const colName of collectionsToPurge) {
           try {
             // Tenant-scoped read: an unscoped collection list here would be
@@ -1033,6 +1042,20 @@ export default function App() {
             console.warn(`Could not purge cloud collection "${colName}":`, e);
           }
         }
+
+        // workspaceConfigs isn't facility-scoped by a `facilityId` field like
+        // the collections above — its document id IS the facility id (same
+        // pattern as `facilities`), so it needs a direct delete rather than
+        // the query-then-delete loop. Previously left behind entirely: never
+        // read back on hydration (so it couldn't silently undo a reset), but
+        // it did contradict the "scrubs all Firestore collections" promise
+        // and left orphaned tenant config sitting in the cloud database.
+        try {
+          await dbDeleteDoc('workspaceConfigs', selectedFacilityId);
+        } catch (e) {
+          console.warn('Could not purge cloud workspaceConfigs doc:', e);
+        }
+
         await dbSetDoc('systemConfig', 'status', { id: 'status', seeded: true });
       }
 
@@ -1047,7 +1070,15 @@ export default function App() {
       setActiveCycle(null);
       setCycleDates([]);
       
-      // 5. Force browser page reload to land the user back into onboarding/portal gateway with full fresh states
+      // 5. Force a page reload with fresh state. This wipes only the
+      // current facility/tenant — selectedFacilityId (GLOBAL_KEYS.lastFacility)
+      // and the signed-in session are deliberately left untouched, so the
+      // user stays in the same facility context to rebuild it rather than
+      // being dropped into a blank organization picker. What they land on
+      // depends on identity: a demo/sandbox session (never persisted) drops
+      // to the pre-sign-in landing page; a real signed-in user with no more
+      // staff profile in this facility (needsOnboarding) lands on
+      // PortalGateway's self-onboarding form, pre-scoped to this facility.
       window.location.reload();
     } catch (err) {
       console.error('Deep purge failed:', err);
