@@ -210,6 +210,63 @@ describe('Tenant read isolation (Phase 1)', () => {
   });
 });
 
+describe('staff/{staffId} self-onboarding (join an existing facility)', () => {
+  const seedFacility = async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'facilities/fac-1'), { id: 'fac-1', name: 'Mine Facility', location: 'Here' });
+    });
+  };
+
+  it('lets a brand-new signed-in user create their own staff doc as a general member of an existing facility', async () => {
+    await seedFacility();
+    const alice = testEnv.authenticatedContext('alice-uid', { email: 'alice@example.com' });
+    await assertSucceeds(
+      setDoc(doc(alice.firestore(), 'staff/staff-alice'), {
+        id: 'staff-alice', name: 'Alice', email: 'alice@example.com', role: 'Coordinator', facilityId: 'fac-1', isManager: false,
+      })
+    );
+  });
+
+  it('blocks self-onboarding into a facility that does not exist', async () => {
+    const alice = testEnv.authenticatedContext('alice-uid', { email: 'alice@example.com' });
+    await assertFails(
+      setDoc(doc(alice.firestore(), 'staff/staff-alice'), {
+        id: 'staff-alice', name: 'Alice', email: 'alice@example.com', role: 'Coordinator', facilityId: 'fac-ghost', isManager: false,
+      })
+    );
+  });
+
+  it('blocks self-onboarding a staff doc for someone else\'s email', async () => {
+    await seedFacility();
+    const alice = testEnv.authenticatedContext('alice-uid', { email: 'alice@example.com' });
+    await assertFails(
+      setDoc(doc(alice.firestore(), 'staff/staff-bob'), {
+        id: 'staff-bob', name: 'Bob', email: 'bob@example.com', role: 'Coordinator', facilityId: 'fac-1', isManager: false,
+      })
+    );
+  });
+
+  it('blocks self-onboarding with isManager true', async () => {
+    await seedFacility();
+    const alice = testEnv.authenticatedContext('alice-uid', { email: 'alice@example.com' });
+    await assertFails(
+      setDoc(doc(alice.firestore(), 'staff/staff-alice'), {
+        id: 'staff-alice', name: 'Alice', email: 'alice@example.com', role: 'Coordinator', facilityId: 'fac-1', isManager: true,
+      })
+    );
+  });
+
+  it('blocks self-onboarding with a pre-set accessLevel (no self-escalation via the staff doc)', async () => {
+    await seedFacility();
+    const alice = testEnv.authenticatedContext('alice-uid', { email: 'alice@example.com' });
+    await assertFails(
+      setDoc(doc(alice.firestore(), 'staff/staff-alice'), {
+        id: 'staff-alice', name: 'Alice', email: 'alice@example.com', role: 'Coordinator', facilityId: 'fac-1', isManager: false, accessLevel: 'superuser',
+      })
+    );
+  });
+});
+
 describe('platformAdmins (Phase 2)', () => {
   it('blocks a non-admin from granting themselves platform admin', async () => {
     const alice = testEnv.authenticatedContext('alice-uid', { email: 'alice@example.com' });

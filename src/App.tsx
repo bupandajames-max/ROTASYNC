@@ -128,12 +128,22 @@ export default function App() {
   const handleGenericError = (error: any) => {
     console.error("Firebase Operation Error (caught):", error);
     const msg = error instanceof Error ? error.message : String(error);
-    if (msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('resource-exhausted') || msg.toLowerCase().includes('resource_exhausted')) {
+    const lower = msg.toLowerCase();
+    if (lower.includes('quota') || lower.includes('resource-exhausted') || lower.includes('resource_exhausted')) {
       const projId = firebaseConfig.projectId || 'gen-lang-client-0706186972';
       const dbId = firebaseConfig.firestoreDatabaseId || 'ai-studio-edcd9041-8cfa-4252-8425-aec992679dde';
       setFirebaseErrorBanner({
         message: "Firestore Quota Exceeded (Read-Only Mode): The daily free-tier write units per project limit has been reached. Your changes are saved locally to your device and will sync when the quota resets tomorrow.",
         link: `https://console.firebase.google.com/project/${projId}/firestore/databases/${dbId}/data?openUpgradeDialog=true`
+      });
+    } else if (lower.includes('permission-denied') || lower.includes('permission_denied') || lower.includes('insufficient permissions')) {
+      // Previously swallowed entirely (console.error only), so a rejected
+      // write looked identical to a successful one: local state had already
+      // updated optimistically, and nothing told the user the cloud copy
+      // never saved. Surface it so a rule/UI mismatch is visible immediately
+      // instead of silently diverging between devices.
+      setFirebaseErrorBanner({
+        message: "That change wasn't saved to the cloud — your account doesn't have permission for it there. It's saved locally on this device only and won't appear on your other devices until this is resolved.",
       });
     }
   };
@@ -1665,8 +1675,6 @@ export default function App() {
           onSelectSandboxBypass={handleSelectSandboxBypass}
           isSandboxBypassActive={isSandboxBypassActive}
           onBypassAsGuestManager={handleBypassAsGuestManager}
-          onCreateFacility={handleCreateFacility}
-          onCreateDepartment={handleCreateDepartment}
           taxonomy={taxonomy}
         />
       </div>

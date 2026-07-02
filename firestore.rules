@@ -96,6 +96,21 @@ service cloud.firestore {
         && data.facilityId is string && data.facilityId.size() <= 100;
     }
 
+    // Self-onboarding: a signed-in user creating their OWN staff doc, joining
+    // an existing facility as a general member. Mirrors the self-create-as-
+    // 'staff' pattern already used by users/{uid} below. Never a manager,
+    // never a pre-set accessLevel (that stays gated entirely by the
+    // users/{uid} rules, so this can't be used to self-escalate), and only
+    // into a facility that already exists (self-service facility/department
+    // creation is a separate, deliberately manager-gated action).
+    function isSelfOnboardStaff(data) {
+      return isValidStaff(data)
+        && data.email == callerEmail()
+        && (!data.keys().hasAny(['isManager']) || data.isManager == false)
+        && !data.keys().hasAny(['accessLevel'])
+        && exists(/databases/$(database)/documents/facilities/$(data.facilityId));
+    }
+
     function isValidCycle(data) {
       return data.keys().hasAll(['id', 'startDate', 'endDate', 'shifts'])
         && data.id is string && data.id.size() <= 128
@@ -198,10 +213,14 @@ service cloud.firestore {
       allow create, update, delete: if isFacilityLevel() && inMyFacility(configId);
     }
 
-    // Staff registry: department heads and above, only within their own facility.
+    // Staff registry: writes are department-head+ within their own facility,
+    // OR a signed-in user self-onboarding their own general-member record
+    // into an existing facility (see isSelfOnboardStaff above).
     match /staff/{staffId} {
       allow read: if isSuper() || resource.data.facilityId == callerFacility();
-      allow create, update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
+      allow create: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
+      allow create: if isSignedIn() && isValidId(staffId) && isSelfOnboardStaff(incoming());
+      allow update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
       allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
 

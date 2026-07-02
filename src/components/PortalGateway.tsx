@@ -10,7 +10,6 @@ import {
   Network,
 } from 'lucide-react';
 import { StaffMember, Facility, Department } from '../types';
-import { useToast } from './ui/ToastProvider';
 
 interface PortalGatewayProps {
   firebaseUser: any;
@@ -24,8 +23,6 @@ interface PortalGatewayProps {
   onSelectSandboxBypass: (staffId: string) => void;
   isSandboxBypassActive: boolean;
   onBypassAsGuestManager: () => void;
-  onCreateFacility: (newFac: Facility) => void;
-  onCreateDepartment?: (newDept: Department) => void;
   taxonomy: {
     appName: string;
     workspaceSingular: string;
@@ -51,12 +48,8 @@ export default function PortalGateway({
   onSelectSandboxBypass,
   isSandboxBypassActive,
   onBypassAsGuestManager,
-  onCreateFacility,
-  onCreateDepartment,
   taxonomy,
 }: PortalGatewayProps) {
-  const toast = useToast();
-
   // Onboarding form states
   const [fullName, setFullName] = useState(firebaseUser?.displayName || '');
   const [employeeNo, setEmployeeNo] = useState(() => `EMP-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -67,68 +60,22 @@ export default function PortalGateway({
   const [selectedFacId, setSelectedFacId] = useState(selectedFacilityId || (facilities[0]?.id || ''));
   const [isDemoUserSelectOpen, setIsDemoUserSelectOpen] = useState(false);
 
-  // New custom facility registration states
-  const [newFacName, setNewFacName] = useState('');
-  const [newFacLocation, setNewFacLocation] = useState('');
-  const [newFacManager, setNewFacManager] = useState('');
-
-  // New custom department registration states
-  const [newDeptName, setNewDeptName] = useState('');
-  const [newDeptDesc, setNewDeptDesc] = useState('');
-
   // Active facility lists
   const activeFacilityDepartments = departments.filter(d => d.facilityId === selectedFacId);
 
-  // Form validations - includes dynamic workspace fields check if creating a new workspace/department
-  const isFormValid = 
-    fullName.trim().length > 2 && 
-    role.trim().length > 2 && 
+  // Joining always targets an existing facility — a brand-new user has no
+  // Firestore permission to create a facility or department (rules require
+  // facility_manager+/superuser for those), so the form can only ever offer
+  // facilities/departments that already exist. See PortalGateway audit notes.
+  const isFormValid =
+    fullName.trim().length > 2 &&
+    role.trim().length > 2 &&
     employeeNo.trim().length > 2 &&
-    (selectedFacId !== 'new_fac_option' || (newFacName.trim().length > 1 && newFacLocation.trim().length > 1)) &&
-    (selectedDeptId !== 'new_dept_option' || newDeptName.trim().length > 1);
+    !!selectedFacId;
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid || !firebaseUser) return;
-
-    let finalFacId = selectedFacId;
-    if (selectedFacId === 'new_fac_option') {
-      if (!newFacName.trim() || !newFacLocation.trim()) {
-        toast.error('Please enter a name and location for your new workspace.');
-        return;
-      }
-      const parsedId = newFacName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-      const customFac: Facility = {
-        id: parsedId,
-        name: newFacName.trim(),
-        location: newFacLocation.trim(),
-        leadManager: newFacManager.trim() || fullName,
-        facilitiesType: 'Branch',
-      };
-      
-      // Provision the Workspace dynamically
-      onCreateFacility(customFac);
-      finalFacId = parsedId;
-    }
-
-    let finalDeptId = selectedDeptId;
-    if (selectedDeptId === 'new_dept_option') {
-      if (!newDeptName.trim()) {
-        toast.error('Please enter a name for your new department.');
-        return;
-      }
-      const parsedDeptId = `${finalFacId}-${newDeptName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-      const customDept: Department = {
-        id: parsedDeptId,
-        facilityId: finalFacId,
-        name: newDeptName.trim(),
-        description: newDeptDesc.trim() || 'Custom department/team.'
-      };
-      if (onCreateDepartment) {
-        onCreateDepartment(customDept);
-      }
-      finalDeptId = parsedDeptId;
-    }
 
     const shortName = fullName.split(' ')[0] || fullName;
     const newStaff: StaffMember = {
@@ -144,8 +91,8 @@ export default function PortalGateway({
       // Always joins as a general member — admin access can only be granted
       // afterward by an existing manager (see firestore.rules users/{uid}).
       isManager: false,
-      facilityId: finalFacId,
-      departmentId: finalDeptId && finalDeptId !== 'new_dept_option' ? finalDeptId : undefined
+      facilityId: selectedFacId,
+      departmentId: selectedDeptId || undefined,
     };
 
     onSelfOnboard(newStaff);
@@ -344,60 +291,11 @@ export default function PortalGateway({
                       {f.name} ({f.location})
                     </option>
                   ))}
-                  <option value="new_fac_option" className="text-emerald-400 font-bold">
-                    + Register a New {taxonomy.workspaceSingular}...
-                  </option>
                 </select>
               </div>
-
-              {selectedFacId === 'new_fac_option' && (
-                <div className="mt-4 p-4 bg-slate-950/60 border border-slate-850 rounded-xl space-y-4 text-left animate-[fadeIn_0.15s_ease-out]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <h4 className="text-[10.5px] font-black uppercase text-slate-200 tracking-wider">Dynamic Workspace Customization</h4>
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed m-0">
-                    To connect your real workspace, specify your corporate site details below. They will dynamically register in the workspace switcher database.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-[fadeIn_0.1s_ease-out]">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 font-mono">Workspace Name *</label>
-                      <input
-                        type="text"
-                        required={selectedFacId === 'new_fac_option'}
-                        placeholder="e.g. Acme Logistics"
-                        value={newFacName}
-                        onChange={(e) => setNewFacName(e.target.value)}
-                        className="w-full text-xs bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none focus:border-[#009EE2]"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 font-mono">Location / Region *</label>
-                      <input
-                        type="text"
-                        required={selectedFacId === 'new_fac_option'}
-                        placeholder="e.g. Lusaka, Zambia"
-                        value={newFacLocation}
-                        onChange={(e) => setNewFacLocation(e.target.value)}
-                        className="w-full text-xs bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none focus:border-[#009EE2]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 animate-[fadeIn_0.1s_ease-out]">
-                    <label className="text-[9px] font-black text-slate-400 font-mono">Lead Supervisor *</label>
-                    <input
-                      type="text"
-                      placeholder="Supervisor or Operations Director"
-                      value={newFacManager}
-                      onChange={(e) => setNewFacManager(e.target.value)}
-                      className="w-full text-xs bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none focus:border-[#009EE2]"
-                    />
-                    <p className="text-[8px] text-slate-500 m-0 p-0 font-sans mt-0.5">Defaults to your full official name if left empty.</p>
-                  </div>
-                </div>
-              )}
+              <p className="text-[9.5px] text-slate-500 font-medium mt-2">
+                Don't see your {taxonomy.workspaceSingular.toLowerCase()}? Ask an existing manager there to set it up first.
+              </p>
             </div>
 
             {/* Department selector */}
@@ -415,52 +313,11 @@ export default function PortalGateway({
                   {activeFacilityDepartments.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
-                  <option value="new_dept_option" className="text-[#009EE2] font-bold">
-                    + Register a New Department...
-                  </option>
                 </select>
               </div>
               <span className="text-[9.5px] text-slate-500 font-medium block">
                 Maps your daily duties into the appropriate departmental workspaces.
               </span>
-
-              {/* Dynamic Department Creation Fields */}
-              {selectedDeptId === 'new_dept_option' && (
-                <div className="mt-4 p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-4 text-left animate-[fadeIn_0.15s_ease-out]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <h4 className="text-[10.5px] font-black uppercase text-slate-200 tracking-wider">Configure Custom Department</h4>
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed m-0">
-                    Define and configure your own custom department or operational team for this workspace.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 font-mono">Department Name *</label>
-                      <input
-                        type="text"
-                        required={selectedDeptId === 'new_dept_option'}
-                        placeholder="e.g. Inpatient Ward, Emergency, ICU"
-                        value={newDeptName}
-                        onChange={(e) => setNewDeptName(e.target.value)}
-                        className="w-full text-xs bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none focus:border-[#009EE2]"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 font-mono">Description / Objectives</label>
-                      <textarea
-                        placeholder="e.g. Core nursing shift roster group for inpatient unit"
-                        value={newDeptDesc}
-                        onChange={(e) => setNewDeptDesc(e.target.value)}
-                        rows={2}
-                        className="w-full text-xs bg-slate-950 border border-slate-800 text-slate-100 rounded-xl p-2.5 outline-none focus:border-[#009EE2]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Designation / Role */}
