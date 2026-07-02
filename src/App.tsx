@@ -943,9 +943,11 @@ export default function App() {
 
   const handleRestoreCycle = (newCycle: RosterCycle) => {
     setActiveCycle(newCycle);
-    const newDates = getDatesForCycle(newCycle.startDate);
-    setCycleDates(newDates);
-    localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(newDates));
+    // Dates are always derived from the cycle's own start/end — the cycle
+    // object is the single persisted source of truth (see useHydration).
+    // Passing only startDate here previously let a restored custom-range
+    // cycle drift from its derived dates via the smart-default heuristic.
+    setCycleDates(getDatesForCycle(newCycle.startDate, newCycle.endDate));
     localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(newCycle));
     persistState('active_cycle', newCycle);
   };
@@ -968,9 +970,9 @@ export default function App() {
     
     setActiveCycle(updatedCycle);
     setCycleDates(newDates);
-    
-    // Persist to local storage & cloud
-    localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(newDates));
+
+    // Persist to local storage & cloud. Only the cycle is persisted — the
+    // dates array is derived from its startDate/endDate at every load.
     localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(updatedCycle));
     persistState('active_cycle', updatedCycle);
   };
@@ -1205,10 +1207,10 @@ export default function App() {
       isLocked: false // draft state
     };
 
-    // Set the date window when creating the first cycle, or when the wizard chose dates.
+    // Set the date window when creating the first cycle, or when the wizard
+    // chose dates. Only the cycle is persisted; dates derive from it on load.
     if (dateRange || !cycleDates || cycleDates.length === 0) {
       setCycleDates(dates);
-      try { localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(dates)); } catch {}
     }
     setActiveCycle(updatedCycle);
     persistState('active_cycle', updatedCycle);
@@ -1250,7 +1252,6 @@ export default function App() {
       .map((t, i) => ({ ...t, id: `dt-carry-${Date.now()}-${i}`, date: newStart, status: 'Carried Fwd' as DailyTask['status'] }));
 
     setCycleDates(newDates);
-    try { localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(newDates)); } catch {}
     setActiveCycle(newCycle);
     persistState('active_cycle', newCycle);
 

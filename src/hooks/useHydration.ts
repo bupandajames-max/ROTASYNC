@@ -256,19 +256,11 @@ export function useHydration(deps: HydrationDeps) {
         lastStaffListRef.current = loadedStaff;
       }
 
-      // Load cycle dates
-      const storedDates = localStorage.getItem(facilityKey(selectedFacilityId, 'cycle_dates'));
-      let loadedDates = getDatesForCycle('2026-06-15');
-      if (storedDates) {
-        try {
-          loadedDates = JSON.parse(storedDates);
-        } catch (e) {}
-      }
-      if (active) {
-        setCycleDates(loadedDates);
-      }
-
-      // Load Active Cycle
+      // Load Active Cycle first — its startDate/endDate is the single
+      // source of truth for the cycle's date window. The separately-stored
+      // `cycle_dates` array is only a legacy cache: it isn't cloud-synced,
+      // so trusting it let a cycle changed on one device silently disagree
+      // with the dates array on another.
       const storedCycle = localStorage.getItem(facilityKey(selectedFacilityId, 'active_cycle'));
       let loadedCycle: RosterCycle | null = null;
       if (storedCycle) {
@@ -276,7 +268,22 @@ export function useHydration(deps: HydrationDeps) {
           loadedCycle = JSON.parse(storedCycle);
         } catch (e) {}
       }
-      if (!loadedCycle) {
+
+      let loadedDates: string[];
+      if (loadedCycle) {
+        loadedDates = getDatesForCycle(loadedCycle.startDate, loadedCycle.endDate);
+        // Self-heal a drifted legacy cache: warn so drift is visible in the
+        // console, then normalize to the cycle-derived dates.
+        try {
+          const storedDates = localStorage.getItem(facilityKey(selectedFacilityId, 'cycle_dates'));
+          if (storedDates && storedDates !== JSON.stringify(loadedDates)) {
+            console.warn('[RotaSync] Stored cycle_dates disagreed with the active cycle — normalized to the cycle\'s own start/end dates.');
+          }
+          localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(loadedDates));
+        } catch (e) {}
+      } else {
+        // No cycle yet: seed a default one; dates derive from that default.
+        loadedDates = getDatesForCycle('2026-06-15');
         const initialShifts = generateSeedShifts(loadedStaff, loadedDates, loadedHolidays, loadedRuleSet);
         loadedCycle = {
           id: `cycle-${selectedFacilityId}-2026-06-15`,
@@ -287,6 +294,7 @@ export function useHydration(deps: HydrationDeps) {
         };
       }
       if (active) {
+        setCycleDates(loadedDates);
         setActiveCycle(loadedCycle);
       }
 
@@ -501,6 +509,12 @@ export function useHydration(deps: HydrationDeps) {
           if (cloudCycle) {
             localStorage.setItem(facilityKey(selectedFacilityId, 'active_cycle'), JSON.stringify(cloudCycle));
             loadedCycle = cloudCycle;
+            // Re-derive the date window from the authoritative cloud cycle —
+            // previously only the cycle was replaced here, so a cycle edited
+            // on another device kept this device's stale dates array.
+            const cloudDates = getDatesForCycle(cloudCycle.startDate, cloudCycle.endDate);
+            if (active) setCycleDates(cloudDates);
+            try { localStorage.setItem(facilityKey(selectedFacilityId, 'cycle_dates'), JSON.stringify(cloudDates)); } catch (e) {}
           } else {
             localStorage.removeItem(facilityKey(selectedFacilityId, 'active_cycle'));
             loadedCycle = null;
