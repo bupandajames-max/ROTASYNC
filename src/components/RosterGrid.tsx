@@ -176,7 +176,22 @@ export default function RosterGrid({
   // Drag and drop states
   const [draggedCell, setDraggedCell] = useState<{ staffId: string; dayIdx: number; shiftCode: string } | null>(null);
   const [draggedOverCell, setDraggedOverCell] = useState<{ staffId: string; dayIdx: number } | null>(null);
-  const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number; x: number; y: number } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number; x: number; y: number; cellTop: number } | null>(null);
+
+  // The shift-picker popover below is `position: fixed`, positioned once
+  // from the clicked cell's getBoundingClientRect() at open time. That's
+  // viewport-relative and never recalculated, so scrolling the page (or the
+  // grid's own horizontal scroll container) moves the cell out from under a
+  // popover that doesn't follow — it looks detached/stuck. Closing on any
+  // scroll while it's open is simpler and more robust than continuously
+  // repositioning it against a click-time coordinate.
+  useEffect(() => {
+    if (!editingCell) return;
+    const closeOnScroll = () => setEditingCell(null);
+    window.addEventListener('scroll', closeOnScroll, true);
+    return () => window.removeEventListener('scroll', closeOnScroll, true);
+  }, [editingCell]);
+
   const [customTimeMode, setCustomTimeMode] = useState(false);
   const [customTimeStart, setCustomTimeStart] = useState('08:00');
   const [customTimeEnd, setCustomTimeEnd] = useState('17:00');
@@ -1104,7 +1119,7 @@ export default function RosterGrid({
                                       className="w-full h-full flex flex-col justify-center items-center cursor-pointer select-none py-1 group/btn"
                                       onClick={(e) => {
                                         const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                        setEditingCell({ staffId: staff.id, dayIdx: dIdx, x: r.left, y: r.bottom + 4 });
+                                        setEditingCell({ staffId: staff.id, dayIdx: dIdx, x: r.left, y: r.bottom + 4, cellTop: r.top });
                                       }}
                                     >
                                       <span className={`inline-flex items-center gap-0.5 justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs tracking-wider group-hover/btn:scale-105 transition-transform ${isUnknownShift ? 'border border-dashed border-rose-300 bg-rose-50' : 'border border-black/5 bg-white/40'}`} style={{ color: isUnknownShift ? '#991B1B' : def?.fg }}>
@@ -1134,8 +1149,46 @@ export default function RosterGrid({
             <>
               <div className="fixed inset-0 z-40" onClick={() => { setEditingCell(null); setCustomTimeMode(false); setShowTaskForm(false); }} />
               <div
-                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-64 max-h-[28rem] overflow-y-auto"
-                style={{ left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 264)), top: editingCell.y }}
+                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-64 overflow-y-auto"
+                style={{
+                  left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 264)),
+                  // Unlike `left` above, `top` previously had no viewport-edge
+                  // clamping at all — clicking a cell near the bottom of the
+                  // screen could open a popover taller than the remaining
+                  // space, cutting off its lower items with no way to scroll
+                  // them into view (the popover itself is fixed-positioned,
+                  // so page scroll doesn't reveal more of it).
+                  //
+                  // Rather than guess the popover's rendered height (content
+                  // varies — the custom-time/task-form panels are shorter
+                  // than the full shift list, and a guessed constant drifted
+                  // from the real value enough to leave a real gap under
+                  // testing), pick whichever side of the click point has
+                  // more room and cap maxHeight to exactly that — this makes
+                  // overflow structurally impossible instead of relying on
+                  // an estimate, with the existing overflow-y-auto handling
+                  // any content that still doesn't fit.
+                  ...(() => {
+                    const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
+                    const gap = 8;
+                    const preferredH = 448; // matches the old max-h-[28rem] cap
+                    // editingCell.y is 4px BELOW the cell's bottom edge — the
+                    // correct anchor when opening downward, but the wrong
+                    // reference point when flipping upward (that needs the
+                    // cell's TOP edge, cellTop, so the popover's bottom lands
+                    // just above the cell instead of overlapping/overshooting
+                    // it). Using editingCell.y for both directions was the
+                    // actual bug — flipped popovers still overflowed because
+                    // they were anchored ~cell-height too low.
+                    const spaceBelow = winH - editingCell.y - gap;
+                    const spaceAbove = editingCell.cellTop - gap;
+                    if (spaceBelow >= Math.min(preferredH, spaceAbove)) {
+                      return { top: editingCell.y, maxHeight: Math.max(120, Math.min(preferredH, spaceBelow)) };
+                    }
+                    const maxHeight = Math.max(120, Math.min(preferredH, spaceAbove));
+                    return { top: Math.max(gap, editingCell.cellTop - gap - maxHeight), maxHeight };
+                  })(),
+                }}
               >
                 {/* Context header — always visible: who, which day, what's
                     currently scheduled, and whether this day already has
