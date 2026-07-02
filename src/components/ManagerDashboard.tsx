@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StaffMember, RosterCycle, ApprovalRequest, ExtraHoursEntry, PublicHoliday, DailyTask, Timesheet, TimesheetDay, ShiftDef } from '../types';
-import { SHIFTS } from '../data/initialData';
+import { useShiftDefs } from '../hooks/useShiftDefs';
 import { isWeekend, isPublicHoliday } from '../utils/rosterUtils';
 import { sumTimesheetTotals } from '../utils/timesheetUtils';
 import { 
@@ -55,7 +55,7 @@ export default function ManagerDashboard({
   approverName,
   shifts,
 }: ManagerDashboardProps) {
-  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const shiftDefs = useShiftDefs(shifts);
   const toast = useToast();
   const confirm = useConfirm();
   const [selectedInspectStaffId, setSelectedInspectStaffId] = useState('');

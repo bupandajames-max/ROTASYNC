@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RosterCycle, StaffMember, PublicHoliday, ShiftDef, RosterActionItem } from '../types';
-import { SHIFTS } from '../data/initialData';
+import { useShiftDefs } from '../hooks/useShiftDefs';
 import { isWeekend, isPublicHoliday, computeShiftDuration } from '../utils/rosterUtils';
 import { dbGetCollectionByFacility, dbSetDoc, dbDeleteDoc } from '../firebase';
 import { useConfirm } from './ui/ConfirmProvider';
@@ -91,7 +91,7 @@ export default function RosterGrid({
   const confirm = useConfirm();
   // Use the workspace's editable shift definitions, falling back to the built-in
   // defaults. This is what makes Settings -> Shift Planner edits show up here.
-  const shiftDefs: { [code: string]: ShiftDef } = { ...SHIFTS, ...(shifts || {}) };
+  const shiftDefs: { [code: string]: ShiftDef } = useShiftDefs(shifts);
   // Enforce read-only locks for standard staff
   const isGridLocked = activeCycle.isLocked || !isManagerView;
 

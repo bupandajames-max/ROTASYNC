@@ -1,14 +1,13 @@
 import { TimesheetDay, Timesheet, StaffMember, RosterCycle, PublicHoliday, ShiftDef } from '../types';
-import { SHIFTS } from '../data/initialData';
 import { isPublicHoliday } from './rosterUtils';
 
 // All five functions below accept an optional `shifts` map: the workspace's
 // own configured shifts (Settings → Shift Planner), layered over the
-// built-in defaults. Without it they'd only recognize the small built-in
-// shift/leave codes — a custom code (e.g. a workspace-specific leave type)
-// would silently be misjudged as a plain absence instead of paid leave, or
-// get the wrong standard-hours figure for overtime math.
-const resolveShiftDefs = (shifts?: { [code: string]: ShiftDef }) => ({ ...SHIFTS, ...(shifts || {}) });
+// built-in defaults via the shared mergeShiftDefs helper. Without it they'd
+// only recognize the small built-in shift/leave codes — a custom code (e.g.
+// a workspace-specific leave type) would silently be misjudged as a plain
+// absence instead of paid leave, or get the wrong overtime threshold.
+import { mergeShiftDefs as resolveShiftDefs } from './shiftDefs';
 
 // Helper to convert HH:MM string to absolute clock minutes
 export function parseTimeToMinutes(timeStr: string): number {

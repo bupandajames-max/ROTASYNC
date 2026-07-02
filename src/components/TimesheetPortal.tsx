@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Timesheet, TimesheetDay, StaffMember, RosterCycle, PublicHoliday, ShiftDef } from '../types';
-import { SHIFTS } from '../data/initialData';
+import { useShiftDefs } from '../hooks/useShiftDefs';
 import { reevaluateTimesheetDay, sumTimesheetTotals } from '../utils/timesheetUtils';
 import { isPublicHoliday } from '../utils/rosterUtils';
 import { useConfirm } from './ui/ConfirmProvider';
@@ -57,7 +57,7 @@ export default function TimesheetPortal({
   // Leave types come from the workspace's actual shift registry, not a fixed
   // list — so this always matches what Settings > Shift Planner defines,
   // instead of drifting out of sync with names/codes that change or get removed.
-  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const shiftDefs = useShiftDefs(shifts);
   const activeLeaveTypes = Object.entries(shiftDefs).filter(([, d]) => d.isLeave && d.active !== false);
 
   // Find or auto-initialize timesheet
@@ -452,7 +452,9 @@ export default function TimesheetPortal({
                       onChange={(e) => setEditActualShift(e.target.value)}
                       className="w-full text-xs font-semibold bg-slate-50 border border-slate-150 rounded-xl p-3 mt-1.5 outline-none focus:border-[#009EE2] transition-colors"
                     >
-                      {Object.entries(SHIFTS).filter(([c, def]) => def.hours > 0).map(([c, def]) => (
+                      {/* Live merged registry, not the bare defaults — a
+                          workspace-defined shift must be pickable here too. */}
+                      {Object.entries(shiftDefs).filter(([, def]) => def.hours > 0 && !def.isLeave && !def.isAdHoc).map(([c, def]) => (
                         <option key={c} value={c}>{c} — {def.name} ({def.time})</option>
                       ))}
                     </select>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel } from '../types';
-import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet, SHIFTS } from '../data/initialData';
+import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
+import { mergeShiftDefs } from '../utils/shiftDefs';
+import { fetchCategoryTaskSuggestions } from '../utils/suggestionApi';
 import { computeShiftDuration } from '../utils/rosterUtils';
 import { LEGACY_FACILITY_ID } from '../utils/storageKeys';
 import { useToast } from './ui/ToastProvider';
@@ -339,25 +341,8 @@ export default function EnterpriseAdmin({
     setTaskSuggestErr(null);
     setTaskSuggestions([]);
     try {
-      let data: any = null;
-      let lastErr = '';
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const res = await fetch('/api/suggest-category-tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category: newTaskCategory, taskName: newTaskName, existingTaskNames: taskMasterList.map(t => t.name) }),
-        });
-        if (res.ok) { data = await res.json(); break; }
-        const err = await res.json().catch(() => ({}));
-        lastErr = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || `status ${res.status}`);
-        if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
-      }
-      if (!data) throw new Error(lastErr.includes('high demand') ? 'The suggestion service is busy — try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
-      if (Array.isArray(data.tasks)) {
-        setTaskSuggestions(data.tasks.map((t: any) => ({
-          name: t.name || '', pattern: t.pattern || 'Auto', priority: t.priority || 'Standard', frequency: t.frequency || 'Daily', notes: t.notes || '',
-        })));
-      }
+      const suggested = await fetchCategoryTaskSuggestions({ category: newTaskCategory, taskName: newTaskName, existingTaskNames: taskMasterList.map(t => t.name) });
+      setTaskSuggestions(suggested);
     } catch (e: any) {
       setTaskSuggestErr(e.message || 'Failed to get suggestions.');
     } finally {
@@ -2103,7 +2088,7 @@ export default function EnterpriseAdmin({
                     onChange={(e) => setNewTaskAssignedVal(e.target.value)}
                     className="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                   >
-                    {Object.entries({ ...SHIFTS, ...(shifts || {}) }).filter(([, d]) => !d.isLeave && !d.isAdHoc).map(([code, def]) => (
+                    {Object.entries(mergeShiftDefs(shifts)).filter(([, d]) => !d.isLeave && !d.isAdHoc).map(([code, def]) => (
                       <option key={code} value={code}>{code} — {def.name}</option>
                     ))}
                   </select>

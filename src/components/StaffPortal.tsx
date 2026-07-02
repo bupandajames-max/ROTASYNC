@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StaffMember, RosterCycle, ApprovalRequest, ExtraHoursEntry, PublicHoliday, DailyTask, Facility, ShiftDef } from '../types';
-import { SHIFTS } from '../data/initialData';
+import { useShiftDefs } from '../hooks/useShiftDefs';
 import { isWeekend, isPublicHoliday, calculateStaffStats } from '../utils/rosterUtils';
 import { Calendar, Clock, ArrowRightLeft, FileSpreadsheet, Hourglass, CheckCircle2, XCircle, Printer, Sparkles, UserCheck, ThumbsUp, AlertTriangle, Info } from 'lucide-react';
 import { useToast } from './ui/ToastProvider';
@@ -35,7 +35,7 @@ export default function StaffPortal({
   shifts,
 }: StaffPortalProps) {
   const toast = useToast();
-  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const shiftDefs = useShiftDefs(shifts);
   const [xhrDate, setXhrDate] = useState(cycleDates[0] || '');
   const [xhrHours, setXhrHours] = useState<number>(2);
   const [xhrNote, setXhrNote] = useState('');

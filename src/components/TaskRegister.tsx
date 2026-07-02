@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { TaskMaster, StaffMember, DailyTask, TaskFieldDef, ShiftDef, patternLabel } from '../types';
-import { SHIFTS, WEEKDAY_NAMES } from '../data/initialData';
+import { WEEKDAY_NAMES } from '../data/initialData';
+import { fetchCategoryTaskSuggestions } from '../utils/suggestionApi';
+import { useShiftDefs } from '../hooks/useShiftDefs';
 
 type CategorySuggestion = {
   name: string;
@@ -42,7 +44,7 @@ export default function TaskRegister({
   onAddCategory,
   shifts,
 }: TaskRegisterProps) {
-  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const shiftDefs = useShiftDefs(shifts);
   const workShiftCodes = Object.entries(shiftDefs).filter(([, d]) => !d.isLeave && !d.isAdHoc);
   const [showAddModal, setShowAddTaskModal] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -290,39 +292,15 @@ export default function TaskRegister({
     setAddingCategory(false);
   };
 
-  // Ask the AI for concrete tasks under the chosen category, in context.
+  // Ask the suggestion service for concrete tasks under the chosen category.
   const handleSuggestCategoryTasks = async () => {
     if (!category && !taskName.trim()) return;
     setCatSuggesting(true);
     setCatSuggestError(null);
     setCatSuggestions([]);
     try {
-      // Retry a couple of times — the model occasionally returns a transient 503.
-      let data: any = null;
-      let lastErr = '';
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const res = await fetch('/api/suggest-category-tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category, taskName, existingTaskNames: tasks.map(t => t.name) }),
-        });
-        if (res.ok) { data = await res.json(); break; }
-        const err = await res.json().catch(() => ({}));
-        lastErr = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || `status ${res.status}`);
-        if (attempt < 2) await new Promise(r => setTimeout(r, 1200));
-      }
-      if (!data) throw new Error(lastErr.includes('high demand') ? 'The suggestion service is busy right now — please try again in a moment.' : lastErr || 'Could not reach the suggestion service.');
-      if (Array.isArray(data.tasks)) {
-        setCatSuggestions(data.tasks.map((t: any): CategorySuggestion => ({
-          name: t.name || '',
-          pattern: t.pattern || 'Auto',
-          priority: t.priority || 'Standard',
-          frequency: t.frequency || 'Daily',
-          notes: t.notes || '',
-          requiredSkills: Array.isArray(t.requiredSkills) ? t.requiredSkills : [],
-          checked: true,
-        })));
-      }
+      const suggested = await fetchCategoryTaskSuggestions({ category, taskName, existingTaskNames: tasks.map(t => t.name) });
+      setCatSuggestions(suggested.map((t): CategorySuggestion => ({ ...t, checked: true })));
     } catch (err: any) {
       setCatSuggestError(err.message || 'Failed to get suggestions.');
     } finally {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StaffMember, RosterCycle, DailyTask, Facility, Department, ShiftDef, PublicHoliday, RosterRuleSet } from '../types';
-import { SHIFTS } from '../data/initialData';
+import { useShiftDefs } from '../hooks/useShiftDefs';
 import { validateRoster } from '../utils/rosterUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -84,7 +84,7 @@ export default function DashboardHome({
 }: DashboardHomeProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   // Use the workspace's editable shift definitions (falls back to defaults).
-  const shiftDefs = { ...SHIFTS, ...(shifts || {}) };
+  const shiftDefs = useShiftDefs(shifts);
 
   // Asset/log audit modal (writes real tracker increments)
   const [auditTarget, setAuditTarget] = useState<'ward' | 'firstaid' | null>(null);
