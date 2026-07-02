@@ -141,6 +141,9 @@ export interface RosterActionItem {
   done: boolean;
   createdBy: string;
   createdAt: string;
+  facilityId?: string; // tenant tag for Firestore isolation, set at write time
+  updatedAt?: string; // last done-toggle or edit, for cross-device auditability
+  updatedBy?: string;
 }
 
 export interface TimesheetDay {

@@ -66,6 +66,7 @@ import { useAuthGate } from './hooks/useAuthGate';
 import { useFacilities } from './hooks/useFacilities';
 import { useWorkspaceConfig, DEFAULT_TAXONOMY } from './hooks/useWorkspaceConfig';
 import { useHydration } from './hooks/useHydration';
+import { useRosterActionItems } from './hooks/useRosterActionItems';
 
 // --- Assignment engine helpers (Increment 1: availability + fairness) ---
 // Codes that mean a staff member is NOT available for task assignment that day.
@@ -97,9 +98,8 @@ export default function App() {
 
   // Lightweight roster action items — ad hoc notes attached to a roster
   // cell, deliberately kept outside the TaskMaster/DailyTask engine.
-  // Local-only persistence for now (no Firestore cloud sync yet); see the
-  // roster task implementation notes for why that's a separate decision.
-  const [rosterActionItems, setRosterActionItems] = useState<RosterActionItem[]>([]);
+  // State + hydration + cloud sync live in useRosterActionItems (called
+  // below once selectedFacilityId/firebaseUser are in scope).
 
   // Identity, sign-in, RBAC access tier, and "are they let in" gating — see useAuthGate.
   // (isRegisteredStaff/needsOnboarding/access-resolution need staffList, which
@@ -656,42 +656,19 @@ export default function App() {
     }
   }, [selectedFacilityId]);
 
-  // Load this workspace's roster action items on facility switch.
-  useEffect(() => {
-    if (!selectedFacilityId) { setRosterActionItems([]); return; }
-    try {
-      const stored = localStorage.getItem(facilityKey(selectedFacilityId, 'roster_action_items'));
-      setRosterActionItems(stored ? JSON.parse(stored) : []);
-    } catch {
-      setRosterActionItems([]);
-    }
-  }, [selectedFacilityId]);
+  // Roster action items: hydration + Firestore sync live in the hook; the
+  // thin wrappers below just resolve who's acting for created/updatedBy.
+  const {
+    items: rosterActionItems,
+    addItem: addRosterActionItem,
+    toggleItem: toggleRosterActionItem,
+    deleteItem: handleDeleteRosterActionItem,
+  } = useRosterActionItems(selectedFacilityId, firebaseUser, handleGenericError);
 
-  const handleAddRosterActionItem = (item: Omit<RosterActionItem, 'id' | 'createdAt' | 'createdBy' | 'done'>) => {
-    const creator = staffList.find(s => s.id === activeStaffId)?.fullName || 'Manager';
-    const newItem: RosterActionItem = {
-      ...item,
-      id: `rai-${Date.now()}`,
-      done: false,
-      createdBy: creator,
-      createdAt: new Date().toISOString().substring(0, 16).replace('T', ' '),
-    };
-    const updated = [...rosterActionItems, newItem];
-    setRosterActionItems(updated);
-    if (selectedFacilityId) localStorage.setItem(facilityKey(selectedFacilityId, 'roster_action_items'), JSON.stringify(updated));
-  };
-
-  const handleToggleRosterActionItem = (id: string) => {
-    const updated = rosterActionItems.map(a => a.id === id ? { ...a, done: !a.done } : a);
-    setRosterActionItems(updated);
-    if (selectedFacilityId) localStorage.setItem(facilityKey(selectedFacilityId, 'roster_action_items'), JSON.stringify(updated));
-  };
-
-  const handleDeleteRosterActionItem = (id: string) => {
-    const updated = rosterActionItems.filter(a => a.id !== id);
-    setRosterActionItems(updated);
-    if (selectedFacilityId) localStorage.setItem(facilityKey(selectedFacilityId, 'roster_action_items'), JSON.stringify(updated));
-  };
+  const activeActorName = () => staffList.find(s => s.id === activeStaffId)?.fullName || 'Manager';
+  const handleAddRosterActionItem = (item: Omit<RosterActionItem, 'id' | 'createdAt' | 'createdBy' | 'done'>) =>
+    addRosterActionItem(item, activeActorName());
+  const handleToggleRosterActionItem = (id: string) => toggleRosterActionItem(id, activeActorName());
 
   // One-time friendly welcome that points a manager at the Get started checklist.
   useEffect(() => {

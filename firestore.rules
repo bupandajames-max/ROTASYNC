@@ -124,6 +124,16 @@ service cloud.firestore {
         && data.seeded is bool;
     }
 
+    // Lightweight notes managers attach to a roster cell (see RosterActionItem).
+    function isValidActionItem(data) {
+      return data.keys().hasAll(['id', 'date', 'title', 'done', 'facilityId'])
+        && data.id is string && data.id.size() <= 128
+        && data.date is string && data.date.size() <= 32
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.done is bool
+        && data.facilityId is string && data.facilityId.size() <= 100;
+    }
+
     // --- COLLECTION RULES MATCH BLOCKS ---
     // Reads are open to any signed-in user (the app hydrates collections and
     // filters by facility/department client-side). Writes are role-gated.
@@ -240,6 +250,16 @@ service cloud.firestore {
       allow read: if isSuper() || resource.data.facilityId == callerFacility();
       allow create, update: if isSignedIn() && isValidId(extraHoursId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
+    }
+
+    // Roster action items: created/toggled/removed by managers in the
+    // roster grid; readable by anyone in the same facility so a future
+    // staff-facing view doesn't need a rules change. Same per-tenant
+    // isolation as everything else — facilityId must match the caller's.
+    match /rosterActionItems/{itemId} {
+      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      allow create, update: if isManagerLevel() && isValidId(itemId) && isValidActionItem(incoming()) && inMyFacility(incoming().facilityId);
+      allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
   }
 }
