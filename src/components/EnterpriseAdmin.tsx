@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel } from '../types';
+import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel, Invite } from '../types';
 import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
 import { mergeShiftDefs } from '../utils/shiftDefs';
 import { fetchCategoryTaskSuggestions } from '../utils/suggestionApi';
@@ -28,7 +28,9 @@ import {
   Pencil,
   Globe,
   Calendar,
-  RotateCcw
+  RotateCcw,
+  Mail,
+  XCircle
 } from 'lucide-react';
 
 // Per-facility workspace configuration — same shape as the App-level
@@ -97,6 +99,9 @@ interface EnterpriseAdminProps {
   platformAdmins?: { id: string; email?: string }[];
   onGrantPlatformAdmin?: (email: string) => Promise<'granted' | 'not_found' | 'already'>;
   onRevokePlatformAdmin?: (uid: string) => Promise<void>;
+  onCreateInvite?: (email: string, role: 'staff' | 'dept_head' | 'facility_manager', departmentId?: string) => Promise<'created' | 'error'>;
+  onListInvites?: () => Promise<Invite[]>;
+  onRevokeInvite?: (invite: Invite) => Promise<void>;
 }
 
 export default function EnterpriseAdmin({
@@ -114,6 +119,9 @@ export default function EnterpriseAdmin({
   platformAdmins = [],
   onGrantPlatformAdmin,
   onRevokePlatformAdmin,
+  onCreateInvite,
+  onListInvites,
+  onRevokeInvite,
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
@@ -161,6 +169,46 @@ export default function EnterpriseAdmin({
         : ROLE_OPTIONS.filter(r => r.value === 'staff');
   const canManageFacilities = accessLevel === 'superuser';
   const [activeSubTab, setActiveSubTab] = useState<'silos' | 'shifts' | 'rules' | 'regional' | 'staff' | 'tasks' | 'sandbox' | 'taxonomy' | 'purge'>('silos');
+
+  // Invite-a-teammate panel state — the only path into this facility for
+  // anyone not already staff (see PortalGateway/firestore.rules invites).
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'staff' | 'dept_head' | 'facility_manager'>('staff');
+  const [inviteDeptId, setInviteDeptId] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+
+  useEffect(() => {
+    if (!onListInvites || activeSubTab !== 'staff') return;
+    let active = true;
+    onListInvites().then(list => { if (active) setInvites(list); });
+    return () => { active = false; };
+  }, [onListInvites, activeSubTab, selectedFacilityId]);
+
+  const handleSendInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onCreateInvite || !inviteEmail.trim() || isInviting) return;
+    setIsInviting(true);
+    try {
+      const result = await onCreateInvite(inviteEmail.trim(), inviteRole, inviteDeptId || undefined);
+      if (result === 'created') {
+        toast.success(`Invited ${inviteEmail.trim()} — they'll see it automatically the next time they sign in with this email.`);
+        setInviteEmail('');
+        setInviteDeptId('');
+        if (onListInvites) setInvites(await onListInvites());
+      } else {
+        toast.error('Could not send that invite.');
+      }
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRevoke = async (invite: Invite) => {
+    if (!onRevokeInvite) return;
+    await onRevokeInvite(invite);
+    setInvites(invites.map(i => i.id === invite.id ? { ...i, status: 'revoked' } : i));
+  };
 
   // Codes referenced by the active ruleset are protected from deletion (they keep
   // the scheduler coherent). Everything else is freely editable/removable.
@@ -1878,7 +1926,72 @@ export default function EnterpriseAdmin({
                 )}
               </div>
             </div>
-            
+
+            {onCreateInvite && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-3">
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                  <h4 className="text-[11px] font-black text-slate-600">Invite a {taxonomy.memberSingular.toLowerCase()}</h4>
+                </div>
+                <p className="text-[9.5px] text-slate-400 leading-relaxed -mt-1">
+                  They'll see this automatically the next time they sign in with this email — no link to share.
+                </p>
+                <form onSubmit={handleSendInvite} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
+                  <input
+                    type="email"
+                    required
+                    placeholder="name@example.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as typeof inviteRole)}
+                    className="text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  >
+                    {assignableRoles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                  <select
+                    value={inviteDeptId}
+                    onChange={(e) => setInviteDeptId(e.target.value)}
+                    className="text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
+                  >
+                    <option value="">No {taxonomy.groupSingular.toLowerCase()}</option>
+                    {departments.filter(d => d.facilityId === selectedFacilityId).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={isInviting || !inviteEmail.trim()}
+                    className="px-4 py-2.5 bg-indigo-950 hover:bg-slate-900 disabled:opacity-40 text-white font-extrabold text-[11px] rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5" /> {isInviting ? 'Sending…' : 'Invite'}
+                  </button>
+                </form>
+                {invites.filter(i => i.status === 'pending').length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    {invites.filter(i => i.status === 'pending').map(inv => (
+                      <div key={inv.id} className="flex items-center justify-between gap-2 text-[10.5px] bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5">
+                        <span className="font-semibold text-slate-600 truncate">{inv.email}</span>
+                        <span className="text-slate-400 font-bold uppercase text-[9px] shrink-0">{inv.role.replace('_', ' ')}</span>
+                        <span className="text-amber-600 font-bold uppercase text-[9px] shrink-0">Pending</span>
+                        {onRevokeInvite && (
+                          <button
+                            type="button"
+                            onClick={() => handleRevoke(inv)}
+                            className="text-slate-400 hover:text-rose-600 shrink-0"
+                            title="Revoke invite"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center gap-2.5">
               <Info className="text-indigo-900 w-4.5 h-4.5 shrink-0" />
               <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">

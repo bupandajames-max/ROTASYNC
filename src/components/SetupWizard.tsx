@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Facility, Department, StaffMember, WorkspaceConfig, Taxonomy } from '../types';
+import { Facility, Department, StaffMember, WorkspaceConfig, Taxonomy, Organization } from '../types';
 import {
   buildDefaultWorkspaceConfig,
   HOLIDAY_PRESETS,
@@ -21,6 +21,7 @@ import {
 
 interface SetupWizardProps {
   onComplete: (data: {
+    organization: Organization;
     facility: Facility;
     config: WorkspaceConfig;
     departments: Department[];
@@ -29,6 +30,11 @@ interface SetupWizardProps {
   suggestedManagerName?: string;
   suggestedManagerEmail?: string;
   suggestedManagerRole?: string;
+  // The Firebase Auth uid of whoever's running this wizard — becomes the new
+  // Organization's ownerUid. Required to actually complete setup in cloud
+  // mode (see firestore.rules' organization-bootstrap rule); local/sandbox
+  // demo mode never reads it.
+  ownerUid?: string;
   onSignOut?: () => void;
 }
 
@@ -42,7 +48,7 @@ const STEPS = [
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
-export default function SetupWizard({ onComplete, suggestedManagerName = '', suggestedManagerEmail = '', suggestedManagerRole = 'Manager', onSignOut }: SetupWizardProps) {
+export default function SetupWizard({ onComplete, suggestedManagerName = '', suggestedManagerEmail = '', suggestedManagerRole = 'Manager', ownerUid = '', onSignOut }: SetupWizardProps) {
   const [stepIdx, setStepIdx] = useState(0);
 
   // Step: Organization
@@ -165,15 +171,27 @@ export default function SetupWizard({ onComplete, suggestedManagerName = '', sug
     // the facility record can never drift from who's actually registered.
     const leadManagerName = (staff.find(s => s.isManager) || staff[0])?.fullName || '';
 
+    const orgId = slug(organizationName.trim()) || `org-${Date.now()}`;
+    const organization: Organization = {
+      id: orgId,
+      // Fall back to the facility name so a solo/small operator who skips
+      // the optional org name field still gets a sensible label instead of
+      // a blank one — the org still exists as a real entity either way.
+      name: organizationName.trim() || facName.trim(),
+      ownerUid: ownerUid,
+      createdAt: new Date().toISOString(),
+    };
+
     const facility: Facility = {
       id: facId,
       name: facName.trim(),
       location: facLocation.trim(),
       leadManager: leadManagerName,
       facilitiesType: facType.trim() || 'Branch',
+      organizationId: orgId,
     };
 
-    onComplete({ facility, config, departments: depts, staff });
+    onComplete({ organization, facility, config, departments: depts, staff });
   };
 
   const StepIcon = STEPS[stepIdx].icon;

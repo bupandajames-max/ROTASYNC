@@ -128,6 +128,20 @@ export async function dbFindUserInFacilityByEmail<T>(email: string, facilityId: 
   }
 }
 
+// Finds a pending invite for this signed-in email — allowed by the
+// invites/{id} read rule's "resource.data.email == callerEmail()" branch,
+// which covers this query regardless of which facility issued the invite.
+export async function dbFindPendingInviteForEmail<T>(email: string): Promise<T | null> {
+  try {
+    const snap = await getDocs(query(collection(db, 'invites'), where('email', '==', email), where('status', '==', 'pending')));
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { ...d.data(), id: d.id } as T;
+  } catch (err) {
+    return null;
+  }
+}
+
 // Unscoped email lookup — only usable by callers the rules already treat as
 // isSuper() (that branch of the users/{uid} read rule has no facility
 // dependency), e.g. for granting platform-admin access by email.

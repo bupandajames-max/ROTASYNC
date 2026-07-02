@@ -16,7 +16,9 @@ import {
   TaskHistoryEntry,
   RosterRuleSet,
   WorkspaceConfig,
-  RosterActionItem
+  RosterActionItem,
+  Organization,
+  Invite
 } from './types';
 import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig, WEEKDAY_NAMES } from './data/initialData';
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
@@ -59,8 +61,10 @@ import {
   dbGetCollectionByFacility,
   dbFindUserInFacilityByEmail,
   dbFindUserByEmail,
+  dbFindPendingInviteForEmail,
   seedCollectionFromLocalIfEmpty
 } from './firebase';
+import { inviteDocId } from './utils/invites';
 import { isSuperuserEmail, resolveAccess } from './config/access';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useFacilities } from './hooks/useFacilities';
@@ -393,7 +397,7 @@ export default function App() {
       setAccess({ accessLevel: 'staff', email: '' });
       return;
     }
-    let resolved = resolveAccess(firebaseUser.email, staffList);
+    let resolved = resolveAccess(firebaseUser.email, staffList, facilities);
     (async () => {
       // Durable super-admin grants (see firestore.rules platformAdmins) live
       // outside the staff/facility model entirely, so resolveAccess can't see
@@ -411,9 +415,10 @@ export default function App() {
         accessLevel: resolved.accessLevel,
         facilityId: resolved.facilityId || '',
         departmentId: resolved.departmentId || '',
+        organizationId: resolved.organizationId || '',
       }).catch(() => {});
     })();
-  }, [firebaseUser, staffList]);
+  }, [firebaseUser, staffList, facilities]);
 
   // Finalizes an access-level grant a manager already made on a staff
   // record (staff/{id}.accessLevel — always correctly gated). That alone
@@ -467,21 +472,123 @@ export default function App() {
     setPlatformAdmins(platformAdmins.filter(a => a.id !== uid));
   };
 
-  // Self onboarding profile handler
-  const handleSelfOnboard = async (newStaff: StaffMember) => {
+  // Looks up a pending invite for the signed-in user's email — this is the
+  // only path into an existing facility now (see PortalGateway). Returns
+  // null if there isn't one, in which case PortalGateway shows an
+  // "ask an admin" message instead of a join form.
+  const handleFindMyInvite = async (): Promise<Invite | null> => {
+    if (!firebaseUser?.email) return null;
+    return dbFindPendingInviteForEmail<Invite>(firebaseUser.email);
+  };
+
+  // Accepting an invite is a 3-write, strictly sequenced bootstrap — same
+  // shape as handleCompleteSetup's org bootstrap, and for the same reason:
+  // the staff doc's self-create rule (isSelfOnboardStaff) and the users/{uid}
+  // self-create rule (inviteGrantsLevel) both re-check the SAME invite doc,
+  // so the invite must exist and match exactly before either write, and the
+  // invite is only flipped to 'accepted' last, once both have landed.
+  const handleAcceptInvite = async (invite: Invite, profile: {
+    fullName: string; employeeNo: string; phone: string; gender: 'F' | 'M' | ''; jobTitle: string;
+  }) => {
+    if (!firebaseUser?.email) return;
+    const isManagerRole = invite.role === 'facility_manager';
+    const shortName = profile.fullName.split(' ')[0] || profile.fullName;
+    const newStaff: StaffMember = {
+      id: `staff-${Math.random().toString(36).substring(2, 11)}`,
+      name: shortName,
+      fullName: profile.fullName,
+      email: firebaseUser.email,
+      phone: profile.phone,
+      role: profile.jobTitle,
+      contractedHours: 168,
+      gender: profile.gender,
+      employeeNo: profile.employeeNo,
+      isManager: isManagerRole,
+      accessLevel: invite.role,
+      facilityId: invite.facilityId,
+      departmentId: invite.departmentId,
+    };
+
+    try {
+      await dbSetDoc('staff', newStaff.id, newStaff);
+      await dbSetDoc('users', firebaseUser.uid, {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        accessLevel: invite.role,
+        facilityId: invite.facilityId,
+        organizationId: invite.organizationId,
+        departmentId: invite.departmentId || '',
+      });
+      await dbSetDoc('invites', invite.id, { ...invite, status: 'accepted' as const });
+    } catch (err) {
+      handleGenericError(err);
+      return;
+    }
+
     const updatedStaff = [...staffList, newStaff];
     setStaffList(updatedStaff);
     setActiveStaffId(newStaff.id);
     setIsManagerView(newStaff.isManager);
-    
+
     // Switch key context if facility is different
     if (newStaff.facilityId && newStaff.facilityId !== selectedFacilityId) {
       setSelectedFacilityId(newStaff.facilityId);
     }
-    
-    // Save to Firestore and local storage cache
+
+    // The cloud copy was already written above via the invite-gated
+    // self-create rule. Pre-seed the diff snapshot persistState uses so it
+    // doesn't also try to write this same doc again through the plain
+    // manager-only update rule — which would spuriously fail (and surface a
+    // false-alarm permission-denied banner right after a successful join)
+    // for anyone invited at plain 'staff' level.
+    lastStaffListRef.current = updatedStaff;
     persistState('staff_list', updatedStaff);
     localStorage.setItem(facilityKey(newStaff.facilityId, 'active_staff_id'), newStaff.id);
+  };
+
+  // Invite management (managers only — enforced server-side by
+  // firestore.rules' invites/{inviteId} create rule, which also caps the
+  // grantable role and confines it to the manager's own facility/org).
+  const handleCreateInvite = async (email: string, role: 'staff' | 'dept_head' | 'facility_manager', departmentId?: string): Promise<'created' | 'error'> => {
+    if (!firebaseUser || !selectedFacilityId) return 'error';
+    const organizationId = facilities.find(f => f.id === selectedFacilityId)?.organizationId;
+    if (!organizationId) return 'error';
+    const invite: Invite = {
+      id: inviteDocId(selectedFacilityId, email),
+      email,
+      organizationId,
+      facilityId: selectedFacilityId,
+      facilityName: facilities.find(f => f.id === selectedFacilityId)?.name,
+      departmentId,
+      departmentName: departmentId ? departments.find(d => d.id === departmentId)?.name : undefined,
+      role,
+      invitedBy: firebaseUser.email || '',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await dbSetDoc('invites', invite.id, invite);
+      return 'created';
+    } catch (err) {
+      handleGenericError(err);
+      return 'error';
+    }
+  };
+
+  const handleListInvites = async (): Promise<Invite[]> => {
+    // Invites are a Firestore-only concept (isSignedIn() gated) — in local/
+    // sandbox demo mode there's no real auth token, so this would just be a
+    // guaranteed permission-denied on every People-tab load.
+    if (!firebaseUser || !selectedFacilityId) return [];
+    return dbGetCollectionByFacility<Invite>('invites', selectedFacilityId);
+  };
+
+  const handleRevokeInvite = async (invite: Invite) => {
+    try {
+      await dbSetDoc('invites', invite.id, { ...invite, status: 'revoked' as const });
+    } catch (err) {
+      handleGenericError(err);
+    }
   };
 
   const handleOnboardNewStaff = (newStaff: StaffMember) => {
@@ -714,14 +821,26 @@ export default function App() {
     ? timesheets.filter(t => displayedStaffList.some(s => s.id === t.staffId))
     : timesheets;
 
-  // First-run setup wizard completion: provision the first facility + workspace config.
-  const handleCompleteSetup = (data: {
+  // First-run setup wizard completion: provision the Organization (the new
+  // ownership/invite namespace) + the first Facility (still the operational
+  // isolation boundary) + workspace config.
+  //
+  // Cloud writes must happen in a strict, AWAITED order — organization, then
+  // facility, then the caller's own users/{uid} mirror at 'facility_manager'
+  // — because each later write's Firestore rule depends on the previous one
+  // already having committed (see firestore.rules isOrgBootstrap/facilities
+  // bootstrap clause). Firing these fire-and-forget in parallel, like the
+  // rest of this file does for steady-state writes, would race: the staff/
+  // department writes need isManagerLevel() to already be true, which it
+  // only becomes once the users/{uid} write above has landed.
+  const handleCompleteSetup = async (data: {
+    organization: Organization;
     facility: Facility;
     config: WorkspaceConfig;
     departments: Department[];
     staff: StaffMember[];
   }) => {
-    const { facility, config, departments: depts, staff } = data;
+    const { organization, facility, config, departments: depts, staff } = data;
 
     // Facility
     const updatedFacs = [...facilities, facility];
@@ -760,12 +879,26 @@ export default function App() {
     setStaffList(scopedStaff);
     localStorage.setItem(facilityKey(facility.id, 'staff_list'), JSON.stringify(scopedStaff));
 
-    // Cloud writes (best effort)
+    // Cloud writes — strictly sequenced bootstrap, then the rest.
     if (firebaseUser) {
-      dbSetDoc('facilities', facility.id, facility).catch(handleGenericError);
-      dbSetDoc('workspaceConfigs', facility.id, { id: facility.id, ruleSet: config.ruleSet, taskCategories: config.taskCategories, facilityTypes: config.facilityTypes, timezoneLabel: config.timezoneLabel, regionPresetId: config.regionPresetId }).catch(() => {});
-      scopedDepts.forEach(d => dbSetDoc('departments', d.id, d).catch(() => {}));
-      scopedStaff.forEach(s => dbSetDoc('staff', s.id, s).catch(() => {}));
+      try {
+        await dbSetDoc('organizations', organization.id, organization);
+        await dbSetDoc('facilities', facility.id, facility);
+        const caller = scopedStaff.find(s => s.email?.toLowerCase().trim() === firebaseUser.email?.toLowerCase().trim());
+        await dbSetDoc('users', firebaseUser.uid, {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          accessLevel: 'facility_manager',
+          facilityId: facility.id,
+          organizationId: organization.id,
+          departmentId: caller?.departmentId || '',
+        });
+        await dbSetDoc('workspaceConfigs', facility.id, { id: facility.id, ruleSet: config.ruleSet, taskCategories: config.taskCategories, facilityTypes: config.facilityTypes, timezoneLabel: config.timezoneLabel, regionPresetId: config.regionPresetId });
+        await Promise.all(scopedDepts.map(d => dbSetDoc('departments', d.id, d)));
+        await Promise.all(scopedStaff.map(s => dbSetDoc('staff', s.id, s)));
+      } catch (err) {
+        handleGenericError(err);
+      }
     }
 
     // Activate the new workspace (triggers hydration with the seeded data present)
@@ -1639,6 +1772,7 @@ export default function App() {
         suggestedManagerName={confirmedIdentity?.name ?? (firebaseUser?.displayName || '')}
         suggestedManagerEmail={firebaseUser?.email || ''}
         suggestedManagerRole={confirmedIdentity?.role ?? 'Manager'}
+        ownerUid={firebaseUser?.uid || ''}
         onSignOut={handleSignOut}
       />
     );
@@ -1668,10 +1802,8 @@ export default function App() {
           onGoogleSignIn={handleGoogleSignIn}
           onSignOut={handleSignOut}
           staffList={staffList}
-          facilities={facilities}
-          departments={departments}
-          selectedFacilityId={selectedFacilityId}
-          onSelfOnboard={handleSelfOnboard}
+          onFindMyInvite={handleFindMyInvite}
+          onAcceptInvite={handleAcceptInvite}
           onSelectSandboxBypass={handleSelectSandboxBypass}
           isSandboxBypassActive={isSandboxBypassActive}
           onBypassAsGuestManager={handleBypassAsGuestManager}
@@ -1982,6 +2114,9 @@ export default function App() {
               platformAdmins={platformAdmins}
               onGrantPlatformAdmin={handleGrantPlatformAdmin}
               onRevokePlatformAdmin={handleRevokePlatformAdmin}
+              onCreateInvite={handleCreateInvite}
+              onListInvites={handleListInvites}
+              onRevokeInvite={handleRevokeInvite}
             />
           )}
         </React.Suspense>

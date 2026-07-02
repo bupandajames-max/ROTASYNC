@@ -42,6 +42,15 @@ service cloud.firestore {
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.facilityId
         : '';
     }
+    // The organization this caller belongs to. Uses .get() with a default
+    // (not dot access) because organizationId is a new field — existing
+    // users/{uid} docs written before this field existed don't have it, and
+    // dot-accessing a missing map key errors rather than returning null.
+    function callerOrganization() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('organizationId', '')
+        : '';
+    }
     // Per-tenant write isolation: a non-super user may only write within their facility.
     function inMyFacility(fid) {
       return isSuper() || fid == callerFacility();
@@ -77,7 +86,96 @@ service cloud.firestore {
         && data.location is string && data.location.size() <= 150
         // Org-defined classification (e.g. 'Branch', 'Warehouse', 'Primary Care')
         // — free text per workspace, not a fixed clinical enum.
-        && (!data.keys().contains('facilitiesType') || (data.facilitiesType is string && data.facilitiesType.size() <= 100));
+        && (!data.keys().contains('facilitiesType') || (data.facilitiesType is string && data.facilitiesType.size() <= 100))
+        // Owning Organization — optional so pre-existing facilities (written
+        // before this field existed) still validate.
+        && (!data.keys().hasAny(['organizationId']) || (data.organizationId is string && data.organizationId.size() <= 128));
+    }
+
+    function isValidOrganization(data) {
+      return data.keys().hasAll(['id', 'name', 'ownerUid', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && data.ownerUid is string && data.ownerUid.size() > 0
+        && data.createdAt is string;
+    }
+
+    // Bootstrap allowance for a brand-new user self-creating their users/{uid}
+    // doc at 'facility_manager' the moment they finish SetupWizard: only
+    // valid when they already own the referenced organization AND that
+    // organization already owns the referenced facility (both docs must
+    // already exist — see handleCompleteSetup's write order in App.tsx).
+    function isOrgBootstrap(data) {
+      return data.accessLevel == 'facility_manager'
+        && data.organizationId is string && data.organizationId.size() > 0
+        && data.facilityId is string && data.facilityId.size() > 0
+        && exists(/databases/$(database)/documents/organizations/$(data.organizationId))
+        && get(/databases/$(database)/documents/organizations/$(data.organizationId)).data.ownerUid == request.auth.uid
+        && exists(/databases/$(database)/documents/facilities/$(data.facilityId))
+        && get(/databases/$(database)/documents/facilities/$(data.facilityId)).data.get('organizationId', '') == data.organizationId;
+    }
+
+    // --- INVITES ---
+    // The only path into an EXISTING facility (see staff/{staffId}'s
+    // isSelfOnboardStaff below). Doc ID is deterministic — facilityId + '--'
+    // + email — so both the client and these rules can look one up directly
+    // by (facilityId, email) with get()/exists() instead of a query, and so
+    // the ID itself can be checked against its own content at creation time.
+    function isValidInviteId(id) {
+      return id is string && id.size() <= 300 && id.matches('^[a-zA-Z0-9_@.\\-]+$');
+    }
+
+    function isValidInvite(data) {
+      return data.keys().hasAll(['id', 'email', 'organizationId', 'facilityId', 'role', 'invitedBy', 'status', 'createdAt'])
+        && data.id is string && data.id.size() <= 300
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 150
+        && data.organizationId is string && data.organizationId.size() <= 128
+        && data.facilityId is string && data.facilityId.size() <= 128
+        // Never 'superuser' — that tier stays platform-admin/bootstrap-email
+        // only (see isSuper()), invites can't grant it.
+        && data.role in ['staff', 'dept_head', 'facility_manager']
+        && data.invitedBy is string && data.invitedBy.size() <= 150
+        && data.status in ['pending', 'accepted', 'revoked']
+        && data.createdAt is string
+        && (!data.keys().hasAny(['departmentId']) || (data.departmentId is string && data.departmentId.size() <= 128))
+        && (!data.keys().hasAny(['facilityName']) || (data.facilityName is string && data.facilityName.size() <= 150))
+        && (!data.keys().hasAny(['departmentName']) || (data.departmentName is string && data.departmentName.size() <= 150));
+    }
+
+    // An inviter may only grant a role at or below their own tier — mirrors
+    // EnterpriseAdmin's existing assignableRoles capping exactly (only a
+    // super user may appoint a facility_manager; a facility_manager or
+    // dept_head may appoint a dept_head; anyone manager-level+ may appoint
+    // plain staff), now also enforced server-side.
+    function canGrantRole(role) {
+      return role == 'staff'
+        || (role == 'dept_head' && isManagerLevel())
+        || (role == 'facility_manager' && isSuper());
+    }
+
+    function inviteDocPath(email, facilityId) {
+      return /databases/$(database)/documents/invites/$(facilityId + '--' + email);
+    }
+    function inviteExists(email, facilityId) {
+      return exists(inviteDocPath(email, facilityId));
+    }
+    // Guarded internally so callers never need their own exists() check —
+    // matches this file's existing callerFacility()-style defensive pattern,
+    // since get()-ing a path that doesn't exist errors out the expression.
+    function inviteRoleFor(email, facilityId) {
+      return inviteExists(email, facilityId) ? get(inviteDocPath(email, facilityId)).data.role : '';
+    }
+    function inviteStatusFor(email, facilityId) {
+      return inviteExists(email, facilityId) ? get(inviteDocPath(email, facilityId)).data.status : '';
+    }
+    function hasUsableInvite(email, facilityId) {
+      return inviteExists(email, facilityId) && inviteStatusFor(email, facilityId) != 'revoked';
+    }
+    // Bootstrap allowance for a brand-new user self-creating their users/{uid}
+    // doc at the exact level their invite grants — mirrors isOrgBootstrap's
+    // shape, gated on the same invite the staff self-create rule checks.
+    function inviteGrantsLevel(email, facilityId, level) {
+      return hasUsableInvite(email, facilityId) && inviteRoleFor(email, facilityId) == level;
     }
 
     function isValidDepartment(data) {
@@ -97,17 +195,18 @@ service cloud.firestore {
     }
 
     // Self-onboarding: a signed-in user creating their OWN staff doc, joining
-    // an existing facility as a general member. Mirrors the self-create-as-
-    // 'staff' pattern already used by users/{uid} below. Never a manager,
-    // never a pre-set accessLevel (that stays gated entirely by the
-    // users/{uid} rules, so this can't be used to self-escalate), and only
-    // into a facility that already exists (self-service facility/department
-    // creation is a separate, deliberately manager-gated action).
+    // an existing facility at EXACTLY the access level a manager already
+    // invited them at (see invites/{inviteId} below) — open self-signup
+    // into an arbitrary facility is not allowed. accessLevel is allowed here
+    // (unlike a manager-authored staff doc) only because it's pinned to
+    // match the invite's role exactly, so it can't be used to self-escalate.
     function isSelfOnboardStaff(data) {
       return isValidStaff(data)
         && data.email == callerEmail()
-        && (!data.keys().hasAny(['isManager']) || data.isManager == false)
-        && !data.keys().hasAny(['accessLevel'])
+        && hasUsableInvite(data.email, data.facilityId)
+        && data.keys().hasAny(['accessLevel'])
+        && data.accessLevel == inviteRoleFor(data.email, data.facilityId)
+        && data.isManager == (data.accessLevel == 'facility_manager')
         && exists(/databases/$(database)/documents/facilities/$(data.facilityId));
     }
 
@@ -173,10 +272,22 @@ service cloud.firestore {
       // reading within their own facility, or super users reading any.
       allow read: if isSignedIn() && (request.auth.uid == userId || isSuper()
         || (isManagerLevel() && resource.data.facilityId == callerFacility()));
+      // Two additional self-create/self-update escape hatches beyond the
+      // plain 'staff' default: isOrgBootstrap (the SetupWizard creator
+      // becoming facility_manager of the org+facility they just made) and
+      // inviteGrantsLevel (accepting an invite at exactly the level it
+      // grants). Both re-verify against a separate, already-committed doc
+      // the caller doesn't control (organizations/{orgId}.ownerUid or
+      // invites/{id}.role), so neither can be used to self-assert an
+      // arbitrary level.
       allow create: if isSignedIn() && request.auth.uid == userId
-        && (incoming().accessLevel == 'staff' || isSuperEmail() || isPlatformAdmin());
+        && (incoming().accessLevel == 'staff' || isSuperEmail() || isPlatformAdmin()
+            || isOrgBootstrap(incoming())
+            || inviteGrantsLevel(incoming().email, incoming().facilityId, incoming().accessLevel));
       allow update: if isSignedIn() && request.auth.uid == userId
-        && (incoming().accessLevel == 'staff' || incoming().accessLevel == existing().accessLevel || isSuperEmail() || isPlatformAdmin());
+        && (incoming().accessLevel == 'staff' || incoming().accessLevel == existing().accessLevel || isSuperEmail() || isPlatformAdmin()
+            || isOrgBootstrap(incoming())
+            || inviteGrantsLevel(incoming().email, incoming().facilityId, incoming().accessLevel));
       allow update: if isSignedIn() && request.auth.uid != userId
         && isManagerLevel() && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && request.auth.uid == userId;
@@ -192,11 +303,72 @@ service cloud.firestore {
     }
 
     // Facilities (sites): readable only by members of that facility (or
-    // super users) — not by any signed-in stranger. Writes remain super-only.
+    // super users) — not by any signed-in stranger. Updates remain
+    // super-only. Creation is super-only EXCEPT for a genuine first-run
+    // bootstrap: a signed-in user with no facility yet (callerFacility()=='')
+    // creating the first facility under an organization they own. This is
+    // what lets SetupWizard's "first admin self-serves" flow actually work
+    // for a real (non-superuser) account. Creating ADDITIONAL facilities
+    // under an existing org is deliberately still super-only for now — see
+    // deferred work.
     match /facilities/{facilityId} {
       allow read: if isSuper() || facilityId == callerFacility();
-      allow create, update: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
+      allow create: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
+      allow create: if isSignedIn() && isValidId(facilityId) && isValidFacility(incoming())
+        && incoming().organizationId is string && incoming().organizationId.size() > 0
+        && exists(/databases/$(database)/documents/organizations/$(incoming().organizationId))
+        && get(/databases/$(database)/documents/organizations/$(incoming().organizationId)).data.ownerUid == request.auth.uid
+        && callerFacility() == '';
+      allow update: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
       allow delete: if isSuper();
+    }
+
+    // Organizations: the top-level ownership/invite namespace above
+    // Facility. Anyone signed in may create ONE they own (self-serve,
+    // mirrors the users/{uid} self-create-as-'staff' bootstrap pattern) —
+    // rate-limiting/abuse prevention for repeated org creation is deferred.
+    // Facility-scoped operational isolation is untouched by this: rosters,
+    // tasks, timesheets, departments all still gate on facilityId, not this.
+    match /organizations/{orgId} {
+      allow read: if isSuper() || orgId == callerOrganization() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(orgId) && isValidOrganization(incoming()) && incoming().ownerUid == request.auth.uid;
+      allow update: if isSuper() || (isSignedIn() && resource.data.ownerUid == request.auth.uid && incoming().ownerUid == resource.data.ownerUid && isValidOrganization(incoming()));
+      allow delete: if isSuper();
+    }
+
+    // Invites: the only path into an EXISTING facility (see staff/{staffId}'s
+    // isSelfOnboardStaff and users/{uid}'s inviteGrantsLevel above). A
+    // manager creates one scoped to their own facility/org, capped to a role
+    // they're allowed to grant (canGrantRole). The invitee can read it (by
+    // email) before accepting, and flip it to 'accepted' themselves — no
+    // other field may change on that write. A manager may revoke a pending
+    // invite in their own facility. There is deliberately no "claim by
+    // link" path — every read/accept is pinned to the invitee's own
+    // signed-in email via callerEmail(), so an invite can't be claimed by
+    // anyone it wasn't issued to.
+    match /invites/{inviteId} {
+      allow read: if isSuper()
+        || (isSignedIn() && resource.data.email == callerEmail())
+        || (isManagerLevel() && resource.data.facilityId == callerFacility());
+      allow create: if isManagerLevel()
+        && isValidInviteId(inviteId)
+        && isValidInvite(incoming())
+        && inMyFacility(incoming().facilityId)
+        && incoming().organizationId == callerOrganization()
+        && incoming().invitedBy == callerEmail()
+        && incoming().status == 'pending'
+        && canGrantRole(incoming().role)
+        && inviteId == (incoming().facilityId + '--' + incoming().email);
+      allow update: if isSignedIn() && resource.data.email == callerEmail()
+        && resource.data.status == 'pending'
+        && incoming().status == 'accepted'
+        && incoming().email == resource.data.email
+        && incoming().facilityId == resource.data.facilityId
+        && incoming().organizationId == resource.data.organizationId
+        && incoming().role == resource.data.role;
+      allow update: if isManagerLevel() && inMyFacility(resource.data.facilityId)
+        && incoming().status == 'revoked';
+      allow delete: if isManagerLevel() && inMyFacility(existing().facilityId);
     }
 
     // Departments: facility managers and above, only within their own facility.

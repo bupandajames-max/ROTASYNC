@@ -212,6 +212,7 @@ export interface Facility {
   location: string;
   leadManager: string;
   facilitiesType: string; // org-defined classification (e.g. 'Primary Care', 'Warehouse', 'Branch')
+  organizationId?: string; // owning Organization — the tenant's billing/invite namespace, not the isolation boundary (facilityId still is)
 }
 
 export interface Department {
@@ -219,6 +220,42 @@ export interface Department {
   facilityId: string;
   name: string;
   description: string;
+}
+
+// Top-level ownership/namespace layer, sitting above Facility. Does NOT
+// replace facilityId as the operational isolation boundary (rosters, tasks,
+// timesheets stay facility-scoped) — it owns billing identity, the invite
+// namespace, and cross-facility admin grants.
+export interface Organization {
+  id: string;
+  name: string;
+  ownerUid: string; // the Firebase Auth uid of whoever created it (self-serve, see SetupWizard)
+  createdAt: string;
+}
+
+// An outstanding or resolved invitation for someone to join a specific
+// facility (and optionally department) at a specific access level. This is
+// the only path into an existing facility — see PortalGateway. Doc ID is
+// deterministic (see utils/invites.ts: inviteDocId) so both the client and
+// firestore.rules can look one up by (facilityId, email) without a query.
+export interface Invite {
+  id: string;
+  email: string;
+  organizationId: string;
+  facilityId: string;
+  // Denormalized display copies, set once at invite creation by the
+  // inviting manager (who can already read their own facility/department).
+  // The invitee can't read `facilities`/`departments` before they're a
+  // member — that's exactly the tenant isolation this whole design
+  // preserves — so the invite doc has to carry its own display strings
+  // rather than the client resolving them from those collections.
+  facilityName?: string;
+  departmentId?: string;
+  departmentName?: string;
+  role: AccessLevel; // capped to 'staff' | 'dept_head' | 'facility_manager' — never 'superuser'
+  invitedBy: string; // inviter's email
+  status: 'pending' | 'accepted' | 'revoked';
+  createdAt: string;
 }
 
 // ── Configuration-driven architecture ──────────────────────────────────────
