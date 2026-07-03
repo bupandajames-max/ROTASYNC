@@ -357,7 +357,12 @@ service cloud.firestore {
         && isValidInviteId(inviteId)
         && isValidInvite(incoming())
         && inMyFacility(incoming().facilityId)
-        && incoming().organizationId == callerOrganization()
+        // A super user (org owner / platform admin) legitimately has no
+        // single organization of their own, so callerOrganization() is ''
+        // for them and this equality could never pass — the same reason
+        // isSuper() already bypasses inMyFacility() just above. Non-super
+        // managers are still confined to their own org.
+        && (isSuper() || incoming().organizationId == callerOrganization())
         && incoming().invitedBy == callerEmail()
         && incoming().status == 'pending'
         && canGrantRole(incoming().role)
@@ -380,7 +385,7 @@ service cloud.firestore {
       allow update: if isManagerLevel()
         && isValidInvite(incoming())
         && inMyFacility(incoming().facilityId)
-        && incoming().organizationId == callerOrganization()
+        && (isSuper() || incoming().organizationId == callerOrganization())
         && incoming().invitedBy == callerEmail()
         && incoming().status == 'pending'
         && canGrantRole(incoming().role)

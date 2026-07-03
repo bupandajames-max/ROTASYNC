@@ -378,6 +378,33 @@ describe('invites/{inviteId}', () => {
     );
   });
 
+  it('lets the bootstrap super user create an invite even though their own org is empty (the invite-failure bug)', async () => {
+    // Regression: a super user (org owner) has no single organization, so
+    // callerOrganization() is '' and the org-match could never pass for
+    // them — which is exactly why real invites were denied. isSuper() now
+    // bypasses that check (same as it already bypasses inMyFacility).
+    const root = testEnv.authenticatedContext('root-uid', { email: SUPER_EMAIL });
+    await assertSucceeds(
+      setDoc(doc(root.firestore(), 'invites/fac-1--carol@example.com'), {
+        id: 'fac-1--carol@example.com', email: 'carol@example.com', organizationId: 'org-1', facilityId: 'fac-1',
+        role: 'facility_manager', invitedBy: SUPER_EMAIL, status: 'pending', createdAt: '2026-01-01T00:00:00.000Z',
+      })
+    );
+  });
+
+  it('still blocks a non-super manager whose org does not match the invite org', async () => {
+    // The isSuper() bypass must NOT leak to ordinary managers — a manager in
+    // org-1 cannot mint an invite claiming org-2.
+    await seedManager('facility_manager');
+    const mgr = testEnv.authenticatedContext('mgr-uid', { email: 'mgr@example.com' });
+    await assertFails(
+      setDoc(doc(mgr.firestore(), 'invites/fac-1--carol@example.com'), {
+        id: 'fac-1--carol@example.com', email: 'carol@example.com', organizationId: 'org-OTHER', facilityId: 'fac-1',
+        role: 'staff', invitedBy: 'mgr@example.com', status: 'pending', createdAt: '2026-01-01T00:00:00.000Z',
+      })
+    );
+  });
+
   it('blocks a dept_head from inviting someone as facility_manager (role cap)', async () => {
     await seedManager('dept_head');
     const mgr = testEnv.authenticatedContext('mgr-uid', { email: 'mgr@example.com' });

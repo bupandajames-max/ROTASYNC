@@ -558,8 +558,14 @@ export default function App() {
   // grantable role and confines it to the manager's own facility/org).
   const handleCreateInvite = async (email: string, role: 'staff' | 'dept_head' | 'facility_manager', departmentId?: string): Promise<'created' | 'error'> => {
     if (!firebaseUser || !selectedFacilityId) return 'error';
-    const organizationId = facilities.find(f => f.id === selectedFacilityId)?.organizationId;
-    if (!organizationId) return 'error';
+    // Derive the organization robustly instead of hard-failing: prefer the
+    // facility's own org, then the caller's resolved org, and finally fall
+    // back to the facility id itself (a coherent single-facility "org"
+    // namespace) so a legacy facility that predates the org model can't
+    // silently block invites with "Could not send that invite".
+    const organizationId = facilities.find(f => f.id === selectedFacilityId)?.organizationId
+      || access.organizationId
+      || selectedFacilityId;
     const invite: Invite = {
       id: inviteDocId(selectedFacilityId, email),
       email,
