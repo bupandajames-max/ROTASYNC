@@ -113,8 +113,19 @@ export function getHolidayPreset(id: string): HolidayPreset | undefined {
 // from scratch in Settings -> Roster Rules.
 export function buildDefaultRuleSet(): RosterRuleSet {
   return {
+    // A manager standard track and at least one rotation track are REQUIRED
+    // for the optimizer to actually assign work shifts — with both empty
+    // (the old default) every regular staffer stayed unassigned and the
+    // whole roster generated as "Off". These sensible starter tracks use
+    // the built-in shift codes (A/C/OFF present in every workspace via
+    // mergeShiftDefs) so a brand-new workspace produces a real weekday
+    // day-cover roster out of the box; managers refine it in Roster Rules.
+    managerTrack: { weekdayShift: 'A', weekendShift: 'OFF' },
     autoAssignments: [],
-    rotationTracks: [],
+    rotationTracks: [
+      { id: 'track-morning', label: 'Morning cover', weekdayShift: 'A', weekendShift: 'OFF' },
+      { id: 'track-afternoon', label: 'Afternoon cover', weekdayShift: 'C', weekendShift: 'OFF' },
+    ],
     restConstraints: {
       lateShifts: [],
       earlyShifts: [],

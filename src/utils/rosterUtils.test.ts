@@ -1,5 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { computeShiftDuration, getDatesForCycle, isPublicHoliday } from './rosterUtils';
+import { computeShiftDuration, getDatesForCycle, isPublicHoliday, runSmartPersonaOptimizer } from './rosterUtils';
+import { buildDefaultRuleSet } from '../data/initialData';
+import type { StaffMember } from '../types';
+
+describe('runSmartPersonaOptimizer with the default ruleset', () => {
+  const mkStaff = (id: string, isManager = false): StaffMember => ({
+    id, name: id, fullName: id, email: `${id}@example.com`, role: 'Member',
+    phone: '', contractedHours: 168, gender: '', employeeNo: id, isManager,
+  });
+
+  it('generates a real roster (not all-Off) for a fresh workspace', () => {
+    // Regression for the "initial roster is all Off" bug: the old default
+    // ruleset had no manager track and no rotation tracks, so the optimizer
+    // left everyone unassigned. The default must schedule real work shifts.
+    const staff = [mkStaff('mgr', true), mkStaff('a'), mkStaff('b')];
+    // Mon–Fri 2026-06-15..19 (all weekdays), no holidays/absences.
+    const dates = ['2026-06-15', '2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19'];
+    const shifts = runSmartPersonaOptimizer(staff, dates, [], {}, buildDefaultRuleSet());
+
+    for (const s of staff) {
+      const assigned = shifts[s.id];
+      expect(assigned).toHaveLength(5);
+      // Every weekday should have a real work shift, none left as OFF/blank.
+      const workedDays = assigned.filter(code => code && code !== 'OFF').length;
+      expect(workedDays).toBe(5);
+    }
+  });
+});
 
 describe('computeShiftDuration', () => {
   it('computes a same-day shift correctly', () => {

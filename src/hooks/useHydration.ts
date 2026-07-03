@@ -187,6 +187,17 @@ export function useHydration(deps: HydrationDeps) {
           if (typeof cfg.regionPresetId === 'string') loadedRegionId = cfg.regionPresetId;
         } catch (e) {}
       }
+
+      // Heal a workspace saved with the old empty-default ruleset — no
+      // rotation tracks AND no manager track — which is the exact signature
+      // that makes the optimizer generate an all-"Off" roster. That combo
+      // never produces a working schedule, so filling in the sensible
+      // default tracks can only help; any other customizations the config
+      // carries (rest constraints, auto-assignments) are preserved.
+      if ((!loadedRuleSet.rotationTracks || loadedRuleSet.rotationTracks.length === 0) && !loadedRuleSet.managerTrack) {
+        const def = buildDefaultRuleSet();
+        loadedRuleSet = { ...loadedRuleSet, managerTrack: def.managerTrack, rotationTracks: def.rotationTracks };
+      }
       if (active) {
         setRuleSet(loadedRuleSet);
         setTaskCategories(loadedCategories);

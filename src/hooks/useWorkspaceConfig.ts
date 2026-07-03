@@ -32,12 +32,18 @@ export function useWorkspaceConfig(selectedFacilityId: string, isHydrated: boole
   const [regionPresetId, setRegionPresetId] = useState<string | undefined>(undefined);
   const [holidays, setHolidays] = useState<PublicHoliday[]>([]);
 
-  // Sync custom taxonomy changes to localStorage
+  // Sync custom taxonomy changes to localStorage. The isHydrated guard is
+  // essential: taxonomy initializes to DEFAULT_TAXONOMY, and without the
+  // guard this effect fires on mount (once selectedFacilityId resolves) and
+  // writes that blank default OVER the stored taxonomy — including the saved
+  // organization name — before hydration has had a chance to load the real
+  // one. Hydration then reads back the clobbered default, so the org name
+  // "disappears" on refresh. Only persist once hydrated (i.e. real user
+  // edits), exactly like the config/holidays effects below.
   useEffect(() => {
-    if (selectedFacilityId) {
-      localStorage.setItem(facilityKey(selectedFacilityId, 'taxonomy'), JSON.stringify(taxonomy));
-    }
-  }, [taxonomy, selectedFacilityId]);
+    if (!isHydrated || !selectedFacilityId) return;
+    localStorage.setItem(facilityKey(selectedFacilityId, 'taxonomy'), JSON.stringify(taxonomy));
+  }, [taxonomy, selectedFacilityId, isHydrated]);
 
   // Persist workspace configuration bundle (ruleset, categories, facility types, regional)
   useEffect(() => {
@@ -65,11 +71,14 @@ export function useWorkspaceConfig(selectedFacilityId: string, isHydrated: boole
     } catch {}
   }, [holidays, selectedFacilityId, isHydrated]);
 
+  // Same isHydrated guard as taxonomy above: `shifts` initializes to the
+  // SHIFTS defaults, so without the guard this effect writes those defaults
+  // over the stored custom_shifts on mount, before hydration loads the real
+  // set — which is why custom shifts "disappear" after refresh.
   useEffect(() => {
-    if (selectedFacilityId) {
-      localStorage.setItem(facilityKey(selectedFacilityId, 'custom_shifts'), JSON.stringify(shifts));
-    }
-  }, [shifts, selectedFacilityId]);
+    if (!isHydrated || !selectedFacilityId) return;
+    localStorage.setItem(facilityKey(selectedFacilityId, 'custom_shifts'), JSON.stringify(shifts));
+  }, [shifts, selectedFacilityId, isHydrated]);
 
   return {
     shifts, setShifts,
