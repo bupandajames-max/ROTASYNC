@@ -1182,6 +1182,18 @@ export default function App() {
       localStorage.setItem(seededFlagKey(selectedFacilityId), 'true');
 
       // 2. Clear Firestore Database if user context exists
+      //
+      // failedCollections tracks anything that DIDN'T actually end up empty,
+      // so we can tell the user honestly rather than silently reporting
+      // success. This was previously all console.warn-only: a delete that
+      // threw mid-loop (or, worse, docs that simply never matched the
+      // facilityId query in the first place — e.g. an orphaned/duplicate
+      // facility doc) left live staff/manager records behind with zero
+      // user-facing indication that the reset was incomplete. A stale
+      // manager record surviving a "successful" reset is exactly how someone
+      // can still sign in with full access to a facility that was supposedly
+      // wiped clean.
+      const failedCollections: string[] = [];
       if (firebaseUser) {
         const collectionsToPurge = [
           'staff',
@@ -1211,8 +1223,17 @@ export default function App() {
                 await dbDeleteDoc(colName, d.id);
               }
             }
+            // Verify rather than assume: re-query after deleting. If a delete
+            // silently failed mid-loop (the previous doc's failure would
+            // throw and skip the rest), this catches it instead of reporting
+            // a clean purge that wasn't.
+            const remaining = await dbGetCollectionByFacility<any>(colName, selectedFacilityId);
+            if (remaining.length > 0) {
+              failedCollections.push(colName);
+            }
           } catch (e) {
             console.warn(`Could not purge cloud collection "${colName}":`, e);
+            failedCollections.push(colName);
           }
         }
 
@@ -1227,6 +1248,7 @@ export default function App() {
           await dbDeleteDoc('workspaceConfigs', selectedFacilityId);
         } catch (e) {
           console.warn('Could not purge cloud workspaceConfigs doc:', e);
+          failedCollections.push('workspaceConfigs');
         }
 
         await dbSetDoc('systemConfig', 'status', { id: 'status', seeded: true });
@@ -1242,7 +1264,23 @@ export default function App() {
       setDepartments([]);
       setActiveCycle(null);
       setCycleDates([]);
-      
+
+      // 4. If anything survived the purge, this MUST reach the user before
+      // the reload below tears down the page (a toast alone wouldn't survive
+      // that) — a reset that silently leaves live records behind is worse
+      // than no reset, since it looks clean while old access stays granted.
+      // Blocking on an explicit acknowledgement also stops them from walking
+      // away assuming it's handled.
+      if (failedCollections.length > 0) {
+        await confirm({
+          title: 'Reset finished, but not completely',
+          message: `These records could not be fully cleared from the cloud: ${failedCollections.join(', ')}. They may still grant access to old staff or managers at this facility. Check your permissions and try again, or remove them individually from Settings before treating this facility as reset.`,
+          confirmLabel: 'Understood',
+          cancelLabel: 'Understood',
+          danger: true,
+        });
+      }
+
       // 5. Force a page reload with fresh state. This wipes only the
       // current facility/tenant — selectedFacilityId (GLOBAL_KEYS.lastFacility)
       // and the signed-in session are deliberately left untouched, so the
