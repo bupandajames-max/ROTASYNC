@@ -255,6 +255,32 @@ export default function TaskBoard({
     return task.category.toLowerCase() === catTab.toLowerCase();
   };
 
+  // The "Filter by area" chips must reflect categories that actually have
+  // tasks right now, not the full taskCategories config list — that list
+  // only ever grows (every AI-suggested department merges its taxonomy into
+  // it permanently, even after the department or its tasks are deleted), so
+  // showing it directly here surfaced dead categories with no real tasks
+  // behind them. Derive the chip set from dailyTasks instead: a category
+  // only appears if it's actually in use. taskCategories still supplies the
+  // display ORDER for the ones that are live, so the chip order stays
+  // predictable rather than reshuffling as tasks are added/removed.
+  const liveCategorySet = new Set(dailyTasks.map(t => t.category).filter(Boolean));
+  const liveCategories = [
+    ...taskCategories.filter(c => liveCategorySet.has(c)),
+    ...Array.from(liveCategorySet).filter(c => !taskCategories.includes(c)),
+  ];
+
+  // If the selected chip's category has no live tasks left (e.g. the last
+  // task in it was deleted, or dailyTasks reloaded for a new facility), fall
+  // back to "All Tasks" rather than silently filtering to an empty, now
+  // invisible tab with no way to tell why nothing shows.
+  useEffect(() => {
+    if (activeCategoryTab !== 'ALL' && !liveCategorySet.has(activeCategoryTab)) {
+      setActiveCategoryTab('ALL');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyTasks]);
+
   // Both sides are plain "YYYY-MM-DD" strings parsed the same way, so the
   // day difference is correct regardless of the viewer's timezone offset.
   const daysOverdue = (task: DailyTask) => {
@@ -599,7 +625,7 @@ export default function TaskBoard({
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'ALL', label: 'All Tasks' },
-            ...taskCategories.map(c => ({ id: c, label: c })),
+            ...liveCategories.map(c => ({ id: c, label: c })),
           ].map(tab => {
             const isActive = activeCategoryTab === tab.id;
             const count = tab.id === 'ALL' ? pendingTasks.length : pendingTasks.filter(t => isTaskInCategory(t, tab.id)).length;
