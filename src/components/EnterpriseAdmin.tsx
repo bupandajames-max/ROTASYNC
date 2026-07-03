@@ -1889,10 +1889,10 @@ export default function EnterpriseAdmin({
                   <button
                     type="button"
                     onClick={openOnboarding}
-                    className="px-3 py-1.5 bg-indigo-50 hover:bg-slate-50 text-[#7A1230] font-black text-[10.5px] rounded-lg tracking-wider uppercase flex items-center gap-1.5 transition-colors border border-indigo-200/40 cursor-pointer"
+                    className="px-3 py-1.5 bg-indigo-50 hover:bg-slate-50 text-[#1f3864] font-black text-[10.5px] rounded-lg tracking-wider uppercase flex items-center gap-1.5 transition-colors border border-indigo-200/40 cursor-pointer"
                     title="Launch the beautiful, guided wizard to onboard clinical personnel step-by-step"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-[#E29E25]" /> Onboard Staff Wizard
+                    <Sparkles className="w-3.5 h-3.5 text-[#009EE2]" /> Onboard Staff Wizard
                   </button>
                 )}
                 {onSyncGrantedAccess && (
@@ -1995,7 +1995,7 @@ export default function EnterpriseAdmin({
             <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 flex items-center gap-2.5">
               <Info className="text-indigo-900 w-4.5 h-4.5 shrink-0" />
               <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
-                Under isolated sandboxed routing, team {taxonomy.memberPlural.toLowerCase()} can ONLY view tasks, logs, checklists and roster mappings corresponding to their assigned {taxonomy.groupSingular.toLowerCase()} silo. Global operators/managers bypass isolation parameters.
+                When "Show one {taxonomy.groupSingular.toLowerCase()} at a time" is on, {taxonomy.memberPlural.toLowerCase()} only see the roster and tasks for their own {taxonomy.groupSingular.toLowerCase()}. Managers and admins always see everyone.
               </p>
             </div>
 
@@ -2041,7 +2041,7 @@ export default function EnterpriseAdmin({
                             const badge = {
                               superuser: { label: 'Super User', cls: 'bg-emerald-600 text-white' },
                               facility_manager: { label: 'Facility Manager', cls: 'bg-indigo-950 text-white' },
-                              dept_head: { label: 'Dept Head', cls: 'bg-indigo-100 text-indigo-900 border border-indigo-200' },
+                              dept_head: { label: 'Department Head', cls: 'bg-indigo-100 text-indigo-900 border border-indigo-200' },
                               staff: { label: 'Staff', cls: 'bg-slate-100 text-slate-500' },
                             }[tier] || { label: tier, cls: 'bg-slate-100 text-slate-500' };
                             return (

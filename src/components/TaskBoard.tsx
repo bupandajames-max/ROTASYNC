@@ -472,7 +472,7 @@ export default function TaskBoard({
             onClick={() => setShowGuide(!showGuide)}
             className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all outline-none cursor-pointer border ${
               showGuide 
-                ? 'bg-[#7A1230] text-white border-[#7A1230] shadow-md' 
+                ? 'bg-[#1f3864] text-white border-[#1f3864] shadow-md' 
                 : 'bg-amber-50 text-amber-800 border-amber-250 hover:bg-amber-100'
             }`}
           >

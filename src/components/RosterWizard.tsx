@@ -142,7 +142,7 @@ export default function RosterWizard({
   };
 
   const labelCls = 'text-[10px] font-bold text-slate-500 uppercase tracking-wide block';
-  const inputCls = 'w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 outline-none focus:border-[#7A1230]';
+  const inputCls = 'w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 outline-none focus:border-[#1f3864]';
 
   return (
     <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -184,7 +184,7 @@ export default function RosterWizard({
           {step === 1 && (
             <div className="space-y-4">
               <form onSubmit={handleAddStaff} className="bg-white border border-slate-200 p-4 rounded-2xl space-y-3">
-                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5"><UserPlus className="w-4 h-4 text-[#7A1230]" /> Add a team member</h3>
+                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5"><UserPlus className="w-4 h-4 text-[#1f3864]" /> Add a team member</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div><label className={labelCls}>Full name</label><input value={sName} onChange={e => setSName(e.target.value)} placeholder="e.g. Alex Banda" className={inputCls} /></div>
                   <div><label className={labelCls}>Role</label><input value={sRole} onChange={e => setSRole(e.target.value)} placeholder="e.g. Nurse" className={inputCls} /></div>
@@ -196,12 +196,12 @@ export default function RosterWizard({
                   </div>
                   <div><label className={labelCls}>Weekly hours</label><input type="number" value={sHours} onChange={e => setSHours(Number(e.target.value))} className={inputCls} /></div>
                 </div>
-                <button type="submit" className="w-full py-2.5 bg-[#4C0B1E] hover:bg-[#7A1230] text-white text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"><Plus className="w-4 h-4" /> Add to team</button>
+                <button type="submit" className="w-full py-2.5 bg-[#101d35] hover:bg-[#1f3864] text-white text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"><Plus className="w-4 h-4" /> Add to team</button>
               </form>
               <div>
                 <h4 className="text-[10px] font-bold text-slate-400 mb-2">Your team ({staffList.length})</h4>
                 <div className="flex flex-wrap gap-1.5">
-                  {staffList.map(s => <span key={s.id} className="text-[11px] font-bold bg-[#7A1230]/5 text-[#7A1230] border border-[#7A1230]/15 px-2.5 py-1 rounded-lg">{s.name} <span className="opacity-60">({s.role})</span></span>)}
+                  {staffList.map(s => <span key={s.id} className="text-[11px] font-bold bg-[#1f3864]/5 text-[#1f3864] border border-[#1f3864]/15 px-2.5 py-1 rounded-lg">{s.name} <span className="opacity-60">({s.role})</span></span>)}
                   {staffList.length === 0 && <span className="text-xs text-slate-400 italic">No one yet — add your first team member above.</span>}
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function RosterWizard({
                 )}
               </div>
               <form onSubmit={handleAddShift} className="bg-white border border-slate-200 p-4 rounded-2xl space-y-3">
-                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#7A1230]" /> Add / define a shift</h3>
+                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#1f3864]" /> Add / define a shift</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div><label className={labelCls}>Code</label><input value={shCode} onChange={e => setShCode(e.target.value)} placeholder="A" maxLength={3} className={inputCls} /></div>
                   <div className="col-span-1 md:col-span-3"><label className={labelCls}>Name</label><input value={shName} onChange={e => setShName(e.target.value)} placeholder="Morning" className={inputCls} /></div>
@@ -267,7 +267,7 @@ export default function RosterWizard({
                     </div>
                   </div>
                 </div>
-                <button type="submit" className="w-full py-2.5 bg-[#4C0B1E] hover:bg-[#7A1230] text-white text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"><Plus className="w-4 h-4" /> Add shift</button>
+                <button type="submit" className="w-full py-2.5 bg-[#101d35] hover:bg-[#1f3864] text-white text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"><Plus className="w-4 h-4" /> Add shift</button>
               </form>
             </div>
           )}
@@ -310,8 +310,8 @@ export default function RosterWizard({
               </div>
               <div className="space-y-4">
                 <div className="bg-slate-50/60 border border-slate-200/50 p-4 rounded-2xl space-y-2">
-                  <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5"><Users className="w-4 h-4 text-[#7A1230]" /> People needed on shift</label>
-                  <input type="number" min={1} value={perShift} onChange={e => setPerShift(Math.max(1, parseInt(e.target.value) || 1))} className="w-20 text-xs font-black bg-white border border-slate-200 rounded-xl p-2.5 text-center text-[#7A1230]" />
+                  <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5"><Users className="w-4 h-4 text-[#1f3864]" /> People needed on shift</label>
+                  <input type="number" min={1} value={perShift} onChange={e => setPerShift(Math.max(1, parseInt(e.target.value) || 1))} className="w-20 text-xs font-black bg-white border border-slate-200 rounded-xl p-2.5 text-center text-[#1f3864]" />
                   <p className="text-[10px] text-slate-400">How many people you want on the busiest shifts.</p>
                 </div>
                 {absences.length > 0 && (
@@ -416,11 +416,11 @@ export default function RosterWizard({
               <ChevronLeft className="w-4 h-4" /> {step === 1 ? 'Cancel' : 'Back'}
             </button>
             {step < 5 ? (
-              <button onClick={() => setStep(step + 1)} className="py-2.5 px-4 bg-[#7A1230] hover:bg-[#4C0B1E] text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer">
+              <button onClick={() => setStep(step + 1)} className="py-2.5 px-4 bg-[#1f3864] hover:bg-[#101d35] text-white font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer">
                 Next <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button onClick={handleBuild} className="py-2.5 px-5 bg-gradient-to-r from-[#4C0B1E] via-[#7A1230] to-[#E29E25] text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer">
+              <button onClick={handleBuild} className="py-2.5 px-5 bg-gradient-to-r from-[#101d35] via-[#1f3864] to-[#009EE2] text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md cursor-pointer">
                 <Sparkles className="w-4 h-4 text-amber-200" /> Build roster
               </button>
             )}

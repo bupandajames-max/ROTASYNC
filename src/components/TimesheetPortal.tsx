@@ -619,15 +619,27 @@ export default function TimesheetPortal({
             {/* Official Report Container */}
             <div id="timesheetPrintable" className="p-8 border border-gray-200 rounded-2xl bg-white font-sans max-h-[75vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none">
 
-              {/* Report Header Logo Section */}
-              <div className="border-b-2 border-[#1f3864] pb-3 mb-3 print:pb-2 print:mb-2 text-center">
-                {taxonomy.organizationName && (
-                  <p className="text-slate-900 font-extrabold text-sm">{taxonomy.organizationName}</p>
-                )}
-                <h2 className="text-[#009EE2] font-extrabold text-base">{activeFacility?.name}</h2>
-                <h3 className="text-gray-800 text-xs font-bold uppercase mt-1">{activeFacility?.location}</h3>
-                <p className="text-[10px] text-gray-500 mt-1 font-black text-rose-800">Official Cycle Timesheet Record</p>
-              </div>
+              {/* Report Header — organization is the hero (it's the legal
+                  entity on payroll); the facility/site is the subtitle. When
+                  no separate organization name is set, the facility name is
+                  promoted to the hero so nothing is blank or duplicated. */}
+              {(() => {
+                const org = taxonomy.organizationName?.trim();
+                const fac = activeFacility?.name;
+                const loc = activeFacility?.location;
+                return (
+                  <div className="border-b-2 border-[#1f3864] pb-3 mb-3 print:pb-2 print:mb-2 text-center">
+                    <p className="text-slate-900 font-extrabold text-base tracking-tight">{org || fac}</p>
+                    {org && fac && (
+                      <h2 className="text-[#009EE2] font-bold text-sm mt-0.5">{fac}</h2>
+                    )}
+                    {loc && (
+                      <h3 className="text-slate-500 text-[11px] font-bold uppercase tracking-wide mt-0.5">{loc}</h3>
+                    )}
+                    <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-[0.15em]">Official Timesheet Record</p>
+                  </div>
+                );
+              })()}
 
               {/* Master Data Grid Header */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs tracking-tight border-b border-gray-100 pb-3 mb-3 print:pb-2 print:mb-2">
@@ -688,7 +700,7 @@ export default function TimesheetPortal({
                         <td className="py-2 px-2 border-r border-gray-200 text-center bg-blue-50/20 font-sans font-bold text-slate-900 print:py-0.5">
                           {d.regularWorkedHours > 0 ? `${d.regularWorkedHours}h` : '-'}
                         </td>
-                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-rose-50/20 font-sans font-bold text-[#7A1230] print:py-0.5">
+                        <td className="py-2 px-2 border-r border-gray-200 text-center bg-rose-50/20 font-sans font-bold text-rose-800 print:py-0.5">
                           {/* A day is never both Sunday-worked and a public holiday, so
                               one column can safely show whichever premium type applies.
                               No specific multiplier is asserted here — this app tracks
@@ -709,7 +721,7 @@ export default function TimesheetPortal({
                   <tr className="bg-slate-100 font-sans font-extrabold border-t-2 border-gray-400 text-xs text-slate-800 select-all">
                     <td colSpan={4} className="py-3 px-3 text-right uppercase font-mono tracking-wider print:py-1">Payroll totals:</td>
                     <td className="py-3 px-2 text-center bg-blue-100/70 text-slate-900 print:py-1">{totals.regular} h</td>
-                    <td className="py-3 px-2 text-center bg-rose-100/70 text-[#7A1230] text-[10px] print:py-1">
+                    <td className="py-3 px-2 text-center bg-rose-100/70 text-rose-800 text-[10px] print:py-1">
                       {/* Unlike the per-day cells, a full cycle can include both
                           Sunday and holiday work, so the total shows both parts —
                           but only when nonzero, since "0h" in this bold print font
