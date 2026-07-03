@@ -27,6 +27,13 @@ export const SHIFT_PRESET_STANDARD: { [code: string]: ShiftDef } = {
   'A':   { code: 'A', name: 'Morning',   time: '08:00 – 17:00', hours: 8,  bg: '#FEF9C3', fg: '#713F12', active: true },
   'C':   { code: 'C', name: 'Afternoon', time: '12:00 – 21:00', hours: 8,  bg: '#DBEAFE', fg: '#1E3A8A', active: true },
   'N':   { code: 'N', name: 'Night Shift', time: '20:00 – 08:00 (overnight)', hours: 12, bg: '#E0E7FF', fg: '#312E81', active: true },
+  // On-call / standby: rostered so the team knows who's reachable at
+  // night, but 0 base hours — standby itself isn't worked time. When the
+  // person is actually called in, those real hours are logged separately
+  // (either as that day's "Worked Call-out" work type on the timesheet,
+  // or via Log Extra Hours on a day they already worked) and paid as
+  // premium/overtime. See timesheetUtils' On-Call Callout handling.
+  'OC':  { code: 'OC', name: 'On-Call', time: 'On standby', hours: 0, bg: '#FFEDD5', fg: '#9A3412', active: true },
   // Leave & absence
   'MD':  { code: 'MD', name: 'Personal Day Off',    time: 'Paid day off',  hours: 8,  bg: '#FCE7F3', fg: '#831843', active: true, isLeave: true },
   'AL':  { code: 'AL', name: 'Annual Leave',        time: 'Paid leave',    hours: 8,  bg: '#D1FAE5', fg: '#064E3B', active: true, isLeave: true },

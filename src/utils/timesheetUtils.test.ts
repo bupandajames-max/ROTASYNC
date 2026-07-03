@@ -99,6 +99,15 @@ describe('reevaluateTimesheetDay', () => {
     expect(result.overtimeHours).toBe(12);
     expect(result.regularWorkedHours).toBe(0);
   });
+
+  it('books an On-Call Callout entirely as premium overtime, not regular hours', () => {
+    // A call-out is unscheduled extra work, so every hour is premium — it
+    // must not be split into "regular up to the standard shift, rest OT".
+    const day = baseDay({ workType: 'On-Call Callout', clockIn: '22:00', clockOut: '01:00', lunchBreakMinutes: 0 }); // 3h overnight callout
+    const result = reevaluateTimesheetDay(day, day.date, []);
+    expect(result.overtimeHours).toBe(3);
+    expect(result.regularWorkedHours).toBe(0);
+  });
 });
 
 describe('sumTimesheetTotals', () => {

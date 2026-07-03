@@ -275,8 +275,12 @@ export function reevaluateTimesheetDay(day: TimesheetDay, dateStr: string, holid
   } else if (isSun) {
     updated.sundayWorkedHours = totalNetHours;
   } else {
-    // Weekday/Saturday actuals
-    if (updated.workType === 'Overtime Duty') {
+    // Weekday/Saturday actuals. Both explicit overtime and an on-call
+    // call-out are unscheduled extra work, so ALL their hours are premium
+    // (overtime) — not "regular up to the standard shift length, remainder
+    // overtime" the way a normal worked shift is split. Previously On-Call
+    // Callout fell into the else branch and was mis-booked as regular hours.
+    if (updated.workType === 'Overtime Duty' || updated.workType === 'On-Call Callout') {
       updated.overtimeHours = totalNetHours;
     } else {
       // Standard regular work up to standard limit, remaining is overtime
