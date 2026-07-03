@@ -8,6 +8,33 @@ export const SUPERUSER_EMAILS: string[] = [
   'bupandajames@gmail.com',
 ];
 
+// --- ROLE DISPLAY LABELS ------------------------------------------------------
+// The single source of truth for how the four access tiers are shown to
+// users. The INTERNAL values (staff/dept_head/facility_manager/superuser)
+// never change — they're what firestore.rules, stored users/staff docs, and
+// every gating check depend on. These labels are purely what the user sees,
+// so relabelling roles never touches access control or requires a migration.
+export const ACCESS_LABELS: Record<AccessLevel, string> = {
+  staff: 'Member',
+  dept_head: 'Supervisor',
+  facility_manager: 'Manager',
+  superuser: 'Org Admin',
+};
+
+// Safe display lookup for a possibly-undefined/legacy level.
+export const accessLabel = (level?: string | null): string =>
+  ACCESS_LABELS[(level as AccessLevel)] ?? 'Member';
+
+// The tiers a person may be assigned/invited at from inside the app, capped
+// by the actor's own tier (superuser is never assignable here — it's granted
+// only via the allowlist / platform-admin path). Value = internal level,
+// label = display name, both from the single map above.
+export const ASSIGNABLE_ROLE_OPTIONS: { value: Exclude<AccessLevel, 'superuser'>; label: string }[] = [
+  { value: 'staff', label: ACCESS_LABELS.staff },
+  { value: 'dept_head', label: ACCESS_LABELS.dept_head },
+  { value: 'facility_manager', label: ACCESS_LABELS.facility_manager },
+];
+
 export interface ResolvedAccess {
   accessLevel: AccessLevel;
   facilityId?: string;

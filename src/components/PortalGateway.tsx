@@ -11,6 +11,7 @@ import {
   MailQuestion,
 } from 'lucide-react';
 import { StaffMember, Invite } from '../types';
+import { accessLabel } from '../config/access';
 
 interface PortalGatewayProps {
   firebaseUser: any;
@@ -35,11 +36,6 @@ interface PortalGatewayProps {
   };
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  staff: 'Staff',
-  dept_head: 'Department Head',
-  facility_manager: 'Facility Manager',
-};
 
 export default function PortalGateway({
   firebaseUser,
@@ -261,7 +257,7 @@ export default function PortalGateway({
             <p className="text-slate-400 text-xs">
               You've been invited to <strong className="text-slate-200">{invite?.facilityName || taxonomy.workspaceSingular}</strong>
               {invite?.departmentName ? <> in <strong className="text-slate-200">{invite.departmentName}</strong></> : null}
-              {' '}as <strong className="text-slate-200">{ROLE_LABELS[invite?.role || 'staff']}</strong>. Confirm your details below to join.
+              {' '}as <strong className="text-slate-200">{accessLabel(invite?.role)}</strong>. Confirm your details below to join.
             </p>
           </div>
 
@@ -316,7 +312,7 @@ export default function PortalGateway({
                 {invite?.facilityName || invite?.facilityId}
                 {invite?.departmentName ? <span className="text-slate-500">· {invite.departmentName}</span> : null}
                 <span className="ml-auto text-[9px] font-black uppercase px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-full">
-                  {ROLE_LABELS[invite?.role || 'staff']}
+                  {accessLabel(invite?.role)}
                 </span>
               </div>
               <p className="text-[9.5px] text-slate-500 font-medium mt-2">

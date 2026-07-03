@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StaffMember, Facility } from '../types';
+import { accessLabel } from '../config/access';
 import { 
   Clock, 
   ShieldCheck, 
@@ -413,19 +414,13 @@ export default function Header({
         {/* Read-only role badge — privileges come from the authenticated account,
             not a toggle. */}
         {(() => {
-          const ROLE_LABELS: Record<string, string> = {
-            superuser: 'Super User',
-            facility_manager: 'Facility Manager',
-            dept_head: 'Department Head',
-            staff: 'Staff',
-          };
           // When signed in, the badge reflects the account's resolved tier. In the
           // no-login demo (sandbox) path there is no tier to resolve, so reflect the
-          // active simulator view instead of always showing "Staff".
+          // active simulator view instead of always showing the base role.
           const signedIn = !!firebaseUser;
           const label = signedIn
-            ? (ROLE_LABELS[accessLevel || 'staff'] || 'Staff')
-            : (isManagerView ? 'Manager · Demo' : 'Staff · Demo');
+            ? accessLabel(accessLevel)
+            : (isManagerView ? `${accessLabel('facility_manager')} · Demo` : `${accessLabel('staff')} · Demo`);
           const elevated = signedIn ? (accessLevel && accessLevel !== 'staff') : isManagerView;
           return (
             <div

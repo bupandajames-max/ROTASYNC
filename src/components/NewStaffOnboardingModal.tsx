@@ -129,7 +129,7 @@ export default function NewStaffOnboardingModal({
       // the legacy isManager flag (kept in sync), matching how the quick-add
       // and edit forms write staff records — so the record is self-consistent
       // instead of relying on every reader to fall back to isManager. Finer
-      // tiers (e.g. Department Head) are set afterward from the People list.
+      // tiers (e.g. Supervisor) are set afterward from the People list.
       accessLevel: isManager ? 'facility_manager' : 'staff',
       isManager,
       facilityId: selectedFacilityId,
@@ -190,7 +190,7 @@ export default function NewStaffOnboardingModal({
                 </div>
                 <div className="text-right space-y-0.5">
                   <span className="text-[9px] text-indigo-300/60 uppercase block font-bold">Access</span>
-                  <span className="font-semibold text-indigo-50">{isManager ? 'Manager' : 'Staff'}</span>
+                  <span className="font-semibold text-indigo-50">{isManager ? 'Manager' : 'Member'}</span>
                 </div>
               </div>
 

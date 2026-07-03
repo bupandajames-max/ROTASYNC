@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { RosterCycle, StaffMember, PublicHoliday, ShiftDef, RosterActionItem } from '../types';
 import { useShiftDefs } from '../hooks/useShiftDefs';
 import { isWeekend, isPublicHoliday, computeShiftDuration } from '../utils/rosterUtils';
@@ -176,20 +176,59 @@ export default function RosterGrid({
   // Drag and drop states
   const [draggedCell, setDraggedCell] = useState<{ staffId: string; dayIdx: number; shiftCode: string } | null>(null);
   const [draggedOverCell, setDraggedOverCell] = useState<{ staffId: string; dayIdx: number } | null>(null);
-  const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number; x: number; y: number; cellTop: number } | null>(null);
+  // The shift-picker popover is an anchored contextual inspector: it stores
+  // the clicked cell ELEMENT (not a one-time coordinate) and recomputes its
+  // position from the cell's live rect, so it stays glued to the cell as the
+  // page or the grid's own scroll container moves. This replaces the old
+  // "close on any scroll" approach, which also fired for scrolling INSIDE
+  // the popover — dismissing it mid-interaction.
+  const [editingCell, setEditingCell] = useState<{ staffId: string; dayIdx: number; cellEl: HTMLElement } | null>(null);
+  const [popoverStyle, setPopoverStyle] = useState<{ left: number; top: number; maxHeight: number }>({ left: 0, top: 0, maxHeight: 448 });
 
-  // The shift-picker popover below is `position: fixed`, positioned once
-  // from the clicked cell's getBoundingClientRect() at open time. That's
-  // viewport-relative and never recalculated, so scrolling the page (or the
-  // grid's own horizontal scroll container) moves the cell out from under a
-  // popover that doesn't follow — it looks detached/stuck. Closing on any
-  // scroll while it's open is simpler and more robust than continuously
-  // repositioning it against a click-time coordinate.
-  useEffect(() => {
+  // Compute the popover box from the cell's current viewport rect. Prefers
+  // opening downward (what a click expects) and only flips up when there
+  // isn't a usable amount of room below and there's more above; maxHeight is
+  // capped to the chosen side so it can never overrun a viewport edge (the
+  // popover's own overflow-y-auto scrolls anything taller than that).
+  const computePopoverPos = (cellEl: HTMLElement) => {
+    const r = cellEl.getBoundingClientRect();
+    const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const winW = typeof window !== 'undefined' ? window.innerWidth : 1280;
+    const popW = 264; // w-64 (256px) + a little breathing room for the border
+    const gap = 4;
+    const preferredH = 448;
+    const minUsable = 220;
+    const left = Math.max(8, Math.min(r.left, winW - popW - 8));
+    const spaceBelow = winH - r.bottom - gap;
+    const spaceAbove = r.top - gap;
+    if (spaceBelow >= Math.min(preferredH, minUsable) || spaceBelow >= spaceAbove) {
+      return { left, top: r.bottom + gap, maxHeight: Math.max(140, Math.min(preferredH, spaceBelow)) };
+    }
+    const maxHeight = Math.max(140, Math.min(preferredH, spaceAbove));
+    return { left, top: Math.max(gap, r.top - gap - maxHeight), maxHeight };
+  };
+
+  // Keep the popover glued to its cell on scroll/resize, and dismiss it (via
+  // Escape, or) if the cell scrolls fully out of view — but NOT on scrolls
+  // that happen inside the popover, since the cell rect is unchanged there,
+  // so the position simply recomputes to the same spot and it stays open.
+  useLayoutEffect(() => {
     if (!editingCell) return;
-    const closeOnScroll = () => setEditingCell(null);
-    window.addEventListener('scroll', closeOnScroll, true);
-    return () => window.removeEventListener('scroll', closeOnScroll, true);
+    const reposition = () => {
+      const r = editingCell.cellEl.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) { setEditingCell(null); return; }
+      setPopoverStyle(computePopoverPos(editingCell.cellEl));
+    };
+    reposition();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setEditingCell(null); };
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('keydown', onKey);
+    };
   }, [editingCell]);
 
   const [customTimeMode, setCustomTimeMode] = useState(false);
@@ -1122,8 +1161,7 @@ export default function RosterGrid({
                                     <div
                                       className="w-full h-full flex flex-col justify-center items-center cursor-pointer select-none py-1 group/btn"
                                       onClick={(e) => {
-                                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                        setEditingCell({ staffId: staff.id, dayIdx: dIdx, x: r.left, y: r.bottom + 4, cellTop: r.top });
+                                        setEditingCell({ staffId: staff.id, dayIdx: dIdx, cellEl: e.currentTarget as HTMLElement });
                                       }}
                                     >
                                       <span className={`inline-flex items-center gap-0.5 justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase shadow-3xs tracking-wider group-hover/btn:scale-105 transition-transform ${isUnknownShift ? 'border border-dashed border-rose-300 bg-rose-50' : 'border border-black/5 bg-white/40'}`} style={{ color: isUnknownShift ? '#991B1B' : def?.fg }}>
@@ -1148,55 +1186,15 @@ export default function RosterGrid({
             </div>
           </div>
 
-          {/* Shift picker popover — colour swatch + name, fixed so the grid scroll can't clip it */}
+          {/* Shift-picker popover — an anchored inspector positioned from the
+              cell's live rect (see computePopoverPos / the reposition effect),
+              so it follows the cell on scroll and never detaches or clips. */}
           {editingCell && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => { setEditingCell(null); setCustomTimeMode(false); setShowTaskForm(false); }} />
               <div
-                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-64 overflow-y-auto"
-                style={{
-                  left: Math.max(8, Math.min(editingCell.x, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 264)),
-                  // Unlike `left` above, `top` previously had no viewport-edge
-                  // clamping at all — clicking a cell near the bottom of the
-                  // screen could open a popover taller than the remaining
-                  // space, cutting off its lower items with no way to scroll
-                  // them into view (the popover itself is fixed-positioned,
-                  // so page scroll doesn't reveal more of it).
-                  //
-                  // Rather than guess the popover's rendered height (content
-                  // varies — the custom-time/task-form panels are shorter
-                  // than the full shift list, and a guessed constant drifted
-                  // from the real value enough to leave a real gap under
-                  // testing), pick whichever side of the click point has
-                  // more room and cap maxHeight to exactly that — this makes
-                  // overflow structurally impossible instead of relying on
-                  // an estimate, with the existing overflow-y-auto handling
-                  // any content that still doesn't fit.
-                  ...(() => {
-                    const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
-                    const gap = 8;
-                    const preferredH = 448; // matches the old max-h-[28rem] cap
-                    const minUsable = 220;  // enough to show the header + a few options without flipping
-                    // editingCell.y is 4px BELOW the cell's bottom edge (the
-                    // anchor for opening downward); editingCell.cellTop is the
-                    // cell's TOP edge (the anchor for flipping upward, so the
-                    // popover's bottom lands just above the cell rather than
-                    // overshooting it). Prefer opening DOWNWARD — that's what a
-                    // click expects — and only flip up when there isn't a
-                    // usable amount of room below and there's more room above.
-                    // maxHeight is capped to the chosen side's available space,
-                    // so the popover can never run past a viewport edge; the
-                    // inner overflow-y-auto scrolls anything that still doesn't
-                    // fit.
-                    const spaceBelow = winH - editingCell.y - gap;
-                    const spaceAbove = editingCell.cellTop - gap;
-                    if (spaceBelow >= Math.min(preferredH, minUsable) || spaceBelow >= spaceAbove) {
-                      return { top: editingCell.y, maxHeight: Math.max(140, Math.min(preferredH, spaceBelow)) };
-                    }
-                    const maxHeight = Math.max(140, Math.min(preferredH, spaceAbove));
-                    return { top: Math.max(gap, editingCell.cellTop - gap - maxHeight), maxHeight };
-                  })(),
-                }}
+                className="fixed z-50 bg-white rounded-xl shadow-2xl border border-slate-200 w-64 overflow-y-auto overscroll-contain"
+                style={{ left: popoverStyle.left, top: popoverStyle.top, maxHeight: popoverStyle.maxHeight }}
               >
                 {/* Context header — always visible: who, which day, what's
                     currently scheduled, and whether this day already has

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StaffMember, Facility, Department, ShiftDef, TaskMaster, RosterRuleSet, PublicHoliday, Taxonomy, patternLabel, Invite } from '../types';
 import { HOLIDAY_PRESETS, getHolidayPreset, buildDefaultRuleSet } from '../data/initialData';
+import { ASSIGNABLE_ROLE_OPTIONS, accessLabel } from '../config/access';
 import { mergeShiftDefs } from '../utils/shiftDefs';
 import { fetchCategoryTaskSuggestions } from '../utils/suggestionApi';
 import { computeShiftDuration } from '../utils/rosterUtils';
@@ -152,21 +153,17 @@ export default function EnterpriseAdmin({
     regionPresetId, setRegionPresetId,
   } = workspaceConfig;
 
-  // Which access tiers the current user may grant to others. Super users can
-  // appoint facility managers; facility managers and dept heads can appoint
-  // department heads (proxies); nobody grants 'superuser' here (allowlist only).
-  const ROLE_OPTIONS: { value: string; label: string }[] = [
-    { value: 'staff', label: 'Staff' },
-    { value: 'dept_head', label: 'Department Head' },
-    { value: 'facility_manager', label: 'Facility Manager' },
-  ];
+  // Which access tiers the current user may grant to others. Org Admins can
+  // appoint Managers; Managers and Supervisors can appoint Supervisors;
+  // nobody grants Org Admin here (allowlist / platform-admin only). Labels
+  // come from the single source of truth in config/access.
   const assignableRoles = accessLevel === 'superuser'
-    ? ROLE_OPTIONS
+    ? ASSIGNABLE_ROLE_OPTIONS
     : accessLevel === 'facility_manager'
-      ? ROLE_OPTIONS.filter(r => r.value !== 'facility_manager')
+      ? ASSIGNABLE_ROLE_OPTIONS.filter(r => r.value !== 'facility_manager')
       : accessLevel === 'dept_head'
-        ? ROLE_OPTIONS.filter(r => r.value === 'staff' || r.value === 'dept_head')
-        : ROLE_OPTIONS.filter(r => r.value === 'staff');
+        ? ASSIGNABLE_ROLE_OPTIONS.filter(r => r.value === 'staff' || r.value === 'dept_head')
+        : ASSIGNABLE_ROLE_OPTIONS.filter(r => r.value === 'staff');
   const canManageFacilities = accessLevel === 'superuser';
   const [activeSubTab, setActiveSubTab] = useState<'silos' | 'shifts' | 'rules' | 'regional' | 'staff' | 'tasks' | 'sandbox' | 'taxonomy' | 'purge'>('silos');
 
@@ -2038,14 +2035,17 @@ export default function EnterpriseAdmin({
                             // four-tier model into two — a dept head and a
                             // facility manager looked identical here.
                             const tier = s.accessLevel || (s.isManager ? 'facility_manager' : 'staff');
-                            const badge = {
-                              superuser: { label: 'Super User', cls: 'bg-emerald-600 text-white' },
-                              facility_manager: { label: 'Facility Manager', cls: 'bg-indigo-950 text-white' },
-                              dept_head: { label: 'Department Head', cls: 'bg-indigo-100 text-indigo-900 border border-indigo-200' },
-                              staff: { label: 'Staff', cls: 'bg-slate-100 text-slate-500' },
-                            }[tier] || { label: tier, cls: 'bg-slate-100 text-slate-500' };
+                            // Colour only lives here; the label comes from the
+                            // single source of truth (accessLabel) so it can
+                            // never drift from the dropdown / header / portal.
+                            const cls = {
+                              superuser: 'bg-emerald-600 text-white',
+                              facility_manager: 'bg-indigo-950 text-white',
+                              dept_head: 'bg-indigo-100 text-indigo-900 border border-indigo-200',
+                              staff: 'bg-slate-100 text-slate-500',
+                            }[tier] || 'bg-slate-100 text-slate-500';
                             return (
-                              <span className={`text-[8px] px-2 py-0.5 font-black rounded uppercase whitespace-nowrap ${badge.cls}`}>{badge.label}</span>
+                              <span className={`text-[8px] px-2 py-0.5 font-black rounded uppercase whitespace-nowrap ${cls}`}>{accessLabel(tier)}</span>
                             );
                           })()}
                         </td>
@@ -2528,7 +2528,7 @@ export default function EnterpriseAdmin({
                 />
                 <input
                   type="text"
-                  placeholder="e.g. Manager, Facility Manager"
+                  placeholder="e.g. Manager, Site Lead"
                   value={taxonomy.managerTitle || ''}
                   onChange={(e) => setTaxonomy({ ...taxonomy, managerTitle: e.target.value })}
                   className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 focus:bg-white"
@@ -3003,10 +3003,12 @@ export default function EnterpriseAdmin({
                   className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl p-2.5 outline-none focus:border-indigo-650"
                 >
                   {/* Always show the member's current level even if above what we can assign,
-                      so we never silently downgrade; only assignable ones are selectable. */}
+                      so we never silently downgrade; only assignable ones are selectable.
+                      Handles any current level (including Org Admin, which isn't in the
+                      assignable list) by adding it from the shared label map. */}
                   {(assignableRoles.some(r => r.value === editAccessLevel)
                     ? assignableRoles
-                    : [...assignableRoles, ROLE_OPTIONS.find(r => r.value === editAccessLevel)!]
+                    : [...assignableRoles, { value: editAccessLevel, label: accessLabel(editAccessLevel) }]
                   ).map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
                 <p className="text-[9px] text-slate-400 mt-1">Governs what this person sees and does. Resolved from their login email.</p>
