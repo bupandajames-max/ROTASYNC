@@ -88,10 +88,10 @@ export default function Analytics({
         {/* Avg hours per standard candidate */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-gray-400 font-bold block">Equity Index (Avg load)</span>
+            <span className="text-[10px] text-gray-400 font-bold block">Average hours per person</span>
             <span className="text-xl font-extrabold text-[#005c93] mt-1 block">{averageHours.toFixed(1)} hrs</span>
             <span className="text-[10px] text-gray-500 font-semibold block mt-0.5">
-              excludes manager from bias math
+              excludes the manager, so one person's hours don't skew the average
             </span>
           </div>
           <div className="p-3 bg-teal-50 text-teal-600 rounded-xl self-start">
@@ -148,13 +148,13 @@ export default function Analytics({
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="border-b border-gray-100 pb-3 mb-4 flex justify-between items-center">
             <h3 className="font-sans font-bold text-sm text-[#005c93] uppercase tracking-wide flex items-center gap-1.5">
-              <Clock className="w-5 h-5 text-[#009EE2]" /> Roster Workload Equity Auditor
+              <Clock className="w-5 h-5 text-[#009EE2]" /> Workload Balance
             </h3>
             <span className="text-[10px] text-gray-400 font-semibold italic">Includes Roster + approved Extra Hours</span>
           </div>
 
           <p className="text-xs text-gray-500 mb-5 leading-relaxed">
-            Equity limits are set to <strong>30% variance</strong> above or below the team average of <strong>{averageHours.toFixed(1)} hrs</strong>. Staff marked Red exceed normal workloads (overtime risks). Yellow staff possess extra operational capacity.
+            Compared against the team average of <strong>{averageHours.toFixed(1)} hrs</strong>. Staff marked red are working 30%+ more than average — a possible overtime/burnout risk. Yellow staff have spare capacity.
           </p>
 
           <div className="flex flex-col gap-4">
@@ -206,10 +206,10 @@ export default function Analytics({
           {/* Overtime Audit Flags */}
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" /> Overtime Fatigue Auditor
+              <AlertTriangle className="w-5 h-5 text-amber-500" /> Overtime Watch
             </h3>
             <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
-              Triggers the "Fatigue Flag" when an employee records more than <strong>{otThreshold} hours</strong> of normal overtime. Consider re-allocating rotating A+ shift extensions.
+              Flags anyone who's logged more than <strong>{otThreshold} hours</strong> of overtime, so you can rebalance shifts before it becomes a pattern.
             </p>
 
             {highOtStaff.length > 0 ? (
@@ -217,13 +217,13 @@ export default function Analytics({
                 {highOtStaff.map((name, idx) => (
                   <div key={idx} className="bg-red-50 text-red-800 text-xs font-bold border border-red-150 p-2.5 rounded-xl flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                    <span><b>{name}</b> exceeds OT ceiling limit! Reduce load.</span>
+                    <span><b>{name}</b> is working more overtime than recommended.</span>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-4 bg-slate-50 border border-slate-100 text-slate-500 rounded-xl font-bold text-xs italic">
-                ✓ No candidates currently override fatigue rules.
+                ✓ Nobody's over the overtime threshold right now.
               </div>
             )}
           </div>
@@ -231,10 +231,10 @@ export default function Analytics({
           {/* Absence pattern audits */}
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2">
-              <Calendar className="w-5 h-5 text-purple-500" /> Absence Pattern Reviewer
+              <Calendar className="w-5 h-5 text-purple-500" /> Extended Leave Watch
             </h3>
             <p className="text-[11px] text-gray-500 mb-4 leading-relaxed">
-              Evaluates Leave days logged. Highlights staff currently on extensive leave periods (e.g. &gt;= 4 days) who should be given lighter shifts upon return.
+              Flags anyone on 4+ days of leave this cycle, so you can ease them back in with a lighter shift on return.
             </p>
 
             {leaveFlags.length > 0 ? (
@@ -242,13 +242,13 @@ export default function Analytics({
                 {leaveFlags.map((item, idx) => (
                   <div key={idx} className="bg-purple-50 text-purple-800 text-xs font-semibold border border-purple-100 p-2.5 rounded-xl flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-purple-600" />
-                    <span><b>{item.name}</b> has <b>{item.days} leave days</b> logged this cycle context.</span>
+                    <span><b>{item.name}</b> has <b>{item.days} leave days</b> logged this cycle.</span>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-4 bg-slate-50 border border-slate-100 text-slate-500 rounded-xl font-bold text-xs italic">
-                ✓ No candidates flagged for extensive absences.
+                ✓ No one's returning from extended leave right now.
               </div>
             )}
           </div>

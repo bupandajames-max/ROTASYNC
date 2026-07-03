@@ -457,12 +457,12 @@ export default function TaskBoard({
       <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-indigo-50/40 to-transparent opacity-40 pointer-events-none"></div>
         <div>
-          <span className="text-[10px] text-gray-400 font-extrabold font-mono select-none">{taxonomy.appName} Operations Console</span>
+          <span className="text-[10px] text-gray-400 font-extrabold font-mono select-none">{taxonomy.appName}</span>
           <h2 className="text-slate-900 text-xl font-black font-sans flex items-center gap-1.5 leading-tight select-none">
-            {taxonomy.workspaceSingular} Action Board & Checklist
+            {taxonomy.taskSingular} Board
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Log metrics, inspect security seals, track continuous visit targets, and sign off compliant duties.
+            See what needs doing today, work through it, and check things off.
           </p>
         </div>
 
@@ -662,7 +662,7 @@ export default function TaskBoard({
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          🚨 Urgent Audits ({pendingTasks.filter(t => (t.priority === 'Critical' || t.priority === 'High') && isTaskInCategory(t, activeCategoryTab)).length})
+          🚨 Urgent ({pendingTasks.filter(t => (t.priority === 'Critical' || t.priority === 'High') && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
 
         <button
@@ -673,7 +673,7 @@ export default function TaskBoard({
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          ⚡ Standard Duty ({pendingTasks.filter(t => t.priority === 'Standard' && isTaskInCategory(t, activeCategoryTab)).length})
+          ⚡ Standard ({pendingTasks.filter(t => t.priority === 'Standard' && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
 
         <button
@@ -684,7 +684,7 @@ export default function TaskBoard({
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          ⚙️ Routine Actions ({pendingTasks.filter(t => t.priority === 'Routine' && isTaskInCategory(t, activeCategoryTab)).length})
+          ⚙️ Routine ({pendingTasks.filter(t => t.priority === 'Routine' && isTaskInCategory(t, activeCategoryTab)).length})
         </button>
 
         <button

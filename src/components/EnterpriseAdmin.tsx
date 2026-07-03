@@ -1744,14 +1744,14 @@ export default function EnterpriseAdmin({
       {activeSubTab === 'staff' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1 bg-slate-50/70 p-5 rounded-2xl border border-slate-100 h-fit">
-            <h3 className="text-xs font-black text-slate-800 mb-2">Register Live {taxonomy.memberSingular}</h3>
+            <h3 className="text-xs font-black text-slate-800 mb-2">Add a {taxonomy.memberSingular.toLowerCase()}</h3>
             <p className="text-[11px] text-slate-500 mb-4 font-semibold">
-              Add new credentials to specific workspaces and dynamic sub-team isolation groups.
+              Creates their roster record so you can schedule them right away — they don't need to sign in for this. To also give someone app access, use <strong>Invite</strong> on the right.
             </p>
 
             <form onSubmit={handleCreateStaff} className="space-y-3 text-left">
               <div>
-                <label className="text-[9.5px] font-black text-slate-400 font-mono">First Name Mnemonic *</label>
+                <label className="text-[9.5px] font-black text-slate-400 font-mono">First Name *</label>
                 <input
                   type="text"
                   required
@@ -1776,7 +1776,7 @@ export default function EnterpriseAdmin({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[9.2px] font-black text-slate-400 font-mono">colleague ID *</label>
+                  <label className="text-[9.2px] font-black text-slate-400 font-mono">Employee No. *</label>
                   <input
                     type="text"
                     required
@@ -2007,7 +2007,7 @@ export default function EnterpriseAdmin({
                     <th className="py-3 px-3">Role / Title</th>
                     <th className="py-3 px-3">Employee No.</th>
                     <th className="py-3 px-3">{taxonomy.groupSingular}</th>
-                    <th className="py-3 px-3">Status</th>
+                    <th className="py-3 px-3">Access</th>
                     <th className="py-3 px-3 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -2030,11 +2030,24 @@ export default function EnterpriseAdmin({
                           </span>
                         </td>
                         <td className="py-3 px-3">
-                          {s.isManager ? (
-                            <span className="text-[8px] px-2 py-0.5 bg-indigo-950 font-black text-white rounded uppercase">Admin/Mgr</span>
-                          ) : (
-                            <span className="text-[8px] px-2 py-0.5 bg-slate-100 font-extrabold text-slate-500 rounded uppercase">Staff</span>
-                          )}
+                          {(() => {
+                            // Show the person's real access tier, resolved the
+                            // same way resolveAccess does (explicit accessLevel
+                            // first, legacy isManager flag as fallback). The old
+                            // binary Admin/Mgr-vs-Staff badge collapsed the
+                            // four-tier model into two — a dept head and a
+                            // facility manager looked identical here.
+                            const tier = s.accessLevel || (s.isManager ? 'facility_manager' : 'staff');
+                            const badge = {
+                              superuser: { label: 'Super User', cls: 'bg-emerald-600 text-white' },
+                              facility_manager: { label: 'Facility Manager', cls: 'bg-indigo-950 text-white' },
+                              dept_head: { label: 'Dept Head', cls: 'bg-indigo-100 text-indigo-900 border border-indigo-200' },
+                              staff: { label: 'Staff', cls: 'bg-slate-100 text-slate-500' },
+                            }[tier] || { label: tier, cls: 'bg-slate-100 text-slate-500' };
+                            return (
+                              <span className={`text-[8px] px-2 py-0.5 font-black rounded uppercase whitespace-nowrap ${badge.cls}`}>{badge.label}</span>
+                            );
+                          })()}
                         </td>
                         <td className="py-3 px-3 text-center">
                           <div className="flex items-center justify-center gap-1">
@@ -2873,7 +2886,7 @@ export default function EnterpriseAdmin({
                   />
                 </div>
                 <div>
-                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">colleague ID *</label>
+                  <label className="text-[9.5px] font-black text-slate-400 block mb-1">Employee No. *</label>
                   <input
                     type="text"
                     required
