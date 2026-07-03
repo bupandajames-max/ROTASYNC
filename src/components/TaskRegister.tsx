@@ -71,6 +71,8 @@ export default function TaskRegister({
     else setFreq(base);
   };
   const [compliance, setCompliance] = useState(false);
+  // Whether the task template is live (generates daily tasks) or paused.
+  const [active, setActive] = useState(true);
   const [notes, setNotes] = useState('');
   const [requiredSkillsInput, setRequiredSkillsInput] = useState('');
 
@@ -199,6 +201,7 @@ export default function TaskRegister({
     setPriority('Standard');
     setFreq('Daily');
     setCompliance(false);
+    setActive(true);
     setNotes('');
     setRequiredSkillsInput('');
     setTrackerTarget(0);
@@ -220,6 +223,7 @@ export default function TaskRegister({
     setPriority(task.priority);
     setFreq(task.frequency);
     setCompliance(task.compliance);
+    setActive(task.active !== false);
     setNotes(task.notes || '');
     setRequiredSkillsInput((task.requiredSkills || []).join(', '));
     setTrackerTarget(task.trackerTarget || 0);
@@ -248,6 +252,7 @@ export default function TaskRegister({
         priority,
         frequency: freq,
         compliance,
+        active,
         notes,
         trackerTarget: trackerTarget > 0 ? trackerTarget : undefined,
         trackerValue: trackerTarget > 0 ? (existing.trackerValue ?? 0) : undefined,
@@ -269,7 +274,7 @@ export default function TaskRegister({
       priority,
       frequency: freq,
       compliance,
-      active: true,
+      active,
       notes,
       trackerTarget: trackerTarget > 0 ? trackerTarget : undefined,
       trackerValue: trackerTarget > 0 ? 0 : undefined,
@@ -754,7 +759,12 @@ export default function TaskRegister({
                       </div>
                     </td>
                     <td className="p-4 font-bold text-slate-800">
-                      <div>{t.name}</div>
+                      <div className={t.active === false ? 'text-slate-400' : ''}>{t.name}</div>
+                      {t.active === false && (
+                        <span className="text-[8px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded font-bold uppercase mt-1 inline-block border border-slate-200">
+                          ⏸ Paused
+                        </span>
+                      )}
                       {t.compliance && (
                         <span className="text-[8px] bg-red-50 text-red-700 px-1 py-0.5 rounded font-bold uppercase mt-1 inline-block border border-red-100">
                           Dual Sign-off [🔒]
@@ -1201,6 +1211,25 @@ export default function TaskRegister({
                 />
                 <label htmlFor="complianceCheck" className="text-xs font-bold text-gray-700 cursor-pointer">
                   Mandatory Dual Counter-sign [🔒]
+                </label>
+              </div>
+
+              {/* Status: a paused template stays in the directory but stops
+                  generating daily tasks — the missing "set status" control. */}
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                <label htmlFor="activeToggle" className="text-xs font-bold text-gray-700 cursor-pointer flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${active ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
+                  {active ? 'Active — generating daily tasks' : 'Paused — not generating tasks'}
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    id="activeToggle"
+                    type="checkbox"
+                    checked={active}
+                    onChange={(e) => setActive(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
                 </label>
               </div>
 
