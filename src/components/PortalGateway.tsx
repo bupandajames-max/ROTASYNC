@@ -13,6 +13,16 @@ import {
 import { StaffMember, Invite } from '../types';
 import { accessLabel } from '../config/access';
 
+// The "or just exploring?" preview buttons let anyone drop into an editable
+// session with NO sign-in and NO invite — great for demos, but a wide-open
+// door for a production deployment with real external users. Gate it: shown
+// in local dev automatically, and in production only when the operator
+// explicitly opts in by setting VITE_ENABLE_DEMO_PREVIEW=true at build time.
+// Off by default in prod, so real users only ever see the Google sign-in →
+// invite-gated onboarding path.
+const DEMO_PREVIEW_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_PREVIEW === 'true';
+
 interface PortalGatewayProps {
   firebaseUser: any;
   onGoogleSignIn: () => Promise<void>;
@@ -123,6 +133,7 @@ export default function PortalGateway({
 
             <p className="text-center text-[11px] text-slate-400 mt-3">Your sign-in is secured by Google.</p>
 
+            {DEMO_PREVIEW_ENABLED && (<>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
                 <div className="w-full border-t border-slate-100"></div>
@@ -132,7 +143,9 @@ export default function PortalGateway({
               </div>
             </div>
 
-            {/* Secondary: demo / preview access — visually quieter than sign-in */}
+            {/* Secondary: demo / preview access — visually quieter than sign-in.
+                Gated by DEMO_PREVIEW_ENABLED so it never ships to production
+                users unless the operator explicitly opts in. */}
             <div className="space-y-2.5">
               <button
                 onClick={() => {
@@ -196,6 +209,7 @@ export default function PortalGateway({
                 </div>
               )}
             </div>
+            </>)}
           </div>
 
         </div>

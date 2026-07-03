@@ -126,6 +126,36 @@ describe('sumTimesheetTotals', () => {
     expect(totals.activeWorkedDaysCount).toBe(2); // the two worked days, not the leave day
   });
 
+  it('pays a worked shift as regular AND a later night call-back as premium overtime', () => {
+    // The healthcare "worked all day, then called back in at night" case:
+    // the scheduled shift is booked normally (regular hours), and the
+    // overnight call-out is a separate On-Call Callout entry whose hours are
+    // ALL premium overtime. Payroll must reflect both — regular from the
+    // shift, overtime from the call-out — never one swallowing the other.
+    const shiftDay = reevaluateTimesheetDay(
+      baseDay({ date: '2026-06-15', workType: 'Worked Shift', clockIn: '08:00', clockOut: '17:00', lunchBreakMinutes: 60, scheduledShift: 'A' }),
+      '2026-06-15', [], { A: { code: 'A', name: 'Morning', time: '', hours: 8, bg: '', fg: '', active: true } }
+    );
+    const callBackDay = reevaluateTimesheetDay(
+      baseDay({ date: '2026-06-16', workType: 'On-Call Callout', clockIn: '23:00', clockOut: '02:00', lunchBreakMinutes: 0 }),
+      '2026-06-16', []
+    );
+    expect(shiftDay.regularWorkedHours).toBe(8);
+    expect(shiftDay.overtimeHours).toBe(0);
+    expect(callBackDay.overtimeHours).toBe(3);
+    expect(callBackDay.regularWorkedHours).toBe(0);
+
+    const timesheet: Timesheet = {
+      id: 't1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft',
+      days: { d1: shiftDay, d2: callBackDay },
+    };
+    const totals = sumTimesheetTotals(timesheet);
+    expect(totals.regular).toBe(8);
+    expect(totals.overtime).toBe(3);
+    expect(totals.total).toBe(11); // 8 regular + 3 premium call-out
+    expect(totals.activeWorkedDaysCount).toBe(2);
+  });
+
   it('returns all zeros for a timesheet with no days', () => {
     const timesheet: Timesheet = { id: 't1', staffId: 's1', staffName: 'Test', cycleId: 'c1', status: 'Draft', days: {} };
     const totals = sumTimesheetTotals(timesheet);

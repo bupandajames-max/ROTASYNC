@@ -65,7 +65,8 @@ import {
   seedCollectionFromLocalIfEmpty
 } from './firebase';
 import { inviteDocId } from './utils/invites';
-import { isSuperuserEmail, resolveAccess } from './config/access';
+import { isSuperuserEmail, resolveAccess, accessLabel } from './config/access';
+import { sendInviteEmailNotification } from './utils/inviteEmail';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useFacilities } from './hooks/useFacilities';
 import { useWorkspaceConfig, DEFAULT_TAXONOMY } from './hooks/useWorkspaceConfig';
@@ -581,6 +582,17 @@ export default function App() {
     };
     try {
       await dbSetDoc('invites', invite.id, invite);
+      // Fire-and-forget email notification. The invite record above is the
+      // source of truth for access; delivery is best-effort and must never
+      // turn a successful invite into a failure, so we don't await it and it
+      // no-ops cleanly when no email provider is configured.
+      void sendInviteEmailNotification({
+        email,
+        roleLabel: accessLabel(role),
+        facilityName: invite.facilityName,
+        organizationName: (taxonomy as any)?.organizationName,
+        invitedBy: invite.invitedBy,
+      });
       return 'created';
     } catch (err) {
       handleGenericError(err);

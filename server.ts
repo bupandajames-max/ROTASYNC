@@ -231,6 +231,74 @@ Provide 5 to 8 distinct tasks suitable for scheduling in a rostering system. For
     }
   });
 
+  // API Route: send an invite notification email.
+  //
+  // Access is granted by the invite/membership RECORD (written client-side to
+  // Firestore under the manager-only create rule) — this email is purely a
+  // best-effort "you've been invited" notification. It is intentionally
+  // credential-gated and non-fatal: if no email provider is configured, or the
+  // provider call fails, we return 200 { sent: false } so the caller (which has
+  // ALREADY created the authoritative invite record) never surfaces a failure
+  // for a successful invite. Delivery is a convenience, not the source of truth.
+  app.post('/api/send-invite-email', async (req, res) => {
+    try {
+      const { email, roleLabel, facilityName, organizationName, invitedBy, appUrl } = req.body || {};
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ sent: false, reason: 'missing-email' });
+      }
+
+      const apiKey = process.env.RESEND_API_KEY;
+      // A verified sender the provider will accept. Falls back to Resend's
+      // shared onboarding sender so a minimal setup (just an API key) still works.
+      const from = process.env.INVITE_FROM_EMAIL || 'RotaSync <onboarding@resend.dev>';
+      if (!apiKey) {
+        // Not an error: the in-app invite already succeeded. Signal clearly so
+        // the UI can tell the admin email delivery isn't switched on yet.
+        return res.status(200).json({ sent: false, reason: 'email-not-configured' });
+      }
+
+      const org = (organizationName && String(organizationName).trim()) || '';
+      const site = (facilityName && String(facilityName).trim()) || 'the workspace';
+      const heroName = org || site;
+      const role = (roleLabel && String(roleLabel).trim()) || 'Member';
+      const link = (appUrl && String(appUrl).trim()) || 'https://rotasync.onrender.com';
+      const invitedByLine = invitedBy ? `${invitedBy} has invited you` : 'You have been invited';
+
+      const subject = `You're invited to ${heroName} on RotaSync`;
+      const html = `
+        <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#0f172a;">
+          <h2 style="margin:0 0 4px;font-size:20px;">${heroName}</h2>
+          ${org ? `<p style="margin:0 0 16px;color:#475569;font-size:14px;">${site}</p>` : ''}
+          <p style="font-size:15px;line-height:1.5;">${invitedByLine} to join <strong>${site}</strong> as a <strong>${role}</strong>.</p>
+          <p style="font-size:15px;line-height:1.5;">Sign in with this email address (<strong>${email}</strong>) using Google and your invitation will be waiting — you'll land directly in the right workspace with the right access.</p>
+          <p style="margin:24px 0;">
+            <a href="${link}" style="background:#4f46e5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:15px;display:inline-block;">Open RotaSync</a>
+          </p>
+          <p style="font-size:12px;color:#94a3b8;line-height:1.5;">If you weren't expecting this, you can ignore this email — no access is granted until you sign in with the invited address.</p>
+        </div>`;
+
+      const providerRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from, to: [email], subject, html }),
+      });
+
+      if (!providerRes.ok) {
+        const detail = await providerRes.text().catch(() => '');
+        console.error('Invite email provider error:', providerRes.status, detail);
+        return res.status(200).json({ sent: false, reason: 'provider-error', status: providerRes.status });
+      }
+      return res.status(200).json({ sent: true });
+    } catch (error: any) {
+      console.error('Error sending invite email:', error);
+      // Never fail the caller for a notification — the invite record stands.
+      return res.status(200).json({ sent: false, reason: 'exception' });
+    }
+  });
+
   // Serve Vite in dev mode, or compiled static files in prod mode
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
