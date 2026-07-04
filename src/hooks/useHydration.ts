@@ -11,7 +11,7 @@ import {
 import { getDatesForCycle, generateSeedShifts } from '../utils/rosterUtils';
 import {
   dbGetCollection, dbSetDoc, dbDeleteDoc, dbGetDoc, dbGetCollectionByFacility,
-  seedCollectionFromLocalIfEmpty,
+  dbGetCollectionByFacilityAndField, seedCollectionFromLocalIfEmpty,
 } from '../firebase';
 import { isSuperuserEmail } from '../config/access';
 import { GLOBAL_KEYS, facilityKey, seededFlagKey } from '../utils/storageKeys';
@@ -412,6 +412,38 @@ export function useHydration(deps: HydrationDeps) {
           const readCol = <T,>(p: string): Promise<T[]> =>
             scopeReads ? dbGetCollectionByFacility<T>(p, selectedFacilityId) : dbGetCollection<T>(p);
 
+          // Firestore evaluates a list query's SHAPE against the security
+          // rule, not the actual returned data -- if a rule compares a field
+          // the query's own where() clauses don't constrain (e.g. the
+          // department/self-scoping rules on staff/dailyTasks/cycles/
+          // timesheets/approvals/extraHours, which check departmentId/
+          // staffId/requesterId while the query here only filters by
+          // facilityId), Firestore rejects the WHOLE query rather than
+          // silently filtering it -- it can't prove no unauthorized document
+          // could come back. That was breaking hydration ENTIRELY for any
+          // non-manager (the very first such read throws, aborting this
+          // whole try block, so nothing after it -- cycles, tasks, everything
+          // -- ever loads either). Fetching the caller's own users/{uid} doc
+          // is always self-allowed, so we can find out up front whether this
+          // caller is manager-level+ and, if not, which department/staffId to
+          // bake into the query so its shape matches what the rule checks.
+          let callerAccessLevel = 'staff';
+          let callerDeptId = '';
+          if (scopeReads) {
+            const ownUserDoc = await dbGetDoc<{ accessLevel?: string; departmentId?: string }>('users', firebaseUser.uid);
+            callerAccessLevel = ownUserDoc?.accessLevel || 'staff';
+            callerDeptId = ownUserDoc?.departmentId || '';
+          }
+          const isManagerOrAbove = !scopeReads || callerAccessLevel === 'facility_manager' || callerAccessLevel === 'dept_head';
+
+          // Department-scoped read for staff/dailyTasks/cycles: only used
+          // below isManagerOrAbove, since a manager still needs to see the
+          // whole facility.
+          const readColByDept = <T,>(p: string): Promise<T[]> =>
+            (scopeReads && !isManagerOrAbove)
+              ? dbGetCollectionByFacilityAndField<T>(p, selectedFacilityId, 'departmentId', callerDeptId)
+              : readCol<T>(p);
+
           // One-time backfill: tag any pre-isolation docs (missing facilityId) with
           // the current facility so non-super reads (which now require the field)
           // can see them. Only the super's unscoped read can find these.
@@ -471,7 +503,7 @@ export function useHydration(deps: HydrationDeps) {
           localStorage.setItem(GLOBAL_KEYS.departments, JSON.stringify(cloudDepts));
 
           // 3. Staff List
-          let cloudStaff = await readCol<StaffMember>('staff');
+          let cloudStaff = await readColByDept<StaffMember>('staff');
           backfillFacility('staff', cloudStaff);
           cloudStaff = cloudStaff.map(s => ({
             id: s.id || `staff-${Math.random().toString(36).substring(2, 11)}`,
@@ -535,6 +567,18 @@ export function useHydration(deps: HydrationDeps) {
           localStorage.setItem(facilityKey(selectedFacilityId, 'staff_list'), JSON.stringify(partitionedCloudStaff));
           loadedStaff = partitionedCloudStaff;
 
+          // Self-scoped read for timesheets/approvals/extraHours: same
+          // query-shape-must-match-rule reasoning as readColByDept above,
+          // but keyed by the caller's OWN staff record id (found now that
+          // staff has loaded) rather than department, since those rules
+          // check staffId/requesterId, not departmentId.
+          const myOwnEmail = (firebaseUser.email || '').toLowerCase().trim();
+          const myStaffId = partitionedCloudStaff.find(s => s.email?.toLowerCase().trim() === myOwnEmail)?.id || '';
+          const readColBySelf = <T,>(p: string, field: string): Promise<T[]> =>
+            (scopeReads && !isManagerOrAbove && myStaffId)
+              ? dbGetCollectionByFacilityAndField<T>(p, selectedFacilityId, field, myStaffId)
+              : readCol<T>(p);
+
           // 4. Active Cycle — shifts are stored as one shard document per
           // department (see utils/cycleSharding.ts), not one shared document
           // for the whole facility, so a non-manager's facility-scoped read
@@ -543,7 +587,7 @@ export function useHydration(deps: HydrationDeps) {
           // to read back into the single unified RosterCycle shape every
           // consumer below (and the optimizer, grid, timesheets, etc.) still
           // expects — this is the only place that needs to know shards exist.
-          const cloudCycleDocs = await readCol<CycleShardDoc>('cycles');
+          const cloudCycleDocs = await readColByDept<CycleShardDoc>('cycles');
           backfillFacility('cycles', cloudCycleDocs);
           const targetCycleId = `cycle-${selectedFacilityId}-2026-06-15`;
           let cloudCycle = mergeCycleShards(cloudCycleDocs, targetCycleId);
@@ -580,7 +624,7 @@ export function useHydration(deps: HydrationDeps) {
           loadedTasks = cloudTasks;
 
           // 6. Daily Tasks
-          let cloudDailyTasks = await readCol<DailyTask>('dailyTasks');
+          let cloudDailyTasks = await readColByDept<DailyTask>('dailyTasks');
           backfillFacility('dailyTasks', cloudDailyTasks);
           let partitionedCloudDaily = cloudDailyTasks.filter(t =>
             loadedStaff.some(s => s.name === t.staffName)
@@ -594,7 +638,7 @@ export function useHydration(deps: HydrationDeps) {
           loadedDaily = partitionedCloudDaily;
 
           // 7. Approvals
-          let cloudApprovals = await readCol<ApprovalRequest>('approvals');
+          let cloudApprovals = await readColBySelf<ApprovalRequest>('approvals', 'requesterId');
           backfillFacility('approvals', cloudApprovals);
           cloudApprovals = await seedCollectionFromLocalIfEmpty('approvals', cloudApprovals, cloudIsAlreadySeeded, loadedApprovals);
           if (active) {
@@ -604,7 +648,7 @@ export function useHydration(deps: HydrationDeps) {
           localStorage.setItem(facilityKey(selectedFacilityId, 'approvals'), JSON.stringify(cloudApprovals));
 
           // 8. Extra Hours Log
-          let cloudExtra = await readCol<ExtraHoursEntry>('extraHours');
+          let cloudExtra = await readColBySelf<ExtraHoursEntry>('extraHours', 'staffId');
           backfillFacility('extraHours', cloudExtra);
           cloudExtra = await seedCollectionFromLocalIfEmpty('extraHours', cloudExtra, cloudIsAlreadySeeded, loadedExtra);
           if (active) {
@@ -614,7 +658,7 @@ export function useHydration(deps: HydrationDeps) {
           localStorage.setItem(facilityKey(selectedFacilityId, 'extra_hours_log'), JSON.stringify(cloudExtra));
 
           // 9. Timesheets
-          const cloudTimesheets = await readCol<Timesheet>('timesheets');
+          const cloudTimesheets = await readColBySelf<Timesheet>('timesheets', 'staffId');
           backfillFacility('timesheets', cloudTimesheets);
           let partitionedCloudTimesheets = cloudTimesheets.filter(t =>
             loadedStaff.some(s => s.id === t.staffId)

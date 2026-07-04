@@ -113,6 +113,31 @@ export async function dbGetCollectionByFacility<T>(path: string, facilityId: str
   }
 }
 
+// Same as dbGetCollectionByFacility, but adds a second equality filter.
+// Firestore evaluates a list query's SHAPE against the security rule, not
+// the actual returned data -- if the rule compares a field the query's own
+// where() clauses don't constrain (e.g. a department/self-scoping rule
+// checking `resource.data.departmentId` when the query only filters by
+// facilityId), Firestore rejects the WHOLE query rather than silently
+// filtering, because it can't prove no unauthorized document could be
+// returned. This is for exactly that case: department- or self-scoped reads
+// (staff/dailyTasks/cycles by departmentId, timesheets/approvals/extraHours
+// by staffId/requesterId) need the extra field baked into the query itself
+// so its shape matches what the rule checks.
+export async function dbGetCollectionByFacilityAndField<T>(
+  path: string,
+  facilityId: string,
+  field: string,
+  value: string
+): Promise<T[]> {
+  try {
+    const snap = await getDocs(query(collection(db, path), where('facilityId', '==', facilityId), where(field, '==', value)));
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }) as T);
+  } catch (err) {
+    return handleFirestoreError(err, OperationType.GET, path);
+  }
+}
+
 // Looks up another user's role-mirror doc by email, scoped to the caller's
 // own facility (matches the users/{uid} read rule's manager branch, which
 // requires both conditions present in the query for Firestore to allow it).
