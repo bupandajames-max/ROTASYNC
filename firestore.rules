@@ -307,17 +307,19 @@ service cloud.firestore {
 
     // Facilities (sites): readable only by members of that facility (or
     // super users) — not by any signed-in stranger. Updates remain
-    // super-only. Creation is super-only EXCEPT for a genuine first-run
-    // bootstrap: a signed-in user with no facility yet (callerFacility()=='')
-    // creating the first facility under an organization they own. This is
-    // what lets SetupWizard's "first admin self-serves" flow actually work
-    // for a real (non-superuser) account. Creating ADDITIONAL facilities
-    // under an existing org is deliberately still super-only for now — see
+    // super-only. The "first-run bootstrap" create branch used to allow ANY
+    // signed-in user with no facility yet (callerFacility()=='') to create
+    // their own first facility — meaning any Google account at all could
+    // self-provision a brand-new workspace with zero invite or approval.
+    // Restricted to isSuper() so only the approved bootstrap owner(s) can
+    // ever spin up a new organization/facility on this deployment; everyone
+    // else must be invited into an existing one. Creating ADDITIONAL
+    // facilities under an existing org remains super-only too — see
     // deferred work.
     match /facilities/{facilityId} {
       allow read: if isSuper() || facilityId == callerFacility();
       allow create: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
-      allow create: if isSignedIn() && isValidId(facilityId) && isValidFacility(incoming())
+      allow create: if isSuper() && isValidId(facilityId) && isValidFacility(incoming())
         && incoming().organizationId is string && incoming().organizationId.size() > 0
         && exists(/databases/$(database)/documents/organizations/$(incoming().organizationId))
         && get(/databases/$(database)/documents/organizations/$(incoming().organizationId)).data.ownerUid == request.auth.uid
@@ -327,14 +329,18 @@ service cloud.firestore {
     }
 
     // Organizations: the top-level ownership/invite namespace above
-    // Facility. Anyone signed in may create ONE they own (self-serve,
-    // mirrors the users/{uid} self-create-as-'staff' bootstrap pattern) —
-    // rate-limiting/abuse prevention for repeated org creation is deferred.
+    // Facility. Previously ANY signed-in user could create one they own
+    // (self-serve) — meaning any Google account could bootstrap its own
+    // organization on this deployment with no gate at all. This is meant to
+    // be a private, single-tenant tool, not open public signup, so creation
+    // is now restricted to isSuper() same as facilities above. Rate-limiting/
+    // abuse prevention for repeated org creation by an approved owner is
+    // still deferred, but that's a much smaller surface than "anyone at all."
     // Facility-scoped operational isolation is untouched by this: rosters,
     // tasks, timesheets, departments all still gate on facilityId, not this.
     match /organizations/{orgId} {
       allow read: if isSuper() || orgId == callerOrganization() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
-      allow create: if isSignedIn() && isValidId(orgId) && isValidOrganization(incoming()) && incoming().ownerUid == request.auth.uid;
+      allow create: if isSuper() && isValidId(orgId) && isValidOrganization(incoming()) && incoming().ownerUid == request.auth.uid;
       allow update: if isSuper() || (isSignedIn() && resource.data.ownerUid == request.auth.uid && incoming().ownerUid == resource.data.ownerUid && isValidOrganization(incoming()));
       allow delete: if isSuper();
     }

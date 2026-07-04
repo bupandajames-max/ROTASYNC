@@ -1812,8 +1812,18 @@ export default function App() {
       myExtraHoursLogCount[s.name] = tot;
     });
 
-  // First-run: an authorized user with no workspace yet provisions one via the setup wizard.
-  const showSetupWizard = isAuthorized && isHydrated && facilities.length === 0;
+  // First-run: ONLY the approved bootstrap owner (or a local sandbox demo,
+  // which is never persisted) may self-serve a brand-new organization/
+  // facility. Previously this was "any signed-in account with zero
+  // facilities" — which meant literally any Google account could land here
+  // and self-provision its own workspace, defaulting its own role to
+  // Manager, with no invite or approval at all. That's the same gap closed
+  // server-side in firestore.rules' organizations/facilities create rules
+  // (isSuper() now required there too) — this client-side check just gives
+  // a non-owner the correct "No invite found" screen instead of a wizard
+  // that would fail with a permission error at the very last step.
+  const showSetupWizard = isAuthorized && isHydrated && facilities.length === 0
+    && (isSandboxBypassActive || isSuperuserEmail(firebaseUser?.email));
 
   // While cloud hydration is still in flight, hold here rather than letting
   // stale (pre-hydration) staffList/facilities briefly render the wrong gate
