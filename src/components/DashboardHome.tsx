@@ -232,21 +232,26 @@ export default function DashboardHome({
   // Operational stations are derived from the workspace's configured departments.
   // No org-specific posts are hardcoded; if no departments exist yet, a small set
   // of neutral generic stations is shown until the admin defines their own.
+  // A Member only sees their own department's station — cross-department
+  // browsing doesn't fit their scope, even though department names/
+  // descriptions themselves aren't sensitive. Managers see every station.
   const facilityDepartments = departments.filter(d => d.facilityId === selectedFacilityId);
+  const visibleDepartments = facilityDepartments.filter(d => staff.isManager || d.id === staff.departmentId);
   type Station = { id: string; title: string; lead: string };
   const stations: Station[] = facilityDepartments.length > 0
-    ? facilityDepartments.map(d => ({ id: d.id, title: d.name, lead: d.description || 'No description provided.' }))
+    ? visibleDepartments.map(d => ({ id: d.id, title: d.name, lead: d.description || 'No description provided.' }))
     : [
         { id: 'gen-frontdesk', title: 'Front Desk', lead: 'Primary reception & coordination point.' },
         { id: 'gen-floor', title: 'Operations Floor', lead: 'General operational coverage area.' },
         { id: 'gen-storage', title: 'Storage', lead: 'Stock and asset custody area.' },
       ];
 
-  // Match an on-duty member to a station (by department if available).
+  // Match an on-duty member to a station by department. No fallback to an
+  // arbitrary team member — that previously mislabeled someone from a
+  // different department as on-duty for a station they aren't in.
   const memberForStation = (station: Station): string => {
     const deptMatch = liveTeamOnDuty.find(item => item.staff.departmentId === station.id);
-    if (deptMatch) return deptMatch.staff.name;
-    return liveTeamOnDuty[0]?.staff.name || 'Unassigned';
+    return deptMatch?.staff.name || 'Unassigned';
   };
 
   const selectedStation = stations.find(s => s.id === selectedStationInfo) || null;

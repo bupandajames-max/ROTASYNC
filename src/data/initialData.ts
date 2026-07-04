@@ -148,7 +148,7 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
   groupPlural: 'Departments',
   taskSingular: 'Task',
   taskPlural: 'Tasks',
-  supervisorTitle: 'Team Leader / Supervisor',
+  supervisorTitle: 'Supervisor',
   managerTitle: 'Manager',
 };
 

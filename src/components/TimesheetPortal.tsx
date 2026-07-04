@@ -758,9 +758,9 @@ export default function TimesheetPortal({
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                   <div>
-                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">{taxonomy.memberSingular} Signature</span>
+                    <span className="font-extrabold block text-slate-400 text-[10px] font-mono">Staff Signature</span>
                     <div className="border-b border-gray-300 w-40 mt-6 print:mt-4"></div>
-                    <span className="text-[10px] text-gray-500 font-mono italic mt-1.5 inline-block">Date: ____ / ____ / ____</span>
+                    <span className="text-[10px] text-gray-400 font-mono italic mt-1.5 inline-block">{activeStaff.name}</span>
                   </div>
 
                   <div>
