@@ -31,7 +31,9 @@ import {
   Calendar,
   RotateCcw,
   Mail,
-  XCircle
+  XCircle,
+  Copy,
+  MessageCircle
 } from 'lucide-react';
 
 // Per-facility workspace configuration — same shape as the App-level
@@ -205,6 +207,34 @@ export default function EnterpriseAdmin({
     if (!onRevokeInvite) return;
     await onRevokeInvite(invite);
     setInvites(invites.map(i => i.id === invite.id ? { ...i, status: 'revoked' } : i));
+  };
+
+  // A shareable invite message as the primary, zero-cost onboarding path —
+  // the Firestore invite record (not this message) is what actually grants
+  // access, so this is just a convenient way to tell the invitee to go sign
+  // in. Doesn't require any email service to be configured at all: the
+  // manager pastes it into WhatsApp, SMS, or says it in person. Access still
+  // only unlocks for the exact invited email once they sign in with Google.
+  const buildInviteMessage = (inv: Invite) => {
+    const org = (taxonomy as any)?.organizationName?.trim();
+    const site = inv.facilityName || 'the workspace';
+    const heroName = org || site;
+    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rotasync.onrender.com';
+    return `You're invited to join ${heroName} on RotaSync as a ${accessLabel(inv.role)}.\n\nSign in with Google using this exact email: ${inv.email}\n${appUrl}`;
+  };
+
+  const handleCopyInviteLink = async (inv: Invite) => {
+    try {
+      await navigator.clipboard.writeText(buildInviteMessage(inv));
+      toast.success('Invite message copied — paste it into WhatsApp, SMS, or wherever works.');
+    } catch {
+      toast.error('Could not copy to clipboard. Your browser may be blocking clipboard access.');
+    }
+  };
+
+  const handleShareInviteViaWhatsApp = (inv: Invite) => {
+    const url = `https://wa.me/?text=${encodeURIComponent(buildInviteMessage(inv))}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   // Codes referenced by the active ruleset are protected from deletion (they keep
@@ -1931,7 +1961,7 @@ export default function EnterpriseAdmin({
                   <h4 className="text-[11px] font-black text-slate-600">Invite a {taxonomy.memberSingular.toLowerCase()}</h4>
                 </div>
                 <p className="text-[9.5px] text-slate-400 leading-relaxed -mt-1">
-                  They'll see this automatically the next time they sign in with this email — no link to share.
+                  They'll see this automatically the next time they sign in with this email. You can also copy an invite message below to send via WhatsApp, SMS, or in person.
                 </p>
                 <form onSubmit={handleSendInvite} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
                   <input
@@ -1972,6 +2002,22 @@ export default function EnterpriseAdmin({
                         <span className="font-semibold text-slate-600 truncate">{inv.email}</span>
                         <span className="text-slate-400 font-bold uppercase text-[9px] shrink-0">{inv.role.replace('_', ' ')}</span>
                         <span className="text-amber-600 font-bold uppercase text-[9px] shrink-0">Pending</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyInviteLink(inv)}
+                          className="text-slate-400 hover:text-indigo-600 shrink-0"
+                          title="Copy invite message"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleShareInviteViaWhatsApp(inv)}
+                          className="text-slate-400 hover:text-emerald-600 shrink-0"
+                          title="Share via WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
                         {onRevokeInvite && (
                           <button
                             type="button"
