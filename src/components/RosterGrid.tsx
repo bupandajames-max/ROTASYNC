@@ -3,6 +3,7 @@ import { RosterCycle, StaffMember, PublicHoliday, ShiftDef, RosterActionItem } f
 import { useShiftDefs } from '../hooks/useShiftDefs';
 import { isWeekend, isPublicHoliday, computeShiftDuration } from '../utils/rosterUtils';
 import { dbGetCollectionByFacility, dbSetDoc, dbDeleteDoc, auth } from '../firebase';
+import { CycleShardDoc, groupShardsByCycle, persistShardedCycle } from '../utils/cycleSharding';
 import { useConfirm } from './ui/ConfirmProvider';
 import { 
   AlertTriangle, 
@@ -356,7 +357,13 @@ export default function RosterGrid({
       // path there's no auth token, so this would be a guaranteed
       // permission-denied on every roster load (local storage below still
       // provides history in that mode).
-      const cycles = (facilityId && auth.currentUser) ? await dbGetCollectionByFacility<RosterCycle>('cycles', facilityId) : [];
+      // Cloud cycle docs are shards (one per department, see
+      // utils/cycleSharding.ts) -- this facility-scoped query only returns
+      // whichever shards the caller's rules allow, and groupShardsByCycle
+      // merges each cycle's shards back into the whole-cycle shape this
+      // history list has always used.
+      const cloudShardDocs = (facilityId && auth.currentUser) ? await dbGetCollectionByFacility<CycleShardDoc>('cycles', facilityId) : [];
+      const cycles = groupShardsByCycle(cloudShardDocs);
       
       // 2. Also read from facility local storage for safety / sandbox isolator
       const localCycles: RosterCycle[] = [];
@@ -413,8 +420,12 @@ export default function RosterGrid({
     };
 
     try {
-      // Save to Firebase
-      await dbSetDoc('cycles', snapshotId, newSnapshot);
+      // Save to Firebase as one shard per department, same as the live
+      // cycle -- also attaches facilityId to every shard, which the
+      // previous unsharded write never did (so this create was already
+      // silently failing the cloud write's inMyFacility() check for real
+      // signed-in managers, beyond just the isolation fix).
+      await persistShardedCycle(newSnapshot, staffList, facilityId || '');
       // Save to facility history localstorage for offline fallback
       localStorage.setItem(`${prefix}_history_cycle_${snapshotId}`, JSON.stringify(newSnapshot));
       
@@ -430,7 +441,18 @@ export default function RosterGrid({
   const handleDeleteSnapshot = async (id: string) => {
     if (!(await confirm({ title: 'Delete this archived cycle?', danger: true, confirmLabel: 'Delete' }))) return;
     try {
-      await dbDeleteDoc('cycles', id);
+      // A snapshot is stored as one shard per department -- delete every
+      // shard belonging to it, not just one document. Falls back to
+      // deleting a single doc keyed directly by id for a pre-sharding
+      // snapshot that was never split in the first place.
+      const shardsToDelete = facilityId
+        ? (await dbGetCollectionByFacility<CycleShardDoc>('cycles', facilityId)).filter(d => (d.cycleId || d.id) === id)
+        : [];
+      if (shardsToDelete.length > 0) {
+        await Promise.all(shardsToDelete.map(d => dbDeleteDoc('cycles', d.id)));
+      } else {
+        await dbDeleteDoc('cycles', id);
+      }
       const prefix = activeCycle.id.split('-').slice(0, 2).join('-');
       localStorage.removeItem(`${prefix}_history_cycle_${id}`);
       if (selectedHistoryCycle?.id === id) {

@@ -463,8 +463,20 @@ service cloud.firestore {
     }
 
     // Roster cycles: department heads and above, within their own facility.
+    // The roster used to be ONE document per facility holding every
+    // department's shifts together -- meaning any rule letting a Member
+    // read their own shifts necessarily handed them every other
+    // department's shifts too, since rules can only grant/deny a whole
+    // document, not redact fields within it. Shifts are now stored as one
+    // shard document per department (see src/utils/cycleSharding.ts):
+    // isManagerLevel()+ still sees every shard in the facility (needed to
+    // build/edit the whole roster), but below that, reads are scoped to the
+    // caller's own department shard -- real isolation, not just the "show
+    // one department at a time" UI toggle.
     match /cycles/{cycleId} {
-      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      allow read: if isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility())
+        || (isSignedIn() && resource.data.facilityId == callerFacility() && resource.data.get('departmentId', '') == callerDepartment());
       allow create, update: if isManagerLevel() && isValidId(cycleId) && isValidCycle(incoming()) && inMyFacility(incoming().facilityId);
       allow delete: if isManagerLevel() && (isSuper() || inMyFacility(existing().facilityId));
     }

@@ -22,6 +22,7 @@ import {
 } from './types';
 import { SHIFTS, INITIAL_STAFF, INITIAL_TASKS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility, upgradeFacilitiesList, buildDefaultRuleSet, buildDefaultWorkspaceConfig, WEEKDAY_NAMES } from './data/initialData';
 import { getDatesForCycle, generateSeedShifts, runSmartPersonaOptimizer, isPublicHoliday, alignShiftsToNewDates } from './utils/rosterUtils';
+import { persistShardedCycle } from './utils/cycleSharding';
 import SetupWizard from './components/SetupWizard';
 import ConfirmIdentity from './components/ConfirmIdentity';
 import LoadingScreen from './components/LoadingScreen';
@@ -983,7 +984,14 @@ export default function App() {
 
         lastStaffListRef.current = data;
       } else if (key === 'active_cycle') {
-        dbSetDoc('cycles', data.id || `cycle-${selectedFacilityId}-2026-06-15`, withFac(data)).catch(handleGenericError);
+        // Written as one shard document per department (see
+        // utils/cycleSharding.ts), not one shared document for the whole
+        // facility -- otherwise any rule letting a Member read their own
+        // shifts would necessarily hand them every other department's
+        // shifts too, since Firestore rules can't redact fields within a
+        // single document.
+        const cycleToPersist = { ...data, id: data.id || `cycle-${selectedFacilityId}-2026-06-15` };
+        persistShardedCycle(cycleToPersist, staffList, selectedFacilityId).catch(handleGenericError);
       } else if (key === 'task_master') {
         const prevTasks = lastTaskMasterListRef.current;
         const toWrite = data.filter((item: TaskMaster) => {

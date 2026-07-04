@@ -16,6 +16,7 @@ import {
 import { isSuperuserEmail } from '../config/access';
 import { GLOBAL_KEYS, facilityKey, seededFlagKey } from '../utils/storageKeys';
 import { DEFAULT_TAXONOMY } from './useWorkspaceConfig';
+import { CycleShardDoc, mergeCycleShards, persistShardedCycle } from '../utils/cycleSharding';
 
 interface HydrationDeps {
   selectedFacilityId: string;
@@ -534,13 +535,20 @@ export function useHydration(deps: HydrationDeps) {
           localStorage.setItem(facilityKey(selectedFacilityId, 'staff_list'), JSON.stringify(partitionedCloudStaff));
           loadedStaff = partitionedCloudStaff;
 
-          // 4. Active Cycle
-          const cloudCycles = await readCol<RosterCycle>('cycles');
-          backfillFacility('cycles', cloudCycles);
+          // 4. Active Cycle — shifts are stored as one shard document per
+          // department (see utils/cycleSharding.ts), not one shared document
+          // for the whole facility, so a non-manager's facility-scoped read
+          // only returns their own department's shard under the updated
+          // firestore.rules. Merge whichever shards this caller was allowed
+          // to read back into the single unified RosterCycle shape every
+          // consumer below (and the optimizer, grid, timesheets, etc.) still
+          // expects — this is the only place that needs to know shards exist.
+          const cloudCycleDocs = await readCol<CycleShardDoc>('cycles');
+          backfillFacility('cycles', cloudCycleDocs);
           const targetCycleId = `cycle-${selectedFacilityId}-2026-06-15`;
-          let cloudCycle = cloudCycles.find(c => c.id === targetCycleId);
+          let cloudCycle = mergeCycleShards(cloudCycleDocs, targetCycleId);
           if (!cloudCycle && !cloudIsAlreadySeeded && loadedCycle) {
-            await dbSetDoc('cycles', loadedCycle.id, loadedCycle);
+            await persistShardedCycle(loadedCycle, loadedStaff, selectedFacilityId);
             cloudCycle = loadedCycle;
           }
           if (active) {
