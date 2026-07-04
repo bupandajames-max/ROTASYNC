@@ -69,7 +69,7 @@ import { isSuperuserEmail, resolveAccess, accessLabel } from './config/access';
 import { sendInviteEmailNotification } from './utils/inviteEmail';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useFacilities } from './hooks/useFacilities';
-import { useWorkspaceConfig, DEFAULT_TAXONOMY } from './hooks/useWorkspaceConfig';
+import { useWorkspaceConfig } from './hooks/useWorkspaceConfig';
 import { useHydration } from './hooks/useHydration';
 import { useRosterActionItems } from './hooks/useRosterActionItems';
 
@@ -552,6 +552,27 @@ export default function App() {
     lastStaffListRef.current = updatedStaff;
     persistState('staff_list', updatedStaff);
     localStorage.setItem(facilityKey(newStaff.facilityId, 'active_staff_id'), newStaff.id);
+  };
+
+  // The organization name is the ORG's identity, not a per-facility setting
+  // — its source of truth is the shared organizations/{orgId} cloud doc (see
+  // useHydration, which reads it back the same way), not the local
+  // per-facility taxonomy blob. This is the edit path for Settings ->
+  // Terminology & Labels; local taxonomy state updates immediately for a
+  // responsive input, and the cloud doc gets the durable write so it
+  // survives reload, other devices, and switching facilities under the same
+  // organization. firestore.rules' organizations/{orgId} update rule allows
+  // any facility-level+ user in that same org to make this specific write.
+  const handleUpdateOrganizationName = async (name: string) => {
+    const trimmed = name.trim();
+    setTaxonomy({ ...taxonomy, organizationName: trimmed });
+    const orgId = facilities.find(f => f.id === selectedFacilityId)?.organizationId;
+    if (!firebaseUser || !orgId) return;
+    try {
+      await dbSetDoc('organizations', orgId, { id: orgId, name: trimmed });
+    } catch (err) {
+      handleGenericError(err);
+    }
   };
 
   // Invite management (managers only — enforced server-side by
@@ -2195,6 +2216,7 @@ export default function App() {
               onCreateInvite={handleCreateInvite}
               onListInvites={handleListInvites}
               onRevokeInvite={handleRevokeInvite}
+              onUpdateOrganizationName={handleUpdateOrganizationName}
             />
           )}
         </React.Suspense>

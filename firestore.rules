@@ -341,7 +341,18 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read: if isSuper() || orgId == callerOrganization() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
       allow create: if isSuper() && isValidId(orgId) && isValidOrganization(incoming()) && incoming().ownerUid == request.auth.uid;
-      allow update: if isSuper() || (isSignedIn() && resource.data.ownerUid == request.auth.uid && incoming().ownerUid == resource.data.ownerUid && isValidOrganization(incoming()));
+      // Third branch: renaming an organization (Settings -> Terminology &
+      // Labels -> Organization / Company Name) is a normal facility-manager+
+      // action, not an ownership change — the org name previously only lived
+      // in a local-only per-facility cache for exactly this reason (nobody
+      // but the bootstrap owner/superuser could write the real org doc), so
+      // it never survived a reload, a new device, or a facility switch.
+      // Scoped tightly: only someone already IN this org (callerOrganization()
+      // match) at facility-manager+ level, and ownerUid/id must stay unchanged.
+      allow update: if isSuper()
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid && incoming().ownerUid == resource.data.ownerUid && isValidOrganization(incoming()))
+        || (isSignedIn() && isFacilityLevel() && orgId == callerOrganization()
+            && incoming().id == resource.data.id && incoming().ownerUid == resource.data.ownerUid && isValidOrganization(incoming()));
       allow delete: if isSuper();
     }
 

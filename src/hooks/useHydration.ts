@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   StaffMember, RosterCycle, DailyTask, ApprovalRequest, ExtraHoursEntry, Timesheet,
   Facility, Department, PublicHoliday, TaskMaster, RosterRuleSet, ShiftDef, Taxonomy,
+  Organization,
 } from '../types';
 import {
   SHIFTS, DEFAULT_FACILITIES, getStaffSeedForFacility, getTasksSeedForFacility,
@@ -382,7 +383,11 @@ export function useHydration(deps: HydrationDeps) {
 
       // Load Taxonomy
       const storedTax = localStorage.getItem(facilityKey(selectedFacilityId, 'taxonomy'));
-      let loadedTax = DEFAULT_TAXONOMY;
+      // Typed explicitly as the full Taxonomy interface: the local
+      // DEFAULT_TAXONOMY constant this falls back to (in useWorkspaceConfig)
+      // predates the organizationName field and doesn't declare it, even
+      // though it's an optional member of Taxonomy itself.
+      let loadedTax: Taxonomy = DEFAULT_TAXONOMY;
       if (storedTax) {
         try {
           loadedTax = JSON.parse(storedTax);
@@ -433,6 +438,30 @@ export function useHydration(deps: HydrationDeps) {
             cloudFacs = upgraded;
             if (active) setFacilities(cloudFacs);
             localStorage.setItem(GLOBAL_KEYS.facilitiesList, JSON.stringify(cloudFacs));
+          }
+
+          // 1.5 Organization name — this is the ORGANIZATION's identity, not a
+          // per-facility setting, so its source of truth is the shared
+          // organizations/{orgId} cloud doc, not the local per-facility
+          // taxonomy blob loaded in STEP A. That local-only storage is
+          // exactly why the org name previously vanished on reload (nothing
+          // to reload it from once the local cache was gone), on a new
+          // device (never synced anywhere at all), and when switching
+          // facilities (each facility had its own unrelated local taxonomy
+          // blob even when two facilities share the same organization).
+          // Cloud always wins here once it loads — this is authoritative,
+          // not a mount-time default, so it can't reintroduce the clobber
+          // pattern fixed earlier.
+          const activeFacRecord = cloudFacs.find(f => f.id === selectedFacilityId);
+          const orgId = activeFacRecord?.organizationId;
+          if (orgId) {
+            try {
+              const orgDoc = await dbGetDoc<Organization>('organizations', orgId);
+              if (orgDoc?.name && active) {
+                loadedTax = { ...loadedTax, organizationName: orgDoc.name };
+                setTaxonomy(loadedTax);
+              }
+            } catch (e) {}
           }
 
           // 2. Departments

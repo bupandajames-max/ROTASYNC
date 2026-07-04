@@ -1,20 +1,15 @@
 import { useEffect, useState } from 'react';
 import { dbSetDoc } from '../firebase';
 import { facilityKey } from '../utils/storageKeys';
-import { SHIFTS, buildDefaultRuleSet, buildDefaultWorkspaceConfig } from '../data/initialData';
+import { SHIFTS, buildDefaultRuleSet, buildDefaultWorkspaceConfig, DEFAULT_TAXONOMY } from '../data/initialData';
 import type { RosterRuleSet, ShiftDef, PublicHoliday } from '../types';
 
-export const DEFAULT_TAXONOMY = {
-  appName: 'RotaSync',
-  workspaceSingular: 'Facility',
-  workspacePlural: 'Facilities',
-  memberSingular: 'Staff Member',
-  memberPlural: 'Staff Members',
-  groupSingular: 'Department',
-  groupPlural: 'Departments',
-  taskSingular: 'Task',
-  taskPlural: 'Tasks',
-};
+// Re-exported (not redefined) so every caller gets one canonical default —
+// this file used to keep its own separate copy that had drifted from the
+// data/initialData.ts version and was missing organizationName entirely,
+// which caused a real type bug once organizationName needed to flow through
+// hydration (see useHydration.ts). Single source of truth now.
+export { DEFAULT_TAXONOMY };
 
 /**
  * Owns the per-facility, runtime-defined workspace configuration: shifts,

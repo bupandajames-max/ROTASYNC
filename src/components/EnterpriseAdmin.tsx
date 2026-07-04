@@ -105,6 +105,7 @@ interface EnterpriseAdminProps {
   onCreateInvite?: (email: string, role: 'staff' | 'dept_head' | 'facility_manager', departmentId?: string) => Promise<'created' | 'error'>;
   onListInvites?: () => Promise<Invite[]>;
   onRevokeInvite?: (invite: Invite) => Promise<void>;
+  onUpdateOrganizationName?: (name: string) => Promise<void>;
 }
 
 export default function EnterpriseAdmin({
@@ -125,6 +126,7 @@ export default function EnterpriseAdmin({
   onCreateInvite,
   onListInvites,
   onRevokeInvite,
+  onUpdateOrganizationName,
 }: EnterpriseAdminProps) {
   const toast = useToast();
   const confirm = useConfirm();
@@ -2555,9 +2557,10 @@ export default function EnterpriseAdmin({
                 placeholder="e.g. Acme Logistics Ltd"
                 value={taxonomy.organizationName || ''}
                 onChange={(e) => setTaxonomy({ ...taxonomy, organizationName: e.target.value })}
+                onBlur={(e) => onUpdateOrganizationName?.(e.target.value)}
                 className="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-indigo-600 focus:bg-white mt-1.5"
               />
-              <p className="text-[10px] text-slate-400 mt-1 font-semibold">The actual employer name — shown on payroll documents like the printed timesheet, separate from the app name above.</p>
+              <p className="text-[10px] text-slate-400 mt-1 font-semibold">The actual employer name — shown on payroll documents like the printed timesheet, separate from the app name above. Shared across every facility in this organization and saved to the cloud once you click away from this field.</p>
             </div>
 
             <div>
