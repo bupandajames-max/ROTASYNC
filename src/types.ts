@@ -96,6 +96,12 @@ export interface DailyTask {
   id: string;
   date: string; // YYYY-MM-DD
   staffName: string;
+  // The assignee's department at generation time — added so firestore.rules
+  // can scope Task Board reads per department (real server-side isolation,
+  // not just the "show one department at a time" UI filter). Optional
+  // because tasks generated before this field existed won't have it; those
+  // become manager-only readable until they roll off.
+  departmentId?: string;
   taskName: string;
   category: string;
   shiftCode: string;
@@ -184,6 +190,12 @@ export interface ApprovalRequest {
   timestamp: string; // YYYY-MM-DD HH:mm
   type: 'SWAP' | 'EXTRA' | 'MONTHLY';
   requesterName: string;
+  // The requester's StaffMember id — added so firestore.rules can scope a
+  // read to "is this my own request" without matching on the display name
+  // (fragile: renames, duplicates). Optional because requests written before
+  // this field existed won't have it; those become manager-only readable
+  // until they naturally roll off, rather than silently open to everyone.
+  requesterId?: string;
   shiftData?: string; // e.g. "2026-06-18|A" for swaps/extra hours
   targetName?: string; // colleague with whom swapping, or supervisor signing, or hours amount
   details: string;
@@ -194,6 +206,8 @@ export interface ExtraHoursEntry {
   id: string;
   timestamp: string;
   staffName: string;
+  // Same reasoning as ApprovalRequest.requesterId above.
+  staffId?: string;
   shiftDate: string; // YYYY-MM-DD
   shiftCode: string;
   hours: number;

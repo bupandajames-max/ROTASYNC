@@ -449,9 +449,13 @@ service cloud.firestore {
       // boundary, not just the UI's "show one department at a time" toggle,
       // which was display-only and never stopped a direct API read of
       // another department's staff records.
+      // .get('departmentId', '') rather than dot access -- a staff doc
+      // written before this field existed would otherwise throw on a
+      // missing key instead of just defaulting, same reasoning as
+      // callerOrganization() above.
       allow read: if isSuper()
         || (isManagerLevel() && resource.data.facilityId == callerFacility())
-        || (isSignedIn() && resource.data.facilityId == callerFacility() && resource.data.departmentId == callerDepartment());
+        || (isSignedIn() && resource.data.facilityId == callerFacility() && resource.data.get('departmentId', '') == callerDepartment());
       allow create: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
       allow create: if isSignedIn() && isValidId(staffId) && isSelfOnboardStaff(incoming());
       allow update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
@@ -482,7 +486,15 @@ service cloud.firestore {
     // — but every write must stay within the caller's own facility, same as
     // every other collection's per-tenant isolation.
     match /dailyTasks/{taskId} {
-      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      // Same pattern as staff/{staffId}: isManagerLevel()+ sees every task in
+      // the facility (needed to review/reassign); below that, reads are
+      // scoped to the caller's own department via departmentId (added
+      // alongside this rule; see types.ts DailyTask). .get(field, '') so a
+      // task generated before this field existed defaults cleanly instead of
+      // erroring on a missing key.
+      allow read: if isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility())
+        || (isSignedIn() && resource.data.facilityId == callerFacility() && resource.data.get('departmentId', '') == callerDepartment());
       allow create, update: if isSignedIn() && isValidId(taskId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
@@ -506,13 +518,31 @@ service cloud.firestore {
     }
 
     match /approvals/{approvalId} {
-      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      // isManagerLevel()+ sees every request in the facility (needed to
+      // review/approve). Below that, a person may only read their OWN
+      // request -- matched via requesterId (added alongside this rule; see
+      // types.ts). The .get(field, '') default check runs BEFORE the get()
+      // lookup so a request written before requesterId existed fails this
+      // branch cleanly (falls through to false) instead of the get() call
+      // erroring on an empty path -- those older requests become
+      // manager-only readable until they roll off, rather than staying open
+      // to the whole facility the way they were before this rule existed.
+      allow read: if isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility())
+        || (isSignedIn() && resource.data.facilityId == callerFacility()
+            && resource.data.get('requesterId', '') != ''
+            && get(/databases/$(database)/documents/staff/$(resource.data.requesterId)).data.email == callerEmail());
       allow create, update: if isSignedIn() && isValidId(approvalId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
 
     match /extraHours/{extraHoursId} {
-      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      // Same reasoning as approvals above, matched via staffId.
+      allow read: if isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility())
+        || (isSignedIn() && resource.data.facilityId == callerFacility()
+            && resource.data.get('staffId', '') != ''
+            && get(/databases/$(database)/documents/staff/$(resource.data.staffId)).data.email == callerEmail());
       allow create, update: if isSignedIn() && isValidId(extraHoursId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
