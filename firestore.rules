@@ -318,24 +318,18 @@ service cloud.firestore {
     }
 
     // Facilities (sites): readable only by members of that facility (or
-    // super users) — not by any signed-in stranger. Updates remain
-    // super-only. The "first-run bootstrap" create branch used to allow ANY
-    // signed-in user with no facility yet (callerFacility()=='') to create
-    // their own first facility — meaning any Google account at all could
-    // self-provision a brand-new workspace with zero invite or approval.
-    // Restricted to isSuper() so only the approved bootstrap owner(s) can
-    // ever spin up a new organization/facility on this deployment; everyone
-    // else must be invited into an existing one. Creating ADDITIONAL
-    // facilities under an existing org remains super-only too — see
-    // deferred work.
+    // super users) — not by any signed-in stranger. Creation, updates, and
+    // deletion are all super-only — the earlier "first-run bootstrap" branch
+    // that let any signed-in user with no facility yet self-provision one
+    // (any Google account, zero invite/approval) was removed entirely; only
+    // the approved bootstrap owner(s) can ever spin up a new organization/
+    // facility on this deployment. (The extra org-ownership-scoped create
+    // branch that used to sit alongside the plain isSuper() one was dead
+    // code — isSuper() alone already covers every case it additionally
+    // required, so it could never actually apply and was removed.)
     match /facilities/{facilityId} {
       allow read: if isSuper() || facilityId == callerFacility();
       allow create: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
-      allow create: if isSuper() && isValidId(facilityId) && isValidFacility(incoming())
-        && incoming().organizationId is string && incoming().organizationId.size() > 0
-        && exists(/databases/$(database)/documents/organizations/$(incoming().organizationId))
-        && get(/databases/$(database)/documents/organizations/$(incoming().organizationId)).data.ownerUid == request.auth.uid
-        && callerFacility() == '';
       allow update: if isSuper() && isValidId(facilityId) && isValidFacility(incoming());
       allow delete: if isSuper();
     }
@@ -520,10 +514,16 @@ service cloud.firestore {
       // rather than a stored staffId-on-user field, so this applies to every
       // existing timesheet immediately with no backfill migration required.
       // Previously any signed-in person in the facility could read anyone
-      // else's timesheet.
+      // else's timesheet. Guards BEFORE the get(): a missing staffId field
+      // (pre-migration doc) or a staffId pointing at a since-deleted staff
+      // record would otherwise make get() throw, failing the WHOLE rule
+      // expression rather than just this branch -- exists() is safe on a
+      // missing path (returns false) where get() is not.
       allow read: if isSuper()
         || (isManagerLevel() && resource.data.facilityId == callerFacility())
         || (isSignedIn() && resource.data.facilityId == callerFacility()
+            && resource.data.get('staffId', '') != ''
+            && exists(/databases/$(database)/documents/staff/$(resource.data.staffId))
             && get(/databases/$(database)/documents/staff/$(resource.data.staffId)).data.email == callerEmail());
       allow create, update: if isSignedIn() && isValidId(timesheetId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
@@ -539,21 +539,26 @@ service cloud.firestore {
       // erroring on an empty path -- those older requests become
       // manager-only readable until they roll off, rather than staying open
       // to the whole facility the way they were before this rule existed.
+      // exists() guard before get(): a requesterId pointing at a
+      // since-deleted staff record must not make the whole rule throw.
       allow read: if isSuper()
         || (isManagerLevel() && resource.data.facilityId == callerFacility())
         || (isSignedIn() && resource.data.facilityId == callerFacility()
             && resource.data.get('requesterId', '') != ''
+            && exists(/databases/$(database)/documents/staff/$(resource.data.requesterId))
             && get(/databases/$(database)/documents/staff/$(resource.data.requesterId)).data.email == callerEmail());
       allow create, update: if isSignedIn() && isValidId(approvalId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
 
     match /extraHours/{extraHoursId} {
-      // Same reasoning as approvals above, matched via staffId.
+      // Same reasoning as approvals above, matched via staffId, same
+      // exists() guard before get().
       allow read: if isSuper()
         || (isManagerLevel() && resource.data.facilityId == callerFacility())
         || (isSignedIn() && resource.data.facilityId == callerFacility()
             && resource.data.get('staffId', '') != ''
+            && exists(/databases/$(database)/documents/staff/$(resource.data.staffId))
             && get(/databases/$(database)/documents/staff/$(resource.data.staffId)).data.email == callerEmail());
       allow create, update: if isSignedIn() && isValidId(extraHoursId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
