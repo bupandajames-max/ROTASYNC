@@ -51,6 +51,18 @@ service cloud.firestore {
         ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('organizationId', '')
         : '';
     }
+    // The department this caller belongs to. Used for genuine department-
+    // level READ isolation (not just a client-side UI filter) below — a
+    // Member or Supervisor in one department must not be able to read
+    // another department's staff/timesheet records even via direct API
+    // access, only via the UI's own "show all" toggle. Facility-level+
+    // callers (Manager/Org Admin/Super) always see the whole facility
+    // regardless of this value — see isFacilityLevel() branches below.
+    function callerDepartment() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('departmentId', '')
+        : '';
+    }
     // Per-tenant write isolation: a non-super user may only write within their facility.
     function inMyFacility(fid) {
       return isSuper() || fid == callerFacility();
@@ -428,7 +440,18 @@ service cloud.firestore {
     // OR a signed-in user self-onboarding their own general-member record
     // into an existing facility (see isSelfOnboardStaff above).
     match /staff/{staffId} {
-      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      // isManagerLevel() (Supervisor/dept_head and above) always sees the
+      // whole facility -- matches the write rules just below, which already
+      // trust dept_head to create/update/delete staff, so restricting their
+      // reads more tightly than their writes would be inconsistent and break
+      // existing Supervisor capability. Below that (plain Member), reads are
+      // scoped to the caller's own department -- a real server-side
+      // boundary, not just the UI's "show one department at a time" toggle,
+      // which was display-only and never stopped a direct API read of
+      // another department's staff records.
+      allow read: if isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility())
+        || (isSignedIn() && resource.data.facilityId == callerFacility() && resource.data.departmentId == callerDepartment());
       allow create: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
       allow create: if isSignedIn() && isValidId(staffId) && isSelfOnboardStaff(incoming());
       allow update: if isManagerLevel() && isValidId(staffId) && isValidStaff(incoming()) && inMyFacility(incoming().facilityId);
@@ -465,7 +488,19 @@ service cloud.firestore {
     }
 
     match /timesheets/{timesheetId} {
-      allow read: if isSuper() || resource.data.facilityId == callerFacility();
+      // isManagerLevel() (Supervisor/dept_head and above) sees every
+      // timesheet in the facility -- needed for payroll/approvals, and
+      // matches the trust level already given to dept_head elsewhere (e.g.
+      // canManageTasksAndApprovals on the client). Below that, a person may
+      // only read their OWN timesheet -- matched via the staff doc's email
+      // rather than a stored staffId-on-user field, so this applies to every
+      // existing timesheet immediately with no backfill migration required.
+      // Previously any signed-in person in the facility could read anyone
+      // else's timesheet.
+      allow read: if isSuper()
+        || (isManagerLevel() && resource.data.facilityId == callerFacility())
+        || (isSignedIn() && resource.data.facilityId == callerFacility()
+            && get(/databases/$(database)/documents/staff/$(resource.data.staffId)).data.email == callerEmail());
       allow create, update: if isSignedIn() && isValidId(timesheetId) && inMyFacility(incoming().facilityId);
       allow delete: if isSignedIn() && inMyFacility(existing().facilityId);
     }
