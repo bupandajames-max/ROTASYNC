@@ -25,9 +25,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -43,21 +40,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * members, snapshot lifecycle, shift-swap approval, timesheet lifecycle,
  * factory reset preservation rules, and tenant isolation on the new entities.
  *
- * Requires Docker. Run: mvn test -Dtest=BackendFlowIntegrationTest
+ * Runs on Testcontainers (Docker) by default, or an external PostgreSQL via
+ * TEST_DATABASE_URL — see TestDatabase. Run: mvn test -Dtest=BackendFlowIntegrationTest
  */
 @SpringBootTest
-@Testcontainers
 class BackendFlowIntegrationTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("app.security.mode", () -> "dev");
+        TestDatabase.apply(registry);
     }
 
     @Autowired JdbcTemplate jdbc;
@@ -67,19 +58,23 @@ class BackendFlowIntegrationTest {
     @Autowired ApprovalService approvalService;
     @Autowired AdminService adminService;
 
-    private record Seed(UUID tenantId, UUID facilityId, UUID departmentId, String orgName) {}
+    private record Seed(UUID tenantId, UUID facilityId, UUID departmentId, UUID userId, String orgName) {}
 
     /** Each test gets its own org so tests stay order-independent. */
     private Seed seedTenant(String orgName) {
         UUID tenant = UUID.randomUUID();
         UUID facility = UUID.randomUUID();
         UUID department = UUID.randomUUID();
+        UUID user = UUID.randomUUID();
         jdbc.update("INSERT INTO organizations (id, name) VALUES (?, ?)", tenant, orgName);
         jdbc.update("INSERT INTO facilities (id, tenant_id, name) VALUES (?, ?, 'Main')",
                 facility, tenant);
         jdbc.update("INSERT INTO departments (id, tenant_id, facility_id, name) VALUES (?, ?, ?, 'Pharmacy')",
                 department, tenant, facility);
-        return new Seed(tenant, facility, department, orgName);
+        // audit_log.actor_user_id has an FK to app_users — principals must be real users
+        jdbc.update("INSERT INTO app_users (id, email) VALUES (?, ?)",
+                user, "actor-" + user + "@test.com");
+        return new Seed(tenant, facility, department, user, orgName);
     }
 
     @AfterEach
@@ -88,17 +83,17 @@ class BackendFlowIntegrationTest {
     }
 
     private void actAsManager(Seed seed) {
-        TenantContext.set(new TenantContext.Principal(UUID.randomUUID(), "manager@test.com",
+        TenantContext.set(new TenantContext.Principal(seed.userId(), "manager@test.com",
                 seed.tenantId(), seed.facilityId(), null, Membership.ROLE_MANAGER, false));
     }
 
     private void actAsOrgAdmin(Seed seed) {
-        TenantContext.set(new TenantContext.Principal(UUID.randomUUID(), "admin@test.com",
+        TenantContext.set(new TenantContext.Principal(seed.userId(), "admin@test.com",
                 seed.tenantId(), seed.facilityId(), null, Membership.ROLE_ORG_ADMIN, false));
     }
 
     private void actAsMember(Seed seed, String email, UUID departmentId) {
-        TenantContext.set(new TenantContext.Principal(UUID.randomUUID(), email,
+        TenantContext.set(new TenantContext.Principal(seed.userId(), email,
                 seed.tenantId(), seed.facilityId(), departmentId, Membership.ROLE_MEMBER, false));
     }
 

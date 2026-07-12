@@ -12,9 +12,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
@@ -29,22 +26,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * wrong role with 403 (before any service/tenant logic runs) and missing auth
  * with 401, while the right role passes through.
  *
- * Requires Docker (context boots against a real PostgreSQL).
+ * Runs on Testcontainers (Docker) by default, or an external PostgreSQL via
+ * TEST_DATABASE_URL — see TestDatabase.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
 class RbacAccessTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("app.security.mode", () -> "dev");
+        TestDatabase.apply(registry);
     }
 
     @Autowired MockMvc mockMvc;

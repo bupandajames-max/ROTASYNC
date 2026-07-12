@@ -12,9 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -40,22 +37,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *  (The JPA layers are tested through the app; RLS is tested via raw JDBC
  *  precisely because raw SQL is what the Java layers can't protect.)
  *
- * Requires Docker (Testcontainers). Run: mvn test -Dtest=TenantIsolationTest
+ * Runs on Testcontainers (Docker) by default, or an external PostgreSQL via
+ * TEST_DATABASE_URL — see TestDatabase. Run: mvn test -Dtest=TenantIsolationTest
  */
 @SpringBootTest
-@Testcontainers
 class TenantIsolationTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        // JWT decoding isn't exercised here; dev mode keeps the context bootable
-        registry.add("app.security.mode", () -> "dev");
+        TestDatabase.apply(registry);
     }
 
     @Autowired StaffService staffService;
@@ -111,10 +101,12 @@ class TenantIsolationTest {
         actAs(TENANT_B, Membership.ROLE_MANAGER);
         Staff bobB = staffService.create(staffReq(FACILITY_B, "Bob", "EMP-B1"));
 
-        // A sees only A's staff
+        // A sees only A's staff (tests share seed data, so assert membership,
+        // not exact contents — method execution order is not guaranteed)
         actAs(TENANT_A, Membership.ROLE_MANAGER);
         List<Staff> aView = staffService.listForCaller(FACILITY_A);
-        assertThat(aView).extracting(Staff::getName).containsExactly("Alice");
+        assertThat(aView).extracting(Staff::getName).contains("Alice").doesNotContain("Bob");
+        assertThat(aView).allMatch(s -> TENANT_A.equals(s.getTenantId()));
         assertThat(staffService.listForCaller(FACILITY_B)).isEmpty(); // B's facility: nothing
 
         // A cannot fetch B's row even with its exact id — 404, not leak
@@ -123,8 +115,9 @@ class TenantIsolationTest {
 
         // B symmetric
         actAs(TENANT_B, Membership.ROLE_MANAGER);
-        assertThat(staffService.listForCaller(FACILITY_B))
-                .extracting(Staff::getName).containsExactly("Bob");
+        List<Staff> bView = staffService.listForCaller(FACILITY_B);
+        assertThat(bView).extracting(Staff::getName).contains("Bob").doesNotContain("Alice");
+        assertThat(bView).allMatch(s -> TENANT_B.equals(s.getTenantId()));
         assertThatThrownBy(() -> staffService.get(aliceA.getId()))
                 .isInstanceOf(jakarta.persistence.EntityNotFoundException.class);
 
@@ -170,7 +163,7 @@ class TenantIsolationTest {
                 """);
 
         try (Connection conn = DriverManager.getConnection(
-                postgres.getJdbcUrl(), "app_rt", "app_rt")) {
+                TestDatabase.jdbcUrl(), "app_rt", "app_rt")) {
             conn.setAutoCommit(false);
 
             // 1) No app.tenant_id set -> RLS yields ZERO rows (fail-closed)

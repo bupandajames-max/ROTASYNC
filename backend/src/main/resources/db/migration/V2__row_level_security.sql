@@ -30,11 +30,13 @@ BEGIN
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
     -- current_setting(..., true) returns NULL when unset -> predicate is
-    -- NULL -> no rows visible. Fail-closed by construction.
+    -- NULL -> no rows visible. Fail-closed by construction. NULLIF guards
+    -- the platforms/builds where an unset custom GUC reads back as '' instead
+    -- of NULL — ''::uuid would otherwise error out the whole query.
     EXECUTE format(
       'CREATE POLICY tenant_isolation ON %I
-         USING (tenant_id = current_setting(''app.tenant_id'', true)::uuid)
-         WITH CHECK (tenant_id = current_setting(''app.tenant_id'', true)::uuid)',
+         USING (tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::uuid)
+         WITH CHECK (tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::uuid)',
       t);
   END LOOP;
 END $$;
@@ -43,8 +45,8 @@ END $$;
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE ROW LEVEL SECURITY;
 CREATE POLICY org_self ON organizations
-  USING (id = current_setting('app.tenant_id', true)::uuid)
-  WITH CHECK (id = current_setting('app.tenant_id', true)::uuid);
+  USING (id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+  WITH CHECK (id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 
 -- app_users is global (login-time lookups happen before a tenant is known),
 -- so it carries no tenant policy. It contains only identity data.

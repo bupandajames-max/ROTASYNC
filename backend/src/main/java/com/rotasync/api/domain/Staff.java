@@ -1,10 +1,10 @@
 package com.rotasync.api.domain;
 
-import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +50,9 @@ public class Staff extends TenantOwnedEntity {
     @Column(nullable = false)
     private String gender = "";
 
-    @Type(ListArrayType.class)
+    // Hibernate 6 native array mapping — hypersistence's ListArrayType reports
+    // Types#OTHER, which fails ddl-auto=validate against a real text[] column
+    @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(columnDefinition = "text[]", nullable = false)
     private List<String> skills = new ArrayList<>();
 

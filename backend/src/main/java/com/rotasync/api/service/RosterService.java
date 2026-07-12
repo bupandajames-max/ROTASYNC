@@ -79,11 +79,11 @@ public class RosterService {
         if (req.endDate().isBefore(req.startDate())) {
             throw new IllegalArgumentException("endDate must be on or after startDate");
         }
-        RosterCycle cycle = new RosterCycle();
-        cycle.setFacilityId(req.facilityId());
-        cycle.setStartDate(req.startDate());
-        cycle.setEndDate(req.endDate());
-        cycle = cycles.save(cycle);
+        RosterCycle draft = new RosterCycle();
+        draft.setFacilityId(req.facilityId());
+        draft.setStartDate(req.startDate());
+        draft.setEndDate(req.endDate());
+        final RosterCycle cycle = cycles.save(draft);
 
         List<RosterAssignment> rows;
         if (req.generate()) {
