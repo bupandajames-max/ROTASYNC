@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: rotasync-api
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/rotasync}
+    username: ${DATABASE_USER:rotasync_app}
+    password: ${DATABASE_PASSWORD:rotasync}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}   # free-tier PG allows few connections
+
+  jpa:
+    hibernate:
+      ddl-auto: validate        # schema is owned by Flyway, never by Hibernate
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Firebase Auth ID tokens. Users keep their existing Google sign-in;
+          # the SPA sends the same idToken it already has to this API.
+          issuer-uri: https://securetoken.google.com/${FIREBASE_PROJECT_ID:rotasync-prod}
+          audiences: ${FIREBASE_PROJECT_ID:rotasync-prod}
+
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework   # behind Render/Fly proxy
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  security:
+    # firebase = verify Google/Firebase JWTs (production)
+    # dev      = accept locally-minted HS256 tokens, see DevJwtConfig (never in prod)
+    mode: ${APP_SECURITY_MODE:firebase}
+    dev-secret: ${APP_DEV_JWT_SECRET:local-dev-secret-local-dev-secret-32b}
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
